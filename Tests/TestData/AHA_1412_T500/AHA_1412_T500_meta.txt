@@ -1,0 +1,31 @@
+mess2Dheterodyne_meta_format 1.1
+Start_time 2011/08/05 14:12:33 
+Method Full 2D echo
+Steps 88
+StepSize 13
+Shots 5000
+T2 500
+T3 0
+Phase -113°
+PEM wavelength 5400
+PEM retardation 500
+Center wavelength 4762.0
+Center wavenumber 2100.0
+CrosTalk  0
+Interleave  0
+Invert
+Mask beam 1 0
+Mask beam 2 0
+Mask beam 3 0
+Mask beam 4 0
+Motor 1 499.5  fs
+Motor 2 500.3  fs
+Motor 3 -8.8  fs
+Use reference 1
+Gain 10
+Grating 150
+optDiffMode Balanced
+Comments undersampling 3
+Scan 2 at 2011/08/05 14:15:03 
+Scan 3 at 2011/08/05 14:17:33 
+Scan 4 at 2011/08/05 14:20:03 
