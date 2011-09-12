@@ -31,10 +31,16 @@ import croc
 from croc.DataClasses import mess_data
 import croc.Absorptive
 import croc.Plotting
+import croc.Constants
+import croc.Debug
 
 reload(croc)
 reload(croc.Absorptive)
 reload(croc.Plotting)
+reload(croc.Constants)
+reload(croc.Debug)
+
+debug_flag = croc.Debug.debug_flag
 
 class pe(croc.DataClasses.mess_data):
     """
@@ -44,6 +50,7 @@ class pe(croc.DataClasses.mess_data):
     
     CHANGELOG
     20110910 RB: started the class, using stuff from earlier work
+    20110912 RB: wrote subclasses for specific cases 
     
     
     """
@@ -65,27 +72,188 @@ class pe(croc.DataClasses.mess_data):
         
         print("=== CROCODILE PHOTON ECHO ===")
         
+        if debug_flag:
+            print(">>> DEBUG MODE <<<")
+        
         # photon echo has 3 dimensions: t1/w1, t2, w3
         croc.DataClasses.mess_data.__init__(self, object_name, diagrams = 2, dimensions = 3)
 
 
-    def setup(self, base_filename, population_time, undersampling, time_stamp = 0000):
-        """
-        croc.pe.setup
-        
-        Sets the most basic variables.
-        
-        20110912 RB: this was split of from __init__ to make the class more flexible (in order to subtract two spectra you can make a new class).
-        
-        """
-        self.base_filename = base_filename
-        self.r_axis[1] = population_time
-        self.undersampling = undersampling
-        self.time_stamp = time_stamp
+#     def setup(self, base_filename, population_time, undersampling, time_stamp = 0000):
+#         """
+#         croc.pe.setup
+#         
+#         Sets the most basic variables.
+#         
+#         20110912 RB: this was split of from __init__ to make the class more flexible (in order to subtract two spectra you can make a new class).
+#         
+#         """
+#         self.base_filename = base_filename
+#         self.r_axis[1] = population_time
+#         self.undersampling = undersampling
+#         self.time_stamp = time_stamp
+
+
+
 
     
 
 
+
+
+
+    # plot the spectrum
+    def plot(self, plot_type = "S", x_range = [0, 0], y_range = [0, -1], zlimit = -1, contours = 12, filled = True, black_contour = True, title = "", x_label = "", y_label = "", diagonal_line = True, new_figure = True):
+        """
+        croc.pe.plot
+        
+        INPUT:
+        - plot_type: 'S' plots the purely absorptive spectrum (default), 'R' plots the rephasing part, 'NR' the non-rephasing part.
+        
+        This function will plot the purely absorptive spectrum. It is a wrapper function for croc.Plotting.contourplot. It will put the data in the right format, adds some labels etc. This should do for 99% of the cases. 
+        For details about the options, see croc.Plotting.contourplot.    
+        """
+        
+        if plot_type == "spectrum" or plot_type == "S":
+            data = self.s
+        elif plot_type == "rephasing" or plot_type == "R":
+            data = numpy.real(numpy.exp(-1j * self.phase_rad) * self.f[0])
+        elif plot_type == "non-rephasing" or plot_type == "NR":
+            data = numpy.real(numpy.exp(1j * self.phase_rad) * self.f[1])  
+        else:
+            print("ERROR (croc.pe.plot): invalid plot type. ")
+            return 0
+        
+        x_axis = self.s_axis[2]
+        y_axis = self.s_axis[0]
+        if x_label == "":
+            x_label = self.s_units[2]
+        if y_label == "":
+            y_label = self.s_units[0] 
+        if title == "":
+            title = self.objectname + ", t2: " + str(self.r_axis[1]) + "\n scans x shots: " + str(self.n_scans) + "x" + str(self.n_shots)
+        
+               
+        croc.Plotting.contourplot(data, x_axis, y_axis, x_range = x_range, y_range = y_range, zlimit = zlimit, contours = contours, filled = filled, black_contour = black_contour, title = title, x_label = x_label, y_label = y_label, diagonal_line = diagonal_line, new_figure = new_figure)  
+
+
+
+
+    # plot the rephasing part of the spectrum
+    def plot_R(self, x_range = [0, 0], y_range = [0, -1], zlimit = -1, contours = 12, filled = True, black_contour = True, title = "", x_label = "", y_label = "", new_figure = True): 
+    
+        print("ADVISE (croc.pe.plot_R): The function only calls croc.pe.plot(plot_type='R'), but may not be completely up-to-date.\n")                      
+        self.plot(plot_type = "R", x_range = x_range, y_range = y_range, zlimit = zlimit, contours = contours, filled = filled, black_contour = black_contour, title = title, x_label = x_label, y_label = y_label, new_figure = new_figure)  
+
+  
+    # plot the non-rephasing part of the spectrum
+    def plot_R(self, x_range = [0, 0], y_range = [0, -1], zlimit = -1, contours = 12, filled = True, black_contour = True, title = "", x_label = "", y_label = "", new_figure = True):          
+    
+        print("ADVISE (croc.pe.plot_NR): The function only calls croc.pe.plot(plot_type='NR'), but may not be completely up-to-date.\n")          
+        self.plot(plot_type = "NR", x_range = x_range, y_range = y_range, zlimit = zlimit, contours = contours, filled = filled, black_contour = black_contour, title = title, x_label = x_label, y_label = y_label, new_figure = new_figure)
+
+
+    # plot the time domain
+    def plot_T(self, x_range = [0, 0], y_range = [0, 0], zlimit = -1, contours = 12, filled = True, black_contour = True, title = "", x_label = "", y_label = "", new_figure = True):
+        """
+        croc.pe.plot_T
+        
+        This function will plot the measured data, still in the time domain. It is a wrapper function for croc.Plotting.contourplot. It will put the data in the right format, adds some labels etc. This should do for 99% of the cases. 
+        For details about the options, see croc.Plotting.contourplot.    
+        """
+        # concatenate the two diagrams
+        data = numpy.concatenate((numpy.flipud(self.r[1]), self.r[0])).T
+        x_axis = numpy.concatenate((-numpy.flipud(self.r_axis[0]), self.r_axis[0])) 
+        y_axis = self.r_axis[2]
+        if x_label == "":
+            x_label = self.r_units[0]
+        if y_label == "":
+            y_label = self.r_units[2]
+        
+        croc.Plotting.contourplot(data, x_axis, y_axis, x_range = x_range, y_range = y_range, zlimit = zlimit, contours = contours, filled = filled, black_contour = black_contour, title = title, x_label = x_label, y_label = y_label, new_figure = new_figure,  diagonal_line = False)  
+
+
+
+
+
+
+
+
+
+
+
+
+class pe_sub(croc.pe.pe):
+
+    """
+    croc.pe.pe_sub
+    
+    This subclass of croc.pe.pe contains the specifics for when two measurements are subtracted from each other. 
+    
+    INPUT:
+    - objectname: a name
+    - class_plus: a class
+    - class_min: the class that will be subtracted
+    
+    CHANGELOG:
+    20110912 RB: split this of croc.pe.pe
+    
+    """
+
+    def __init__(self, objectname, class_plus, class_min):
+        
+        croc.pe.pe.__init__(self, objectname)
+
+        self.s = class_plus.s - class_min.s
+        self.s_axis[0] = class_plus.s_axis[0]
+        self.s_axis[1] = class_plus.s_axis[1]
+        self.s_axis[2] = class_plus.s_axis[2]
+        self.comment = ("Subtraction of " + class_plus.objectname + " with " + class_min.objectname)
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+class pe_exp(croc.pe.pe):
+    """
+    croc.pe.pe_exp
+    
+    This subclass of croc.pe.pe contains the specifics for experimentally measured 2DIR measurements. 
+    
+    
+    """
+
+
+
+
+    def __init__(self, objectname, base_filename, population_time, undersampling, time_stamp = 0000):
+    
+        croc.pe.pe.__init__(self, objectname)
+        
+        self.base_filename = base_filename
+        self.r_axis[1] = population_time
+        self.undersampling = undersampling
+        self.time_stamp = time_stamp        
+        
+
+
+
+
+
+         
+        
     def import_data(self, scans = [0], noise = True, meta = True):
         """
         croc.pe.import_data
@@ -244,6 +412,12 @@ class pe(croc.DataClasses.mess_data):
 
 
 
+
+
+
+
+
+
     def fourier_helper(self, array, window_function = "none", window_length = 0):
         """
         fourier_helper
@@ -263,10 +437,14 @@ class pe(croc.DataClasses.mess_data):
         ft_array = numpy.reshape( numpy.zeros(x*y, dtype=numpy.cfloat), (x, y))
 
         # iterate over all the pixels
-        for i in range(len(self.r_axis[2])):
-            ft_array[:,i] = croc.Absorptive.fourier(array[:,i], zero_in_middle = False, first_correction = True, zeropad_to = self.zeropad_to, window_function = window_function, window_length = window_length)   
         
-        return ft_array   
+        for i in range(y):
+            ft_array[:,i] = croc.Absorptive.fourier(array[:,i], zero_in_middle = False, first_correction = True, zeropad_to = self.zeropad_to, window_function = window_function, window_length = window_length)  
+        return ft_array  
+        
+      
+        
+          
 
 
   
@@ -284,12 +462,16 @@ class pe(croc.DataClasses.mess_data):
         # CHECKS
         # checks the undersampling. It can be 0, but that is hardly used
         if self.undersampling == 0:
-            print("WARNING (croc.pe.fourier): undersampling is 0!\n")
+            print("\nWARNING (croc.pe.pe_exp.absorptive): undersampling is 0!\n")
         
         # do the fft
         # copy the arrays to prevent changing the originals
-        self.f[0] = self.fourier_helper(numpy.copy(self.r[0]), window_function = window_function, window_length = window_length)
-        self.f[1] = self.fourier_helper(numpy.copy(self.r[1]), window_function = window_function, window_length = window_length)
+        try:
+            self.f[0] = self.fourier_helper(numpy.copy(self.r[0]), window_function = window_function, window_length = window_length)
+            self.f[1] = self.fourier_helper(numpy.copy(self.r[1]), window_function = window_function, window_length = window_length)
+        except ValueError:
+            print("\nERROR (croc.pe.pe_exp.absorptive): Problem with the Fourier Transforms. Are r[0] and r[1] assigned?")
+            return 0
         
         # phase the spectrum
         self.s = numpy.real(numpy.exp(-1j * self.phase_rad) * self.f[0] + numpy.exp(1j * self.phase_rad) * self.f[1])
@@ -305,98 +487,26 @@ class pe(croc.DataClasses.mess_data):
             self.s = self.s[(len(self.s)/2):][:]        
         
         # fix the axes
-        self.s_axis[0] = croc.Absorptive.make_ft_axis(length = 2*numpy.shape(self.s)[0], dt = self.r_axis[0][1]-self.r_axis[0][0], undersampling = self.undersampling)
+        try:
+            self.s_axis[0] = croc.Absorptive.make_ft_axis(length = 2*numpy.shape(self.s)[0], dt = self.r_axis[0][1]-self.r_axis[0][0], undersampling = self.undersampling)
+        except TypeError:
+            print("\nERROR (croc.pe.pe_exp.absorptive): Problem with making the Fourier Transformed axis. Is r_axis[0] assigned?")
+            return 0
+            
         self.s_axis[0] = self.s_axis[0][0:len(self.s_axis[0])/2]
         self.s_axis[2] = self.r_axis[2]    
         
         # add some stuff to self
         self.s_units = ["cm-1", "fs", "cm-1"]
-        self.s_resolution = [(self.s_axis[0][1] - self.s_axis[0][0]), 0, (self.s_axis[2][1] - self.s_axis[2][0])]
-    
-
-
-
-
-
-    # plot the spectrum
-    def plot(self, plot_type = "S", x_range = [0, 0], y_range = [0, -1], zlimit = 0, contours = 12, filled = True, black_contour = True, title = "", x_label = "", y_label = "", diagonal_line = True, new_figure = True):
-        """
-        croc.pe.plot
-        
-        INPUT:
-        - plot_type: 'S' plots the purely absorptive spectrum (default), 'R' plots the rephasing part, 'NR' the non-rephasing part.
-        
-        This function will plot the purely absorptive spectrum. It is a wrapper function for croc.Plotting.contourplot. It will put the data in the right format, adds some labels etc. This should do for 99% of the cases. 
-        For details about the options, see croc.Plotting.contourplot.    
-        """
-        
-        if plot_type == "spectrum" or plot_type == "S":
-            data = self.s
-        elif plot_type == "rephasing" or plot_type == "R":
-            data = numpy.real(numpy.exp(-1j * self.phase_rad) * self.f[0])
-        elif plot_type == "non-rephasing" or plot_type == "NR":
-            data = numpy.real(numpy.exp(1j * self.phase_rad) * self.f[1])  
-        else:
-            print("ERROR (croc.pe.plot): invalid plot type. ")
-            return 0
-        
-        x_axis = self.s_axis[2]
-        y_axis = self.s_axis[0]
-        if x_label == "":
-            x_label = self.s_units[2]
-        if y_label == "":
-            y_label = self.s_units[0] 
-        if title == "":
-            title = self.objectname + ", t2: " + str(self.r_axis[1]) + "\n scans x shots: " + str(self.n_scans) + "x" + str(self.n_shots)
-        
-               
-        croc.Plotting.contourplot(data, x_axis, y_axis, x_range = x_range, y_range = y_range, zlimit = zlimit, contours = contours, filled = filled, black_contour = filled, title = title, x_label = x_label, y_label = y_label, diagonal_line = diagonal_line, new_figure = new_figure)  
-
-
-
-
-    # plot the rephasing part of the spectrum
-    def plot_R(self, x_range = [0, 0], y_range = [0, -1], zlimit = 0, contours = 12, filled = True, black_contour = True, title = "", x_label = "", y_label = "", new_figure = True): 
-    
-        print("ADVISE (croc.pe.plot_R): The function only calls croc.pe.plot(plot_type='R'), but may not be completely up-to-date.\n")                      
-        self.plot(plot_type = "R", x_range = x_range, y_range = y_range, zlimit = zlimit, contours = contours, filled = filled, black_contour = filled, title = title, x_label = x_label, y_label = y_label, new_figure = new_figure)  
-
-  
-    # plot the non-rephasing part of the spectrum
-    def plot_R(self, x_range = [0, 0], y_range = [0, -1], zlimit = 0, contours = 12, filled = True, black_contour = True, title = "", x_label = "", y_label = "", new_figure = True):          
-    
-        print("ADVISE (croc.pe.plot_NR): The function only calls croc.pe.plot(plot_type='NR'), but may not be completely up-to-date.\n")          
-        self.plot(plot_type = "NR", x_range = x_range, y_range = y_range, zlimit = zlimit, contours = contours, filled = filled, black_contour = filled, title = title, x_label = x_label, y_label = y_label, new_figure = new_figure)
-
-
-
-
-
-    # plot the time domain
-    def plot_T(self, x_range = [0, 0], y_range = [0, 0], zlimit = 0, contours = 12, filled = True, black_contour = True, title = "", x_label = "", y_label = "", new_figure = True):
-        """
-        croc.pe.plot_T
-        
-        This function will plot the measured data, still in the time domain. It is a wrapper function for croc.Plotting.contourplot. It will put the data in the right format, adds some labels etc. This should do for 99% of the cases. 
-        For details about the options, see croc.Plotting.contourplot.    
-        """
-        # concatenate the two diagrams
-        data = numpy.concatenate((numpy.flipud(self.r[1]), self.r[0])).T
-        x_axis = numpy.concatenate((-numpy.flipud(self.r_axis[0]), self.r_axis[0])) 
-        y_axis = self.r_axis[2]
-        if x_label == "":
-            x_label = self.r_units[0]
-        if y_label == "":
-            y_label = self.r_units[2]
-        
-        croc.Plotting.contourplot(data, x_axis, y_axis, x_range = x_range, y_range = y_range, zlimit = zlimit, contours = contours, filled = filled, black_contour = filled, title = title, x_label = x_label, y_label = y_label, new_figure = new_figure,  diagonal_line = False)  
-
-    
-    
-
-        
-        
-                
+        try:
+            self.s_resolution = [(self.s_axis[0][1] - self.s_axis[0][0]), 0, (self.s_axis[2][1] - self.s_axis[2][0])]
+        except TypeError:
+            print("\nERROR (croc.pe.pe_exp.absorptive): The resolution of the spectrum can not be determined. This can mean that the original axes (r_axis) or the spectral axes (s_axis) contains an error.")
+            print("r_axis[0]:", self.r_axis[0])
+            print("r_axis[2]:", self.r_axis[2])
+            print("s_axis[0]:", self.s_axis[0])
+            print("s_axis[2]:", self.s_axis[2])
+            return 0                
             
             
     

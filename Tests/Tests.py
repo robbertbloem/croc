@@ -12,12 +12,13 @@ import croc
 import croc.ftir
 import croc.pe
 import croc.Absorptive
+import croc.Plotting
 
 reload(croc)
 reload(croc.ftir)
 reload(croc.pe)
 reload(croc.Absorptive)
-
+reload(croc.Plotting)
 
 
 
@@ -36,10 +37,10 @@ def PE1():
     print("=== TEST ===\nSimple test of PE routines\n")
     
     mess = [0]
-    mess[0] = croc.pe.pe("PE1")
-    mess[0].setup("AHA", 300, undersampling = 3, time_stamp = 1337)
+    mess[0] = croc.pe.pe_exp("PE1", "AHA", 300, undersampling = 3, time_stamp = 1337)
+    
     mess[0].path = os.path.join(os.path.dirname(__file__), "TestData/AHA_1337_T300/")
-    mess[0].import_data()
+    mess[0].import_data()  
     mess[0].absorptive()
     mess[0].plot()
     print(mess[0])
@@ -73,8 +74,7 @@ def PE2():
     
     
     mess = [0]
-    mess[0] = croc.pe.pe("PE2")
-    mess[0].setup("AHA", 300, undersampling = 3, time_stamp = 1337)
+    mess[0] = croc.pe.pe_exp("PE1", "AHA", 300, undersampling = 3, time_stamp = 1337)
     mess[0].path = os.path.join(os.path.dirname(__file__), "TestData/AHA_1337_T300/")
     mess[0].import_data()
     mess[0].absorptive()
@@ -136,8 +136,7 @@ def PE3():
     
     mess = [0]
 
-    mess[0] = croc.pe.pe("PE1")
-    mess[0].setup("AHA", 300, undersampling = 3, time_stamp = 1337)
+    mess[0] = croc.pe.pe_exp("PE1", "AHA", 300, undersampling = 3, time_stamp = 1337)
     mess[0].path = os.path.join(os.path.dirname(__file__), "TestData/AHA_1337_T300/")
     mess[0].import_data()    
  
@@ -149,7 +148,7 @@ def PE3():
     
         plt.subplot(2, 4, i+1)
         title = window_fxn[i][0] + ", n=" + str(window_fxn[i][1])
-        mess[0].plot(new_figure = False, title = title, zlimit = 0)
+        mess[0].plot(new_figure = False, title = title, zlimit = -1)
 
 
 
@@ -168,13 +167,11 @@ def PE4():
 
     mess = [0, 0]
     
-    mess[0] = croc.pe.pe("PE3_1")
-    mess[0].setup("AHA", 300, undersampling = 3, time_stamp = 1337)
+    mess[0] = croc.pe.pe_exp("PE1", "AHA", 300, undersampling = 3, time_stamp = 1337)
     mess[0].path = os.path.join(os.path.dirname(__file__), "TestData/AHA_1337_T300/")
     mess[0].import_data()
 
-    mess[1] = croc.pe.pe("PE3_2")
-    mess[1].setup("AHA", 300, undersampling = 3, time_stamp = 1337)
+    mess[1] = croc.pe.pe_exp("PE1", "AHA", 300, undersampling = 3, time_stamp = 1337)
     mess[1].path = os.path.join(os.path.dirname(__file__), "TestData/AHA_1337_T300/")
     mess[1].import_data()
     mess[1].absorptive()
@@ -194,38 +191,62 @@ def PE4():
         
  
 def PE5():
+    """
+    croc.Tests.Tests.PE5
+    
+    Test the subtraction of two plots    
+    
+    """
     mess = [0, 0]
     
-    mess[0] = croc.pe.pe("PE5_AHA")
-    mess[0].setup("AHA", 300, undersampling = 3, time_stamp = 1337)
+    mess[0] = croc.pe.pe_exp("PE5_AHA", "AHA", 300, undersampling = 3, time_stamp = 1337)
     mess[0].path = os.path.join(os.path.dirname(__file__), "TestData/AHA_1337_T300/")
     mess[0].import_data()
     mess[0].absorptive()
 
-    mess[1] = croc.pe.pe("PE5_D2O")
-    mess[1].setup("d2o", 300, undersampling = 3, time_stamp = 1348)
+    mess[1] = croc.pe.pe_exp("PE5_D2O", "d2o", 300, undersampling = 3, time_stamp = 1348)
     mess[1].path = os.path.join(os.path.dirname(__file__), "TestData/d2o_1348_T300/")
     mess[1].import_data()
     mess[1].absorptive()
     
     sub = [0]
-    sub[0] = croc.pe.pe("PE_SUB")
-    sub[0].r[0] = mess[0].s
-    sub[0].r[1] = mess[1].s
-    
-    sub[0].s = mess[0].s - mess[1].s
-    
-    sub[0].s_axis[0] = mess[0].s_axis[0]
-    sub[0].s_axis[1] = mess[0].s_axis[1]
-    sub[0].s_axis[2] = mess[0].s_axis[2]
-    
+    sub[0] = croc.pe.pe_sub("PE_SUB", mess[0], mess[1])
     sub[0].plot()
+    print(sub[0])
     
     
 
 def PLOTTING1():
-    pass 
-    #array = numpy.reshape(numpy.arange
+    """
+    croc.Tests.Tests.PLOTTING1
+    
+    Tests if the contour lines are correctly placed.
+    
+    """
+    
+    print("=== TEST ===\nTest of plotting\n")
+    
+    print("PLOT 1:\n" + 
+        "Ranges from -1 to 1. The white band should be in the middle.\n"+
+        "PLOT 2:\n" + 
+        "Ranges from -1 to 0.9. The white band should be rotated a bit clockwise."
+    )
+    
+    # plot 1
+    X, Y = numpy.meshgrid(numpy.linspace(-1, 0, num=11), numpy.linspace(0, 1, num=11))  
+    x_axis = numpy.linspace(0, 1, num=11)
+    y_axis = numpy.linspace(0, 1, num=11)
+    S = X + Y
+    title = "range:-1, 1, zlimit:-1"
+    croc.Plotting.contourplot(S, x_axis, y_axis, zlimit = -1, title = title)
+
+    # plot 2
+    X, Y = numpy.meshgrid(numpy.linspace(-1, 0, num=11), numpy.linspace(0, 0.9, num=11))
+    x_axis = numpy.linspace(0, 1, num=11)
+    y_axis = numpy.linspace(0, 1, num=11)
+    S = X + Y
+    title = "range:-1, 0.9, zlimit:-1"
+    croc.Plotting.contourplot(S, x_axis, y_axis, zlimit = -1)
 
 
 

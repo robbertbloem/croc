@@ -6,6 +6,12 @@ import pylab
 import matplotlib 
 import matplotlib.pyplot as plt
 
+import croc.Debug
+
+reload(croc.Debug)
+
+debug_flag = croc.Debug.debug_flag
+
 cdict = {'red':   [(0.0,  0.0, 0.0),(0.475,  1.0, 1.0),(0.525,  1.0, 1.0),
             (1.0,  1.0, 1.0)],
          'green': [(0.0,  0.0, 0.0),(0.475,  1.0, 1.0),(0.525,  1.0, 1.0),
@@ -150,17 +156,23 @@ def make_contours_2d(data, zlimit = 0, contours = 21):
     if zlimit == 0:
         ma = numpy.amax(data)
         mi = numpy.amin(data)
-        #print(mi, ma)
+        if debug_flag:
+            print("make_contours_2d, minimum, maximum")
+            print(mi, ma)
         return numpy.linspace(mi, ma, num=contours)
+        
     if zlimit == -1:
         ma = numpy.amax(data)
         mi = numpy.amin(data)
-        #print(mi, ma)
+        if debug_flag:
+            print("make_contours_2d, minimum, maximum")
+            print(mi, ma)
         if abs(mi) > abs(ma):
             ma = abs(mi)
         else:
             ma = abs(ma)
         return numpy.linspace(-ma, ma, num=contours) 
+        
     if type(zlimit) == int:
         return numpy.linspace(-abs(zlimit), abs(zlimit), num=contours) 
     if type(zlimit) == list:
@@ -170,7 +182,7 @@ def make_contours_2d(data, zlimit = 0, contours = 21):
 
 
 
-def contourplot(data, x_axis, y_axis, x_range = [0, 0], y_range = [0, -1], zlimit = 0, contours = 12, filled = True, black_contour = True, x_label = "", y_label = "", title = "", diagonal_line = True, new_figure = True):
+def contourplot(data, x_axis, y_axis, x_range = [0, 0], y_range = [0, -1], zlimit = -1, contours = 12, filled = True, black_contour = True, x_label = "", y_label = "", title = "", diagonal_line = True, new_figure = True):
 
     """
     croc.Plotting.contourplot
@@ -199,18 +211,40 @@ def contourplot(data, x_axis, y_axis, x_range = [0, 0], y_range = [0, -1], zlimi
     
     """
     
+#     if debug_flag:
+#         print("x_range:", x_range)
+#         print("y_range:", y_range)
+#         print("zlimit:", zlimit)
+#         print("contours:", contours)
+#         print("filled:", filled)
+#         print("black_contour:", black_contour)
+#         print("x_label:", x_label)
+#         print("y_label:", y_label)
+#         print("title:", title)
+#         print("diagonal_line:", diagonal_line)
+#         print("new_figure:", new_figure)
+            
     # CHECKS
+    
+    # check if the lengths of the axes correspond to the shape of the data
     y, x = numpy.shape(data)
-    if len(x_axis) != x or len(y_axis) != y:
-        # oops, the shape of the data does not correspond with the axes.
-        
-        # see if they are switched
-        if len(x_axis) == y and len(y_axis) == x:
-            print("WARNING (croc.Plotting.contourplot): the shape of the data seems to be flipped. The data will be transposed.\n")
-            data = data.T
-        else:
-            print("ERROR (croc.Plotting.contourplot): the shape of the data does not correspond with the axes. ")
-            return 0
+    try:
+        if len(x_axis) != x or len(y_axis) != y:
+            # oops, the shape of the data does not correspond with the axes.
+            
+            # see if they are switched
+            if len(x_axis) == y and len(y_axis) == x:
+                print("\nWARNING (croc.Plotting.contourplot): the shape of the data seems to be flipped. The data will be transposed.\n")
+                data = data.T
+            else:
+                print("\nERROR (croc.Plotting.contourplot): the shape of the data does not correspond with the axes. ")
+                return 0
+    
+    except TypeError:
+        print("\nERROR (croc.Plotting.contourplot): The x or y axis seems to have no length. It should be an array, not an integer.")
+        print("x-axis:", x_axis)
+        print("y-axis:", y_axis)
+        return 0
 
     # determine the range to be plotted
     x_min, x_max, y_min, y_max = find_axes(x_axis, y_axis, x_range, y_range)
@@ -226,7 +260,7 @@ def contourplot(data, x_axis, y_axis, x_range = [0, 0], y_range = [0, -1], zlimi
     try:
         y_max_i = numpy.where(y_axis > y_max)[0][0]
     except: 
-        y_max_i = -1
+        y_max_i = len(y_axis)
 
     try:
         x_min_i = numpy.where(x_axis < x_min)[0][-1]
@@ -236,27 +270,38 @@ def contourplot(data, x_axis, y_axis, x_range = [0, 0], y_range = [0, -1], zlimi
     try:
         x_max_i = numpy.where(x_axis > x_max)[0][0]
     except: 
-        x_max_i = -1
+        x_max_i = len(x_axis)
         
     V = make_contours_2d(data[y_min_i:y_max_i, x_min_i:x_max_i], zlimit, contours)
     
-    #print(V[0])
+    if debug_flag:
+        print("Range to be plotted (x_min, x_max, y_min, y_max):")
+        print(x_min, x_max, y_min, y_max)
     
+        print("Indices of plotted range (x_min_i, x_max_i, y_min_i, y_max_i):")
+        print(x_min_i, x_max_i, y_min_i, y_max_i)
         
-
+        print("Contours:")
+        print(V)
+    
     # make the actual figure
     if new_figure:
         plt.figure()
     if filled:
         plt.contourf(x_axis, y_axis, data, V, cmap = my_cmap)
+        if debug_flag:
+            plt.colorbar()
     if black_contour:
-        plt.contour(x_axis, y_axis, data, V, linewidths=1, linestyles="solid", colors="k")    
+        if filled:
+            plt.contour(x_axis, y_axis, data, V, linewidths = 1, linestyles = "solid", colors = "k")
+        else:
+            plt.contour(x_axis, y_axis, data, V, colors = "k")            
 
-    
     # we only want to see a certain part of the spectrum   
     plt.xlim(x_min, x_max)
     plt.ylim(y_min, y_max)
     
+    # the diagonal line
     if diagonal_line:
         plt.plot([0, 10000], [0, 10000], "k")
     
