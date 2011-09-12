@@ -234,7 +234,7 @@ class pe(croc.DataClasses.mess_data):
 
 
 
-    def fourier_helper(self, array):
+    def fourier_helper(self, array, window_function = "none", window_length = 0):
         """
         fourier_helper
         
@@ -254,14 +254,14 @@ class pe(croc.DataClasses.mess_data):
 
         # iterate over all the pixels
         for i in range(len(self.r_axis[2])):
-            ft_array[:,i] = croc.Absorptive.fourier(array[:,i], zero_in_middle = False, first_correction = True, zeropad_to = self.zeropad_to)   
+            ft_array[:,i] = croc.Absorptive.fourier(array[:,i], zero_in_middle = False, first_correction = True, zeropad_to = self.zeropad_to, window_function = window_function, window_length = window_length)   
         
         return ft_array   
 
 
   
                 
-    def absorptive(self):
+    def absorptive(self, window_function = "none", window_length = 0):
         """
         croc.pe.fourier
         
@@ -277,8 +277,8 @@ class pe(croc.DataClasses.mess_data):
             print("WARNING (croc.pe.fourier): undersampling is 0!\n")
         
         # do the fft
-        self.f[0] = self.fourier_helper(self.r[0])
-        self.f[1] = self.fourier_helper(self.r[1])
+        self.f[0] = self.fourier_helper(numpy.copy(self.r[0]), window_function = window_function, window_length = window_length)
+        self.f[1] = self.fourier_helper(numpy.copy(self.r[1]), window_function = window_function, window_length = window_length)
         
         # phase the spectrum
         self.s = numpy.real(numpy.exp(-1j * self.phase_rad) * self.f[0] + numpy.exp(1j * self.phase_rad) * self.f[1])

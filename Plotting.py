@@ -240,6 +240,9 @@ def contourplot(data, x_axis, y_axis, x_range = [0, 0], y_range = [0, -1], zlimi
         
     V = make_contours_2d(data[y_min_i:y_max_i, x_min_i:x_max_i], zlimit, contours)
     
+    #print(V[0])
+    
+        
 
     # make the actual figure
     if new_figure:

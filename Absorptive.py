@@ -9,10 +9,11 @@ from __future__ import print_function
 from __future__ import division
 
 import numpy
-#import types
+
+
 
 # the general Fourier transform method
-def fourier(array, zero_in_middle = False, first_correction = False, zeropad_to = None):
+def fourier(array, zero_in_middle = False, first_correction = False, zeropad_to = None, window_function = "none", window_length = 0):
     """
     A Fourier transform for any dimension.
     
@@ -34,6 +35,8 @@ def fourier(array, zero_in_middle = False, first_correction = False, zeropad_to 
     if zero_in_middle == True:
         array = numpy.fft.ifftshift(array)
     
+    
+    
     # half the first element
     if first_correction == True: 
         dim = len(numpy.shape(array))
@@ -45,6 +48,13 @@ def fourier(array, zero_in_middle = False, first_correction = False, zeropad_to 
         elif dim > 2:
             print("WARNING (fourier.fourier.py): correction of the first element is not done!")
     
+    
+    # window function
+    if window_function != "none": 
+        array = window_functions(array, window_function, window_length)
+    
+    
+    
     # the fft
     array = numpy.fft.fft(array, n = zeropad_to)
     
@@ -53,6 +63,79 @@ def fourier(array, zero_in_middle = False, first_correction = False, zeropad_to 
         array = numpy.fft.fftshift(array)
     
     return array 
+
+
+
+
+def window_functions(array, window_function, window_length = 0):
+    """
+    croc.Absorptive.window_functions
+    
+    Different window functions.
+    
+    INPUT:
+    - array (ndarray): the array where the window-functions will be applied to
+    - window_length (int): the length of the window. If the length is 0 or equal or larger than the length of array, this will be set to the length of the array.
+    - window_function: the function
+        - none: will apply a rectangular window with 1's for all elements
+        - ones: will make a rectangular window with a certain length and pads with zeros.
+        - triangular: will make a triangular window with a certain length and pads with zeros
+        - gaussian: will make a gaussian window for the full length of array, but will go to zero at around window_length.
+    
+    """
+
+    dim = len(numpy.shape(array))
+    
+    if dim == 1:
+        # the window function should end up with the same length as the array
+        array_length = numpy.shape(array)[0]
+    
+        # if it is smaller than the length, make it that length
+        if window_length > 0 and window_length < array_length:
+            n_max = window_length
+            zeros = numpy.zeros(array_length - window_length) 
+        else:
+            n_max = array_length
+            zeros = []
+        
+        # the windows
+        if window_function == "none":
+            window = numpy.ones(array_length)
+            #print(window_function)
+            #print(window)
+        
+        elif window_function == "ones":
+            window = numpy.concatenate((numpy.ones(n_max).T, zeros)) 
+            #print(window_function)
+            #print(window)
+        
+        elif window_function == "triangle":
+            window = numpy.concatenate((numpy.linspace(1, 0, n_max).T, zeros)) 
+            #print(window_function)
+            #print(window)   
+
+        elif window_function == "gaussian":
+            window = numpy.exp(-numpy.arange(0, array_length)**2 / (n_max**1.5)).T    
+            #print(window_function)
+            #print(window)
+
+        else:
+            print("ERROR (croc.Absorptive.window_functions): Unknown window function.")
+            window = numpy.ones(array_length)
+    
+        return array * window
+
+    # for higher dimensions
+    else:
+        print("ERROR (croc.Absorptive.triangle_window): Not implemented yet for multiple dimensions.")
+        return 0        
+
+
+          
+
+
+
+
 
 
 

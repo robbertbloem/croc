@@ -11,10 +11,12 @@ import matplotlib.pyplot as plt
 import croc
 import croc.ftir
 import croc.pe
+import croc.Absorptive
 
 reload(croc)
 reload(croc.ftir)
 reload(croc.pe)
+reload(croc.Absorptive)
 
 
 
@@ -103,6 +105,124 @@ def PE2():
 
     print(mess[0])
 
+
+def PE3():
+    """
+    croc.Tests.tests.PE3
+    
+    Test of window functions
+    
+    CHANGELOG:
+    - 20110910 RB: init
+    
+    """
+    
+    print("=== TEST ===\nSimple test of PE routines\n")
+    
+    n = 100
+
+    window_fxn = [
+        ["none", n], 
+        ["ones", n], 
+        ["triangle", n], 
+        ["gaussian", n], 
+        ["none", n/2], 
+        ["ones", n/2], 
+        ["triangle", n/2], 
+        ["gaussian", n/2]
+    ]
+    
+    mess = [0, 0, 0, 0, 0, 0, 0, 0]
+    
+    plt.figure()
+    
+    for i in range(len(window_fxn)):
+
+        
+        mess[i] = croc.pe.pe("PE1", "AHA", 300, undersampling = 3, time_stamp = 1337)
+        mess[i].path = os.path.join(os.path.dirname(__file__), "TestData/AHA_1337_T300/")
+        mess[i].import_data()    
+        mess[i].absorptive(window_function = window_fxn[i][0], window_length = window_fxn[i][1])   
+        
+        plt.subplot(2, 4, i+1)
+        title = window_fxn[i][0] + ", n=" + str(window_fxn[i][1])
+        mess[i].plot(new_figure = False, title = title, zlimit = 0)
+
+
+
+
+   
+    
+def PE4():
+    """
+    croc.Tests.Tests.PE4
+    
+    Test if the original data is unchanged during succesive operations. (Background: incorrect copying operations may make a new pointer to the same data, instead of making a new pointer to a copy of the data. This can lead to data corruption.
+    
+    """
+
+    mess = [0, 0]
+    
+    mess[0] = croc.pe.pe("PE1", "AHA", 300, undersampling = 3, time_stamp = 1337)
+    mess[0].path = os.path.join(os.path.dirname(__file__), "TestData/AHA_1337_T300/")
+    mess[0].import_data()
+
+    mess[1] = croc.pe.pe("PE1", "AHA", 300, undersampling = 3, time_stamp = 1337)
+    mess[1].path = os.path.join(os.path.dirname(__file__), "TestData/AHA_1337_T300/")
+    mess[1].import_data()
+    mess[1].absorptive()
+    
+    plt.figure()
+    
+    for i in range(2):
+        mess[0].absorptive()
+        
+        if numpy.any((mess[0].r[0] - mess[1].r[0]) != 0) == False:
+            print("Correct")
+        else:
+            print("WARNING: data is not the same")
+        
+        plt.subplot(1, 2, i+1)
+        mess[0].plot(new_figure = False)
+        
+ 
+ 
+
+
+
+   
+
+
+def WF1():
+
+    n = 100
+
+    window_fxn = [
+        ["none", n], 
+        ["ones", n], 
+        ["triangle", n], 
+        ["gaussian", n], 
+        ["none", n/2], 
+        ["ones", n/2], 
+        ["triangle", n/2], 
+        ["gaussian", n/2]
+    ]
+
+    array = numpy.ones(n)
+    
+    plt.figure()
+    
+    for i in range(len(window_fxn)):    
+    
+        w_array = croc.Absorptive.window_functions(array, window_fxn[i][0], window_fxn[i][1])
+        
+        plt.subplot(2, 4, i+1)
+        
+        plt.plot(w_array)
+        plt.title(window_fxn[i][0] + " " + str(window_fxn[i][1]))
+        plt.ylim(0,1.1)
+    plt.show()
+    
 
 
 
