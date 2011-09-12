@@ -21,7 +21,7 @@ cdict = {'red':   [(0.0,  0.0, 0.0),(0.475,  1.0, 1.0),(0.525,  1.0, 1.0),
          'blue':  [(0.0,  1.0, 1.0),(0.475,  1.0, 1.0),(0.525,  1.0, 1.0),
             (1.0,  0.0, 0.0)]
         }
-my_cmap = matplotlib.colors.LinearSegmentedColormap('my_colormap',cdict, 256)
+my_cmap = matplotlib.colors.LinearSegmentedColormap('my_colormap', cdict, 256)
 
 
 
@@ -298,6 +298,7 @@ def contourplot(data, x_axis, y_axis, x_range = [0, 0], y_range = [0, -1], zlimi
         if filled:
             plt.contour(x_axis, y_axis, data, V, linewidths = 1, linestyles = "solid", colors = "k")
         else:
+            # this will make dashed lines for negative values
             plt.contour(x_axis, y_axis, data, V, colors = "k")            
 
     # we only want to see a certain part of the spectrum   
