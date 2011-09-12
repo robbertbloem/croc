@@ -86,6 +86,7 @@ def window_functions(array, window_function, window_length = 0):
 
     dim = len(numpy.shape(array))
     
+    # for single dimensions
     if dim == 1:
         # the window function should end up with the same length as the array
         array_length = numpy.shape(array)[0]
@@ -101,23 +102,15 @@ def window_functions(array, window_function, window_length = 0):
         # the windows
         if window_function == "none":
             window = numpy.ones(array_length)
-            #print(window_function)
-            #print(window)
         
         elif window_function == "ones":
             window = numpy.concatenate((numpy.ones(n_max).T, zeros)) 
-            #print(window_function)
-            #print(window)
         
         elif window_function == "triangle":
-            window = numpy.concatenate((numpy.linspace(1, 0, n_max).T, zeros)) 
-            #print(window_function)
-            #print(window)   
+            window = numpy.concatenate((numpy.linspace(1, 0, n_max).T, zeros))   
 
         elif window_function == "gaussian":
             window = numpy.exp(-numpy.arange(0, array_length)**2 / (n_max**1.5)).T    
-            #print(window_function)
-            #print(window)
 
         else:
             print("ERROR (croc.Absorptive.window_functions): Unknown window function.")

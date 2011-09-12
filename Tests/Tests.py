@@ -36,7 +36,8 @@ def PE1():
     print("=== TEST ===\nSimple test of PE routines\n")
     
     mess = [0]
-    mess[0] = croc.pe.pe("PE1", "AHA", 300, undersampling = 3, time_stamp = 1337)
+    mess[0] = croc.pe.pe("PE1")
+    mess[0].setup("AHA", 300, undersampling = 3, time_stamp = 1337)
     mess[0].path = os.path.join(os.path.dirname(__file__), "TestData/AHA_1337_T300/")
     mess[0].import_data()
     mess[0].absorptive()
@@ -49,9 +50,9 @@ def PE1():
 
 def PE2():
     """
-    croc.Tests.tests.doublePE
+    croc.Tests.tests.PE2
     
-    Test of the plotting routines of the PE.
+    Test of the plotting routines and their options of the PE.
     
     CHANGELOG:
     - 20110910 RB: init
@@ -72,7 +73,8 @@ def PE2():
     
     
     mess = [0]
-    mess[0] = croc.pe.pe("PE2", "AHA", 300, undersampling = 3, time_stamp = 1337)
+    mess[0] = croc.pe.pe("PE2")
+    mess[0].setup("AHA", 300, undersampling = 3, time_stamp = 1337)
     mess[0].path = os.path.join(os.path.dirname(__file__), "TestData/AHA_1337_T300/")
     mess[0].import_data()
     mess[0].absorptive()
@@ -110,14 +112,14 @@ def PE3():
     """
     croc.Tests.tests.PE3
     
-    Test of window functions
+    Test of window functions.
     
     CHANGELOG:
     - 20110910 RB: init
     
     """
     
-    print("=== TEST ===\nSimple test of PE routines\n")
+    print("=== TEST ===\nTest of window functions\n")
     
     n = 100
 
@@ -132,21 +134,22 @@ def PE3():
         ["gaussian", n/2]
     ]
     
-    mess = [0, 0, 0, 0, 0, 0, 0, 0]
+    mess = [0]
+
+    mess[0] = croc.pe.pe("PE1")
+    mess[0].setup("AHA", 300, undersampling = 3, time_stamp = 1337)
+    mess[0].path = os.path.join(os.path.dirname(__file__), "TestData/AHA_1337_T300/")
+    mess[0].import_data()    
+ 
     
     plt.figure()
     
     for i in range(len(window_fxn)):
-
-        
-        mess[i] = croc.pe.pe("PE1", "AHA", 300, undersampling = 3, time_stamp = 1337)
-        mess[i].path = os.path.join(os.path.dirname(__file__), "TestData/AHA_1337_T300/")
-        mess[i].import_data()    
-        mess[i].absorptive(window_function = window_fxn[i][0], window_length = window_fxn[i][1])   
-        
+        mess[0].absorptive(window_function = window_fxn[i][0], window_length = window_fxn[i][1]) 
+    
         plt.subplot(2, 4, i+1)
         title = window_fxn[i][0] + ", n=" + str(window_fxn[i][1])
-        mess[i].plot(new_figure = False, title = title, zlimit = 0)
+        mess[0].plot(new_figure = False, title = title, zlimit = 0)
 
 
 
@@ -161,13 +164,17 @@ def PE4():
     
     """
 
+    print("=== TEST ===\nTest of data integrity\n")
+
     mess = [0, 0]
     
-    mess[0] = croc.pe.pe("PE1", "AHA", 300, undersampling = 3, time_stamp = 1337)
+    mess[0] = croc.pe.pe("PE3_1")
+    mess[0].setup("AHA", 300, undersampling = 3, time_stamp = 1337)
     mess[0].path = os.path.join(os.path.dirname(__file__), "TestData/AHA_1337_T300/")
     mess[0].import_data()
 
-    mess[1] = croc.pe.pe("PE1", "AHA", 300, undersampling = 3, time_stamp = 1337)
+    mess[1] = croc.pe.pe("PE3_2")
+    mess[1].setup("AHA", 300, undersampling = 3, time_stamp = 1337)
     mess[1].path = os.path.join(os.path.dirname(__file__), "TestData/AHA_1337_T300/")
     mess[1].import_data()
     mess[1].absorptive()
@@ -186,14 +193,43 @@ def PE4():
         mess[0].plot(new_figure = False)
         
  
- 
+def PE5():
+    mess = [0, 0]
+    
+    mess[0] = croc.pe.pe("PE5_AHA")
+    mess[0].setup("AHA", 300, undersampling = 3, time_stamp = 1337)
+    mess[0].path = os.path.join(os.path.dirname(__file__), "TestData/AHA_1337_T300/")
+    mess[0].import_data()
+    mess[0].absorptive()
+
+    mess[1] = croc.pe.pe("PE5_D2O")
+    mess[1].setup("d2o", 300, undersampling = 3, time_stamp = 1348)
+    mess[1].path = os.path.join(os.path.dirname(__file__), "TestData/d2o_1348_T300/")
+    mess[1].import_data()
+    mess[1].absorptive()
+    
+    sub = [0]
+    sub[0] = croc.pe.pe("PE_SUB")
+    sub[0].r[0] = mess[0].s
+    sub[0].r[1] = mess[1].s
+    
+    sub[0].s = mess[0].s - mess[1].s
+    
+    sub[0].s_axis[0] = mess[0].s_axis[0]
+    sub[0].s_axis[1] = mess[0].s_axis[1]
+    sub[0].s_axis[2] = mess[0].s_axis[2]
+    
+    sub[0].plot()
+    
+    
+
+def PLOTTING1():
+    pass 
+    #array = numpy.reshape(numpy.arange
 
 
 
-   
-
-
-def WF1():
+def ABSORPTIVE1():
 
     n = 100
 

@@ -50,7 +50,7 @@ class pe(croc.DataClasses.mess_data):
     
     
     
-    def __init__(self, object_name, base_filename, population_time, undersampling, time_stamp = 0000):
+    def __init__(self, object_name):
         """
         20101209 RB: continued
         20110910 RB: implemented the new file formats
@@ -67,13 +67,23 @@ class pe(croc.DataClasses.mess_data):
         
         # photon echo has 3 dimensions: t1/w1, t2, w3
         croc.DataClasses.mess_data.__init__(self, object_name, diagrams = 2, dimensions = 3)
+
+
+    def setup(self, base_filename, population_time, undersampling, time_stamp = 0000):
+        """
+        croc.pe.setup
+        
+        Sets the most basic variables.
+        
+        20110912 RB: this was split of from __init__ to make the class more flexible (in order to subtract two spectra you can make a new class).
+        
+        """
         self.base_filename = base_filename
         self.r_axis[1] = population_time
         self.undersampling = undersampling
         self.time_stamp = time_stamp
 
-
-
+    
 
 
     def import_data(self, scans = [0], noise = True, meta = True):
@@ -277,6 +287,7 @@ class pe(croc.DataClasses.mess_data):
             print("WARNING (croc.pe.fourier): undersampling is 0!\n")
         
         # do the fft
+        # copy the arrays to prevent changing the originals
         self.f[0] = self.fourier_helper(numpy.copy(self.r[0]), window_function = window_function, window_length = window_length)
         self.f[1] = self.fourier_helper(numpy.copy(self.r[1]), window_function = window_function, window_length = window_length)
         
@@ -340,6 +351,8 @@ class pe(croc.DataClasses.mess_data):
         
                
         croc.Plotting.contourplot(data, x_axis, y_axis, x_range = x_range, y_range = y_range, zlimit = zlimit, contours = contours, filled = filled, black_contour = filled, title = title, x_label = x_label, y_label = y_label, diagonal_line = diagonal_line, new_figure = new_figure)  
+
+
 
 
     # plot the rephasing part of the spectrum
