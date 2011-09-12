@@ -34,11 +34,14 @@ import croc.Plotting
 import croc.Constants
 import croc.Debug
 
-reload(croc)
-reload(croc.Absorptive)
-reload(croc.Plotting)
-reload(croc.Constants)
 reload(croc.Debug)
+
+if croc.Debug.reload_flag:
+    reload(croc)
+    reload(croc.Absorptive)
+    reload(croc.Plotting)
+    reload(croc.Constants)
+
 
 debug_flag = croc.Debug.debug_flag
 

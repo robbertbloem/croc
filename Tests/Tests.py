@@ -13,12 +13,16 @@ import croc.ftir
 import croc.pe
 import croc.Absorptive
 import croc.Plotting
+import croc.Debug
 
-reload(croc)
-reload(croc.ftir)
-reload(croc.pe)
-reload(croc.Absorptive)
-reload(croc.Plotting)
+reload(croc.Debug)
+
+if croc.Debug.reload_flag:
+    reload(croc)
+    reload(croc.ftir)
+    reload(croc.pe)
+    reload(croc.Absorptive)
+    reload(croc.Plotting)
 
 
 
@@ -160,6 +164,9 @@ def PE4():
     croc.Tests.Tests.PE4
     
     Test if the original data is unchanged during succesive operations. (Background: incorrect copying operations may make a new pointer to the same data, instead of making a new pointer to a copy of the data. This can lead to data corruption.
+
+    CHANGELOG:
+    - 20110912 RB: init
     
     """
 
@@ -195,6 +202,9 @@ def PE5():
     croc.Tests.Tests.PE5
     
     Test the subtraction of two plots    
+
+    CHANGELOG:
+    - 20110912 RB: init
     
     """
     mess = [0, 0]
@@ -221,6 +231,9 @@ def PLOTTING1():
     croc.Tests.Tests.PLOTTING1
     
     Tests if the contour lines are correctly placed.
+
+    CHANGELOG:
+    - 20110912 RB: init
     
     """
     
@@ -251,7 +264,11 @@ def PLOTTING1():
 
 
 def ABSORPTIVE1():
-
+    """
+    
+    CHANGELOG:
+    - 20110912 RB: init
+    """
     n = 100
 
     window_fxn = [

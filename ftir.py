@@ -18,9 +18,13 @@ import matplotlib.pyplot as plt
 import croc
 from croc.DataClasses import mess_data
 import croc.Plotting
+import croc.Debug
 
-reload(croc)
-reload(croc.Plotting)
+reload(croc.Debug)
+
+if croc.Debug.reload_flag:
+    reload(croc)
+    reload(croc.Plotting)
 
 
 

@@ -12,6 +12,8 @@ reload(croc.Debug)
 
 debug_flag = croc.Debug.debug_flag
 
+
+# make the colormap
 cdict = {'red':   [(0.0,  0.0, 0.0),(0.475,  1.0, 1.0),(0.525,  1.0, 1.0),
             (1.0,  1.0, 1.0)],
          'green': [(0.0,  0.0, 0.0),(0.475,  1.0, 1.0),(0.525,  1.0, 1.0),
@@ -239,7 +241,6 @@ def contourplot(data, x_axis, y_axis, x_range = [0, 0], y_range = [0, -1], zlimi
             else:
                 print("\nERROR (croc.Plotting.contourplot): the shape of the data does not correspond with the axes. ")
                 return 0
-    
     except TypeError:
         print("\nERROR (croc.Plotting.contourplot): The x or y axis seems to have no length. It should be an array, not an integer.")
         print("x-axis:", x_axis)
@@ -271,9 +272,11 @@ def contourplot(data, x_axis, y_axis, x_range = [0, 0], y_range = [0, -1], zlimi
         x_max_i = numpy.where(x_axis > x_max)[0][0]
     except: 
         x_max_i = len(x_axis)
-        
+     
+    # now make the actual contours   
     V = make_contours_2d(data[y_min_i:y_max_i, x_min_i:x_max_i], zlimit, contours)
     
+    # print some extra stuff if the debug flag is set
     if debug_flag:
         print("Range to be plotted (x_min, x_max, y_min, y_max):")
         print(x_min, x_max, y_min, y_max)
