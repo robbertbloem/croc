@@ -209,7 +209,8 @@ class pe_exp(pe):
         self.base_filename = base_filename
         self.r_axis[1] = population_time
         self.undersampling = undersampling
-        self.time_stamp = time_stamp        
+        self.time_stamp = time_stamp   
+        self.path = self.base_filename + "_" + str(self.time_stamp) + "_T" + str(self.r_axis[1]) + "/"     
         
 
          
@@ -315,7 +316,9 @@ class pe_exp(pe):
             
             # import the meta data
             if meta: 
-                self.import_meta()           
+                self.import_meta()  
+            
+                     
                 
                 
     def import_meta(self):
@@ -353,7 +356,7 @@ class pe_exp(pe):
                     self.n_shots = int((re.search(regex, line)).group())
             
                 if re.match("Phase", line):
-                    self.phase_degrees = float((re.search(regex, line)).group())
+                    self.phase_degrees = float((re.search(regex, line)).group()) + 180.0
                 
                 if re.match("Comments", line):
                     self.comment = line[9:]
@@ -455,7 +458,7 @@ class pe_exp(pe):
             return 0
             
         self.s_axis[0] = self.s_axis[0][0:len(self.s_axis[0])/2]
-        self.s_axis[2] = self.r_axis[2]    
+        self.s_axis[2] = self.r_axis[2] + self.r_correction[2]  
         
         # add some stuff to self
         self.s_units = ["cm-1", "fs", "cm-1"]

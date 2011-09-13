@@ -55,12 +55,13 @@ class ftir(croc.DataClasses.mess_data):
 
 
     def import_data(self):
-    
+
+
         # for both
-        if self.base_filename[-4:] != ".txt":
-            self.base_filename = self.base_filename + ".txt"
+        if self.base_filename[0][-4:] != ".txt":
+            self.base_filename[0] = self.base_filename[0] + ".txt"
             
-        filename = self.path + self.base_filename    
+        filename = self.path + self.base_filename[0]    
         try:
             self.r_axis[0], self.r[0] = numpy.loadtxt(filename, delimiter = ",", unpack = True)
         except IOError:
@@ -69,10 +70,10 @@ class ftir(croc.DataClasses.mess_data):
         
         # only for difference absorption
         if self.mess_type == "AbsDiff":
-            if self.sec_filename[-4:] != ".txt":
-                self.sec_filename = self.sec_filename + ".txt"         
+            if self.base_filename[1][-4:] != ".txt":
+                self.base_filename[1] = self.base_filename[1] + ".txt"         
                 
-            filename = self.path + self.sec_filename
+            filename = self.path + self.base_filename[1]
             try:
                 self.r_axis[0], self.r[1] = numpy.loadtxt(filename, delimiter = ",", unpack = True)
             except IOError:
@@ -119,11 +120,47 @@ class ftir(croc.DataClasses.mess_data):
 
 
 
+class ftir_abs(ftir):
+
+    def __init__(self, object_name):
+        """
+        croc.ftir.ftir_abs
+        
+        Init the FTIR class for absorbance measurements
+        
+        INPUT:
+        - abs_diff: if False, it will show an absorption spectrum. If True, it will make a difference absorption spectrum. In order to do this, a second file has to be loaded. 
+        
+        """
+
+        print("=== CROCODILE FTIR ===")
+        croc.DataClasses.mess_data.__init__(self, object_name, diagrams = 1, dimensions = 1)
+        self.mess_type = "Abs"
 
 
 
 
 
+
+
+
+class ftir_diffabs(ftir):
+
+
+    def __init__(self, object_name):
+        """
+        croc.ftir.__init__
+        
+        Init the FTIR class.
+        
+        INPUT:
+        - abs_diff: if False, it will show an absorption spectrum. If True, it will make a difference absorption spectrum. In order to do this, a second file has to be loaded. 
+        
+        """
+
+        print("=== CROCODILE FTIR ===")
+        croc.DataClasses.mess_data.__init__(self, object_name, diagrams = 2, dimensions = 1)
+        self.mess_type = "AbsDiff"
 
 
 

@@ -68,7 +68,7 @@ class mess_data(ClassTools):
         
         # file stuff
         self.path = ""
-        self.base_filename = ""
+        self.base_filename = [""]
         self.sec_filename = ""
         self.time_stamp = ""
         self.date = ""
@@ -162,38 +162,38 @@ class mess_data(ClassTools):
         #self._zeropad_by = zp_by 
        
         
-    def correct_freq_axes(self):
-        """
-        This function will correct a frequency axis by a few of wave numbers. It 
-            will add the number, so 1600 cm-1 with a correction of 10 cm-1 
-            becomes 1610 cm-1.
-        After the correction has be done, the correction will be written into 
-            r_correction_applied and r_correction will be set to zeros. You can 
-            run this function as many times as you want, as it will not change 
-            anything anymore. 
-        If you change r_correction it will of course change the frequency axis 
-            again. The extra amount will be added to r_correction_applied and 
-            r_correction will be set to zeros. This way, you can always keep 
-            track of the total amount of correction you have applied.  
-        """
-        for i in range(0, self.dimensions):
-            if self.r_domain[i] == "f":
-                for j in range(0, len(self.r_axis[i])):
-                    self.r_axis[i][j] += self.r_correction[i]
-                self.r_correction_applied[i] += self.r_correction[i]
-                self.r_correction[i] = 0
-                
-    def undo_correct_freq_axes(self):
-        """
-        You might want to read the instructions of correct_freq_axes first.
-        This function will remove all the corrections in one go.
-        """
-        for i in range(0, self.dimensions):
-            if self.r_domain[i] == "f":
-                for j in range(0, len(self.r_axis[i])):
-                    self.r_axis[i][j] -= self.r_correction_applied[i]
-                self.r_correction[i] += self.r_correction_applied[i]
-                self.r_correction_applied[i] = 0    
+#     def correct_freq_axes(self):
+#         """
+#         This function will correct a frequency axis by a few of wave numbers. It 
+#             will add the number, so 1600 cm-1 with a correction of 10 cm-1 
+#             becomes 1610 cm-1.
+#         After the correction has be done, the correction will be written into 
+#             r_correction_applied and r_correction will be set to zeros. You can 
+#             run this function as many times as you want, as it will not change 
+#             anything anymore. 
+#         If you change r_correction it will of course change the frequency axis 
+#             again. The extra amount will be added to r_correction_applied and 
+#             r_correction will be set to zeros. This way, you can always keep 
+#             track of the total amount of correction you have applied.  
+#         """
+#         for i in range(0, self.dimensions):
+#             if self.r_domain[i] == "f":
+#                 for j in range(0, len(self.r_axis[i])):
+#                     self.r_axis[i][j] += self.r_correction[i]
+#                 self.r_correction_applied[i] += self.r_correction[i]
+#                 self.r_correction[i] = 0
+#                 
+#     def undo_correct_freq_axes(self):
+#         """
+#         You might want to read the instructions of correct_freq_axes first.
+#         This function will remove all the corrections in one go.
+#         """
+#         for i in range(0, self.dimensions):
+#             if self.r_domain[i] == "f":
+#                 for j in range(0, len(self.r_axis[i])):
+#                     self.r_axis[i][j] -= self.r_correction_applied[i]
+#                 self.r_correction[i] += self.r_correction_applied[i]
+#                 self.r_correction_applied[i] = 0    
 
 
 
