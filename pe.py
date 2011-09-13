@@ -304,7 +304,8 @@ class pe_exp(pe):
             
                 # fill in some details 
                 self.r_units = ["fs", "fs", "cm-1"]
-                self.r_resolution = [(self.r_axis[0][1] - self.r_axis[0][0]), 0, (self.r_axis[2][1] - self.r_axis[2][0])]            
+                self.r_resolution = [(self.r_axis[0][1] - self.r_axis[0][0]), 0, (self.r_axis[2][1] - self.r_axis[2][0])]   
+                self.n_steps = len(self.r_axis[0])         
             
             
             # import multiple scans and average them
@@ -358,7 +359,7 @@ class pe_exp(pe):
                     self.comment = line[9:]
                     
                 if re.match("Scan", line):
-                    temp_scans = int((re.search(regex, line[4:6])).group())
+                    temp_scans = int((re.search(regex, line[4:7])).group())
         except IOError:
             print("ERROR (croc.pe.import_meta): unable to load file:", filebase)
             raise
