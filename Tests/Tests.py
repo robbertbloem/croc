@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 import croc
 import croc.ftir
-import croc.pe
+import croc.Pe
 import croc.Absorptive
 import croc.Plotting
 import croc.Debug
@@ -20,7 +20,7 @@ reload(croc.Debug)
 if croc.Debug.reload_flag:
     reload(croc)
     reload(croc.ftir)
-    reload(croc.pe)
+    reload(croc.Pe)
     reload(croc.Absorptive)
     reload(croc.Plotting)
 
@@ -41,7 +41,7 @@ def PE1():
     print("=== TEST ===\nSimple test of PE routines\n")
     
     mess = [0]
-    mess[0] = croc.pe.pe_exp("PE1", "AHA", 300, undersampling = 3, time_stamp = 1337)
+    mess[0] = croc.Pe.pe_exp("PE1", "AHA", 300, undersampling = 3, time_stamp = 1337)
     
     mess[0].path = os.path.join(os.path.dirname(__file__), "TestData/AHA_1337_T300/")
     mess[0].import_data()  
@@ -78,7 +78,7 @@ def PE2():
     
     
     mess = [0]
-    mess[0] = croc.pe.pe_exp("PE1", "AHA", 300, undersampling = 3, time_stamp = 1337)
+    mess[0] = croc.Pe.pe_exp("PE1", "AHA", 300, undersampling = 3, time_stamp = 1337)
     mess[0].path = os.path.join(os.path.dirname(__file__), "TestData/AHA_1337_T300/")
     mess[0].import_data()
     mess[0].absorptive()
@@ -140,7 +140,7 @@ def PE3():
     
     mess = [0]
 
-    mess[0] = croc.pe.pe_exp("PE1", "AHA", 300, undersampling = 3, time_stamp = 1337)
+    mess[0] = croc.Pe.pe_exp("PE1", "AHA", 300, undersampling = 3, time_stamp = 1337)
     mess[0].path = os.path.join(os.path.dirname(__file__), "TestData/AHA_1337_T300/")
     mess[0].import_data()    
  
@@ -174,11 +174,11 @@ def PE4():
 
     mess = [0, 0]
     
-    mess[0] = croc.pe.pe_exp("PE1", "AHA", 300, undersampling = 3, time_stamp = 1337)
+    mess[0] = croc.Pe.pe_exp("PE1", "AHA", 300, undersampling = 3, time_stamp = 1337)
     mess[0].path = os.path.join(os.path.dirname(__file__), "TestData/AHA_1337_T300/")
     mess[0].import_data()
 
-    mess[1] = croc.pe.pe_exp("PE1", "AHA", 300, undersampling = 3, time_stamp = 1337)
+    mess[1] = croc.Pe.pe_exp("PE1", "AHA", 300, undersampling = 3, time_stamp = 1337)
     mess[1].path = os.path.join(os.path.dirname(__file__), "TestData/AHA_1337_T300/")
     mess[1].import_data()
     mess[1].absorptive()
@@ -209,18 +209,18 @@ def PE5():
     """
     mess = [0, 0]
     
-    mess[0] = croc.pe.pe_exp("PE5_AHA", "AHA", 300, undersampling = 3, time_stamp = 1337)
+    mess[0] = croc.Pe.pe_exp("PE5_AHA", "AHA", 300, undersampling = 3, time_stamp = 1337)
     mess[0].path = os.path.join(os.path.dirname(__file__), "TestData/AHA_1337_T300/")
     mess[0].import_data()
     mess[0].absorptive()
 
-    mess[1] = croc.pe.pe_exp("PE5_D2O", "d2o", 300, undersampling = 3, time_stamp = 1348)
+    mess[1] = croc.Pe.pe_exp("PE5_D2O", "d2o", 300, undersampling = 3, time_stamp = 1348)
     mess[1].path = os.path.join(os.path.dirname(__file__), "TestData/d2o_1348_T300/")
     mess[1].import_data()
     mess[1].absorptive()
     
     sub = [0]
-    sub[0] = croc.pe.pe_sub("PE_SUB", mess[0], mess[1])
+    sub[0] = croc.Pe.pe_sub("PE_SUB", mess[0], mess[1])
     sub[0].plot()
     print(sub[0])
     

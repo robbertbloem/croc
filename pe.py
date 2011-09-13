@@ -82,28 +82,6 @@ class pe(croc.DataClasses.mess_data):
         croc.DataClasses.mess_data.__init__(self, object_name, diagrams = 2, dimensions = 3)
 
 
-#     def setup(self, base_filename, population_time, undersampling, time_stamp = 0000):
-#         """
-#         croc.pe.setup
-#         
-#         Sets the most basic variables.
-#         
-#         20110912 RB: this was split of from __init__ to make the class more flexible (in order to subtract two spectra you can make a new class).
-#         
-#         """
-#         self.base_filename = base_filename
-#         self.r_axis[1] = population_time
-#         self.undersampling = undersampling
-#         self.time_stamp = time_stamp
-
-
-
-
-    
-
-
-
-
 
     # plot the spectrum
     def plot(self, plot_type = "S", x_range = [0, 0], y_range = [0, -1], zlimit = -1, contours = 12, filled = True, black_contour = True, title = "", x_label = "", y_label = "", diagonal_line = True, new_figure = True):
@@ -181,12 +159,7 @@ class pe(croc.DataClasses.mess_data):
 
 
 
-
-
-
-
-
-class pe_sub(croc.pe.pe):
+class pe_sub(pe):
 
     """
     croc.pe.pe_sub
@@ -205,7 +178,7 @@ class pe_sub(croc.pe.pe):
 
     def __init__(self, objectname, class_plus, class_min):
         
-        croc.pe.pe.__init__(self, objectname)
+        croc.Pe.pe.__init__(self, objectname)
 
         self.s = class_plus.s - class_min.s
         self.s_axis[0] = class_plus.s_axis[0]
@@ -214,22 +187,12 @@ class pe_sub(croc.pe.pe):
         self.comment = ("Subtraction of " + class_plus.objectname + " with " + class_min.objectname)
 
     
-
-
-
-
-
-
-
-
-
-
-
-
+    
 
     
 
-class pe_exp(croc.pe.pe):
+
+class pe_exp(pe):
     """
     croc.pe.pe_exp
     
@@ -239,21 +202,15 @@ class pe_exp(croc.pe.pe):
     """
 
 
-
-
     def __init__(self, objectname, base_filename, population_time, undersampling, time_stamp = 0000):
     
-        croc.pe.pe.__init__(self, objectname)
+        croc.Pe.pe.__init__(self, objectname)
         
         self.base_filename = base_filename
         self.r_axis[1] = population_time
         self.undersampling = undersampling
         self.time_stamp = time_stamp        
         
-
-
-
-
 
          
         
@@ -512,13 +469,6 @@ class pe_exp(croc.pe.pe):
             return 0                
             
             
-    
-  
-    
-    
-    
-
-
 
 
 
