@@ -52,14 +52,14 @@ class mess_data(ClassTools):
     Most of the variables are lists which point to ndarrays with the real data.
     """
     
-    def __init__(self, objectname, dimensions, diagrams):
+    def __init__(self, objectname, dimensions, measurements):
         """
         croc.DataClasses.messdata
         
         INPUT:
         - objectname: the name
         - dimensions: the number of axes. Linear/2D/3D = 1/2/3. If something is measured in frequency and time (certain pump-probe) the dimension is also 2.
-        - diagrams: number of diagrams. Is 1 for everything except 2D-PE (=2) or 3D (=4?)
+        - measurements: number of diagrams. Is 1 for everything except 2D-PE (=2) or 3D (=4?)
         
         
         """
@@ -68,31 +68,30 @@ class mess_data(ClassTools):
         
         # file stuff
         self.path = ""
-        self.base_filename = [""]
-        self.sec_filename = ""
+        self.base_filename = ""
         self.time_stamp = ""
         self.date = ""
         
         # organizational stuff
         self.mess_type = ""             # "sim" or "exp" for 2dir
         self.dimensions = dimensions    # t1, t2, t3 etc. so 2D -> 3 dimensions
-        self.diagrams = diagrams        # number of diagrams or measurements etc
+        self.measurements = measurements        # number of diagrams or measurements etc
 
         # data
-        self.r = [0] * diagrams           # r is a collection of diagrams
+        self.r = [0] * measurements           # r is a collection of measurements
         self.r_domain = [0] * dimensions  # r_domain about one response function
         self.r_axis = [0] * dimensions    # r_axis are the times/frequencies
 
         self.r_correction = [0] * dimensions  # correction for spectrom inaccur.
         self.r_correction_applied = [0] * dimensions
         
-        self.r_noise = [0] * diagrams
+        self.r_noise = [0] * measurements
         
-        self.r_units = [""] * dimensions        # the units
-        self.r_resolution = [0] * dimensions    # the resolution
+        self.r_units = [""] * measurements        # the units
+        self.r_resolution = [0] * measurements    # the resolution
         
         # fourier transformed data/processing
-        self.f = [0] * diagrams         # the fourier transformed but not yet phased data
+        self.f = [0] * measurements         # the fourier transformed but not yet phased data
         
         self._zeropad_to = None         # the amount of samples for zeropadding (WARNING: this is different from MATLAB), -1 indicates no zeropadding
         self._zeropad_by = 1.0          # how many times it should be zeropadded

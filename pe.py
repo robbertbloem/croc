@@ -79,7 +79,7 @@ class pe(croc.DataClasses.mess_data):
             print(">>> DEBUG MODE <<<")
         
         # photon echo has 3 dimensions: t1/w1, t2, w3
-        croc.DataClasses.mess_data.__init__(self, object_name, diagrams = 2, dimensions = 3)
+        croc.DataClasses.mess_data.__init__(self, object_name, measurements = 2, dimensions = 3)
 
 
 

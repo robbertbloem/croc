@@ -314,9 +314,9 @@ def FTIR1():
     print("=== TEST ===\nSimple test of FTIR routines\n")
 
     mess = [0]  
-    mess[0] = croc.Ftir.ftir_abs("FTIR1") 
+    mess[0] = croc.Ftir.ftir_abs("FTIR1", "sample") 
     mess[0].path = os.path.join(os.path.dirname(__file__), "TestData/")
-    mess[0].base_filename = ["sample"] # left the .txt out on purpose
+#    mess[0].base_filename = "sample" # left the .txt out on purpose
     mess[0].import_data()
     mess[0].plot(x_range = [1000, 3000])
     print(mess[0])
@@ -334,10 +334,10 @@ def FTIR2():
     
     print("=== TEST ===\nSimple test of FTIR routines for difference absorption\n")    
     mess = [0]  
-    mess[0] = croc.Ftir.ftir_diffabs("FTIR2")
+    mess[0] = croc.Ftir.ftir_diffabs("FTIR2", "sample", "buffer.txt")
     mess[0].path = os.path.join(os.path.dirname(__file__), "TestData/")
-    mess[0].base_filename = ["sample", "buffer.txt"]
-#    mess[0].base_filename = "buffer.txt"
+#    mess[0].base_filename = ["sample", "buffer.txt"]
+#    mess[0].sec_filename = "buffer.txt"
     mess[0].import_data()
     mess[0].plot(x_range = [2000, 2200])
     print(mess[0])

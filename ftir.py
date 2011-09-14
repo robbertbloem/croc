@@ -58,10 +58,21 @@ class ftir(croc.DataClasses.mess_data):
 
 
         # for both
-        if self.base_filename[0][-4:] != ".txt":
-            self.base_filename[0] = self.base_filename[0] + ".txt"
+        if self.mess_type != "AbsDiff": 
+            if self.base_filename[-4:] != ".txt":
+                self.base_filename = self.base_filename + ".txt"
             
-        filename = self.path + self.base_filename[0]    
+            filename = self.path + self.base_filename
+
+        else:
+            if self.base_filename[0][-4:] != ".txt":
+                self.base_filename[0] = self.base_filename[0] + ".txt"
+        
+            if self.base_filename[1][-4:] != ".txt":
+                self.base_filename[1] = self.base_filename[1] + ".txt"              
+
+            filename = self.path + self.base_filename[0]  
+              
         try:
             self.r_axis[0], self.r[0] = numpy.loadtxt(filename, delimiter = ",", unpack = True)
         except IOError:
@@ -70,9 +81,7 @@ class ftir(croc.DataClasses.mess_data):
         
         # only for difference absorption
         if self.mess_type == "AbsDiff":
-            if self.base_filename[1][-4:] != ".txt":
-                self.base_filename[1] = self.base_filename[1] + ".txt"         
-                
+        
             filename = self.path + self.base_filename[1]
             try:
                 self.r_axis[0], self.r[1] = numpy.loadtxt(filename, delimiter = ",", unpack = True)
@@ -122,7 +131,7 @@ class ftir(croc.DataClasses.mess_data):
 
 class ftir_abs(ftir):
 
-    def __init__(self, object_name):
+    def __init__(self, object_name, base_filename):
         """
         croc.ftir.ftir_abs
         
@@ -134,9 +143,9 @@ class ftir_abs(ftir):
         """
 
         print("=== CROCODILE FTIR ===")
-        croc.DataClasses.mess_data.__init__(self, object_name, diagrams = 1, dimensions = 1)
+        croc.DataClasses.mess_data.__init__(self, object_name, measurements = 1, dimensions = 1)
         self.mess_type = "Abs"
-
+        self.base_filename = base_filename
 
 
 
@@ -147,7 +156,7 @@ class ftir_abs(ftir):
 class ftir_diffabs(ftir):
 
 
-    def __init__(self, object_name):
+    def __init__(self, object_name, I_filename, I0_filename):
         """
         croc.ftir.__init__
         
@@ -159,8 +168,9 @@ class ftir_diffabs(ftir):
         """
 
         print("=== CROCODILE FTIR ===")
-        croc.DataClasses.mess_data.__init__(self, object_name, diagrams = 2, dimensions = 1)
+        croc.DataClasses.mess_data.__init__(self, object_name, measurements = 2, dimensions = 1)
         self.mess_type = "AbsDiff"
+        self.base_filename = [I_filename, I0_filename]
 
 
 
