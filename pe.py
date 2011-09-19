@@ -246,7 +246,7 @@ class pe_exp(pe):
             # construct the file name  
             filebase = self.path + self.base_filename + "_" + str(self.time_stamp) + "_T" + str(self.r_axis[1])
             
-            # import a single scan
+             # import a single scan
             if len(scans) == 1:
                 
                 # import the averaged data
@@ -476,10 +476,142 @@ class pe_exp(pe):
 
 
 
+class pefs(pe):
 
+    def __init__(self, objectname, base_filename, population_time, time_stamp):
+        
+        croc.Pe.pe.__init__(self, objectname)
+        
+        self.base_filename = base_filename
+        self.r_axis[1] = population_time   
+        self.time_stamp = time_stamp   
+        
+        self.m = [0] * 4  
+        self.m_axis = [0] * 4
+    
+        
 
+    def import_data(self, meta = True):
+        
+        n_channels = 37
+        
+        data = numpy.fromfile(self.path + self.base_filename)
+        
+        n_steps = int(numpy.shape(data)[0] / n_channels)
+        
+        m1 = numpy.zeros((n_channels, n_steps))
+        
+        #print(n_steps, n_channels)
+        
+        for i in range(n_steps):
+            for j in range(n_channels):
+                m1[j, i] = data[j + i * n_channels]
+        
+        self.m[0] = m1
+        
+        #print(numpy.shape(self.r))
+    
+    def reconstruct_counter(self):
+        
+        # put the required data in some better readable arrays
+        x = self.m[0][32,:]
+        y = self.m[0][33,:]
+        
+        # determine the median values
+        med_x = numpy.min(x) + (numpy.max(x) - numpy.min(x))/2
+        med_y = numpy.min(y) + (numpy.max(y) - numpy.min(y))/2
+        
+        # some stuff
+        length = len(x)
+        counter = 0
+        
+        # the fringe count will be written in this array
+        self.m_axis[0] = numpy.zeros(length)
+        
+        # this is the (counter-) clockwise lock
+        c_lock = False
+        cc_lock = False
+        
+        # the first value is always zero
+        self.m_axis[0][0] = counter
+        
+        # do the loop
+        for i in range(1, length - 1):
+            # count can only change when y > 0
+            if y[i] > med_y:
+                if c_lock == False:
+                    if x[i-1] < med_x and x[i+1] > med_x: 
+                        counter += 1               
+                        c_lock = True
+                        cc_lock = False
 
+                if cc_lock == False:
+                    if x[i-1] > med_x and x[i+1] < med_x:
+                        counter -= 1
+                        c_lock = False
+                        cc_lock = True  
 
+            else:
+                c_lock = False
+                cc_lock = False
+            
+            self.m_axis[0][i] = counter
+        
+        self.m_axis[0][-1] = counter
+                                               
+        print("Number of counts:", counter)        
+        
+    
+    def bin_data(self):
+        
+        min_fringe = numpy.nanmin(self.m_axis[0])
+        max_fringe = numpy.nanmax(self.m_axis[0])
+        
+        fringe_range = int(max_fringe - min_fringe + 1)
+        channels, n_steps = numpy.shape(self.m[0])
+        
+        # custom axis, with all fringes, even though the negative ones will be discarded    
+        # it should not be mistaken with self.r_axis and self.r
+        r_axis = [0] * 3   
+        # the fringes 
+        r_axis[0] = numpy.arange(min_fringe, max_fringe + 1)
+        # the times
+        r_axis[1] = 2.11 * numpy.arange(min_fringe, max_fringe + 1)
+        # the counter
+        r_axis[2] = numpy.zeros(fringe_range)
+
+        r = numpy.zeros((fringe_range, channels))
+        
+        # iterate over the data
+        for i in range(n_steps):
+            # find the fringe
+            j = int(self.m_axis[0][i]) - min_fringe
+
+            # add the data to the correct fringe            
+            r[j] += self.m[0][:,i]
+            
+            # add 1 to the counter
+            r_axis[2][j] += 1 
+       
+       
+        for i in range(fringe_range):
+            r[i] /= r_axis[2][i]
+            
+        self.r = r
+        self.r_axis[0] = r_axis[1]
+        
+        print("Number of bins with a low amount of samples:")
+        print("==3: ", numpy.shape(numpy.where(r_axis[2] == 3))[1])
+        print("==4: ", numpy.shape(numpy.where(r_axis[2] == 4))[1])
+        print("==5: ", numpy.shape(numpy.where(r_axis[2] == 5))[1])   
+        
+            
+            
+        
+            
+    
+    
+        
 
 
 

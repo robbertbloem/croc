@@ -343,8 +343,13 @@ def FTIR2():
     print(mess[0])
     
 
-
-
-
+def FS1():
+    mess = [0]
+    mess[0] = croc.Pe.pefs("FS1", "stage1_R1_1.bin", 300, 1000)
+    mess[0].path = os.path.join(os.path.dirname(__file__), "TestData/")
+    mess[0].import_data()
+    mess[0].reconstruct_counter()
+    mess[0].bin_data()
+    print(mess[0])
 
 
