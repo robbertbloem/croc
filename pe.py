@@ -478,44 +478,326 @@ class pe_exp(pe):
 
 class pefs(pe):
 
+    """
+    croc.Pe.pefs
+    
+    Data processing for fast scanning.
+
+    
+    
+    """
+
     def __init__(self, objectname, base_filename, population_time, time_stamp):
+    
+        """
+        croc.Pe.pefs.__init__
+        
+        This will init the pefs-class. 
+        
+        INPUT:
+        - objectname (string): a name
+        - base_filename (string): the base name of the file ("azide") or so
+        - population_time (integer): the population time in fs
+        - time_stamp (integer): when the measurement started.
+        
+        SPECIAL STUFF:
+        Fast scanning will result in more data. This is why the data should not be imported, but should be added. The addition of data is done in add_data. Each shot will be assigned a fringe. Then the data is binned per fringe. This is saved in self.b, the particular fringes in self.b_axis and the count of how much data there is in each bin is saved in self.b_count. 
+        Each measurement can be added to these bins. Then the rephasing and non-rephasing diagram can be constructed. 
+        
+        
+        
+        """
         
         croc.Pe.pe.__init__(self, objectname)
         
         self.base_filename = base_filename
         self.r_axis[1] = population_time   
         self.time_stamp = time_stamp   
+        #self.path = self.base_filename + "_" + str(self.time_stamp) + "_T" + str(self.r_axis[1]) + "/"  
         
-        self.m = [0] * 4  
-        self.m_axis = [0] * 4
-    
+        self.mess_type = "FastScan"
         
+        # self.b* will contain the data, binned, but not yet averaged. This allows for easy adding of data.
+        self.b = [0] * 2  
+        self.b_axis = [0] * 2
+        self.b_count = [0] * 2
+        
+        # some channels have a special meaning
+        self.n_channels = 37
+        self.x_channel = 32
+        self.y_channel = 33
+        self.chopper_channel = 36
+        
+        self.n_pixels = 32
+        
+        # the number of fringes should be nearly the same, but this will 
+        self.extra_fringes = 20
+        
+        self.imported_scans = []
 
-    def import_data(self, meta = True):
+        self.reference = []
+
+
+
+
+
+    def import_reference(self):
+
+        filename = self.path + self.base_filename + "_" + str(self.time_stamp) + "_T" + str(self.r_axis[1]) + "_ref.dat"
+                
+        data = numpy.loadtxt(filename)
         
-        n_channels = 37
+        self.r_axis[2] = data[0,1:(self.n_pixels+1)]
         
-        data = numpy.fromfile(self.path + self.base_filename)
+        self.reference = data[1,1:]
         
-        n_steps = int(numpy.shape(data)[0] / n_channels)
         
-        m1 = numpy.zeros((n_channels, n_steps))
         
-        #print(n_steps, n_channels)
         
-        for i in range(n_steps):
-            for j in range(n_channels):
-                m1[j, i] = data[j + i * n_channels]
-        
-        self.m[0] = m1
-        
-        #print(numpy.shape(self.r))
+                
+
     
-    def reconstruct_counter(self):
+    def add_data(self, scan, flag_import_override = False, flag_construct_r = True):
+        """
+        Adds data for a single scan.
+        The data is imported as data.
+        Then it is written to m as channel * shot. m_axis contains the fringe for that shot.
+        Then it is binned to self.b. In self.b_axis the corresponding fringes are written. In self.b_count contains how many data points are in that bin.
+        All three self.b* are a bit longer than the amount of shots, to make up for variations between measurements.
+        
+        INPUT:
+        - scan (integer): the number of the scan to be imported
+        - flag_import_override (BOOL, False): If set to False, it will prevent a scan from being re-imported. If set to True, it will give a warning, but will continue anyway.
+        - flag_construct_r (BOOL, True): will construct self.r at the end.  
+        
+        """
+        
+        if len(self.imported_scans) == 0:
+            self.import_reference()
+            self.import_meta()
+    
+        # see if we already imported this file
+        if self.imported_scans.count(scan) != 0:
+            if flag_import_override == False: 
+                print("ERROR (croc.Pe.pefs.add_data): Scan is already imported.")  
+                return 0
+            else:
+                print("WARNING (croc.Pe.pefs.add_data): Scan is already imported, but will be imported anyway because flag_import_override is set to True.")
+            
+    
+        # construct filenames
+        filename = [0] * 4  # the filenames
+
+        filename[0] = self.path + self.base_filename + "_" + str(self.time_stamp) + "_T" + str(self.r_axis[1]) + "_R1" + "_" + str(scan) + ".bin"
+        filename[1] = self.path + self.base_filename + "_" + str(self.time_stamp) + "_T" + str(self.r_axis[1]) + "_R2" + "_" + str(scan) + ".bin"
+        filename[2] = self.path + self.base_filename + "_" + str(self.time_stamp) + "_T" + str(self.r_axis[1]) + "_NR1" + "_" + str(scan) + ".bin"
+        filename[3] = self.path + self.base_filename + "_" + str(self.time_stamp) + "_T" + str(self.r_axis[1]) + "_NR2" + "_" + str(scan) + ".bin"
+
+        # for the 4 files
+        for k in range(4):
+        
+            # to distuinguish between the two diagrams
+            if k < 2:
+                diagram = 0
+            else:
+                diagram = 1
+            
+            # import the data
+            data = numpy.fromfile(filename[k]) 
+           
+            # read the fringes and remove them
+            fringes = [data[-2], data[-1]]
+            data = data[:-2]
+            
+            # determine the length
+            if self.n_shots == 0:
+                self.n_shots = int(numpy.shape(data)[0] / self.n_channels)            
+            
+            # construct m
+            m = numpy.zeros((self.n_channels, self.n_shots))
+            
+            # read in the data
+            for i in range(self.n_shots):
+                for j in range(self.n_channels):
+                    m[j, i] = data[j + i * self.n_channels] 
+            
+            # reconstruct the counter
+            m_axis, counter = self.reconstruct_counter(m, fringes[0])
+            
+            if k == 0:
+                n_fringes = counter - 4000
+            
+            # check for consistency
+            if counter != fringes[1]:
+                print("WARNING (croc.Pe.pefs.add_data): There is a miscount with the fringes!")
+                print("Fringe start:", fringes[0])
+                print("Fringe end:", fringes[1])
+                print("Fringes counted to:", counter) 
+                print("File:", filename[k])
+                print("This run will be skipped!\n")
+
+            # if it is consistent, continue
+            else:
+                print("Count is correct!")
+            
+                # make b the correct size, if it isn't already
+                if numpy.shape(self.b_axis)[-1] == 2:
+                    #print("make b")
+                    self.b = [numpy.zeros((counter + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((counter + 2 * self.extra_fringes, self.n_channels))]
+                    self.b_axis[0] = numpy.arange(-self.extra_fringes, n_fringes + self.extra_fringes)
+                    self.b_axis[1] = numpy.arange(-self.extra_fringes, n_fringes + self.extra_fringes)
+                    self.b_count = numpy.zeros((2, n_fringes + 2 * self.extra_fringes))
+                
+                    self.r = [numpy.zeros((n_fringes + self.extra_fringes, 32)),numpy.zeros((n_fringes + self.extra_fringes, 32))]
+            
+                # bin the data
+                self.bin_data(m, m_axis, diagram)
+                
+                # all the data is now written into self.b* 
+        
+        #print(self.b_count[0][500:510])
+        
+        # construct the actual measurement
+        if flag_construct_r:
+            self.construct_r()
+
+        # now append that we already imported this scan
+        self.imported_scans.append(scan)
+        
+        self.n_scans = len(self.imported_scans)
+
+
+ 
+            
+                     
+                
+                
+    def import_meta(self):
+        """
+        croc.pe.import_meta
+        
+        Import data from the meta-data files.
+
+        INPUT: 
+        - a class
+        
+        COMMENTS
+        - it will scan the meta-file for n_scans, n_shots, phase and comments
+        
+        CHANGELOG
+        RB 20110909: started function        
+        
+        
+        """
+        
+        # construct file name
+        filebase = self.path + self.base_filename + "_" + str(self.time_stamp) + "_T" + str(self.r_axis[1]) + "_meta.txt"
+        
+        # close older files
+        fileinput.close()
+        
+        # found at: http://docs.python.org/library/re.html#matching-vs-searching , is equivalent to scanf(..%f..)
+        regex = re.compile("[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?")
+        
+        # scan the file
+        try:
+            for line in fileinput.input(filebase):
+            
+                if re.match("Shots", line): 
+                    self.n_shots = int((re.search(regex, line)).group())
+            
+                #if re.match("Phase", line):
+                #    self.phase_degrees = float((re.search(regex, line)).group()) + 180.0
+                
+                if re.match("Comments", line):
+                    self.comment = line[9:]
+                    
+                #if re.match("Scan", line):
+                #    temp_scans = int((re.search(regex, line[4:7])).group())
+        except IOError:
+            print("ERROR (croc.pe.import_meta): unable to load file:", filebase)
+            raise
+            return 0            
+  
+        # close the file     
+        fileinput.close()
+        
+        # number of scans is (number of scans started) - 1, because the last one wasn't finished
+        #self.n_scans = temp_scans - 1
+
+
+
+
+
+
+
+    def construct_r(self):
+    
+        n_fringes = len(self.b_axis[0])
+        
+        temp = numpy.zeros((2, n_fringes, self.n_channels))
+        
+        # average the data for the two diagrams
+        for j in range(2):
+            for i in range(n_fringes):
+                temp[j,i,:] = self.b[j][i,:] / self.b_count[j][i]    
+            else:    
+                temp[j,i,:] = 0                
+
+        # now only select the part where fringes are not negative
+        temp = temp[:,self.extra_fringes:,:self.n_pixels]
+              
+        # make the r_axis
+        self.r_axis[0] = self.b_axis[0][self.extra_fringes:] * 2.11
+
+        # now convert it to mOD
+        for j in range(2):
+            for i in range(self.n_pixels):
+                self.r[j][:,i] = -numpy.log10(2 * temp[j,:,i] / self.reference[i] + 1)
+        
+        self.r = numpy.nan_to_num(self.r)
+        
+        self.r_units = ["fs", "fs", "cm-1"]
+        
+        
+            
+            
+
+                
+
+    def bin_data(self, m, m_axis, diagram):
+    
+        #print("binning, diagram:", diagram)
+    
+        if m[self.chopper_channel, 0] < 2.5:
+            pem = 0
+        else:
+            pem = 1
+        
+        n_shots = len(m_axis)
+        
+        for i in range(n_shots):
+            pem_state = (i + pem) % 2
+            
+            # find the fringe
+            j = int(m_axis[i]) + self.extra_fringes - 4000
+            
+            # add it to the bin            
+            self.b[diagram][j, :] += m[:,i] * (-1**pem_state)
+            
+            self.b_count[diagram, j] += 1
+            
+        
+    
+    
+    
+    
+    
+    def reconstruct_counter(self, data, start_counter):
         
         # put the required data in some better readable arrays
-        x = self.m[0][32,:]
-        y = self.m[0][33,:]
+        x = data[self.x_channel,:]
+        y = data[self.y_channel,:]
         
         # determine the median values
         med_x = numpy.min(x) + (numpy.max(x) - numpy.min(x))/2
@@ -523,17 +805,17 @@ class pefs(pe):
         
         # some stuff
         length = len(x)
-        counter = 0
+        counter = start_counter
         
         # the fringe count will be written in this array
-        self.m_axis[0] = numpy.zeros(length)
+        m_axis = numpy.zeros(length)
         
         # this is the (counter-) clockwise lock
         c_lock = False
         cc_lock = False
         
         # the first value is always zero
-        self.m_axis[0][0] = counter
+        m_axis[0] = counter
         
         # do the loop
         for i in range(1, length - 1):
@@ -555,63 +837,127 @@ class pefs(pe):
                 c_lock = False
                 cc_lock = False
             
-            self.m_axis[0][i] = counter
+            m_axis[i] = counter
         
-        self.m_axis[0][-1] = counter
-                                               
-        print("Number of counts:", counter)        
+        m_axis[-1] = counter
         
-    
-    def bin_data(self):
-        
-        min_fringe = numpy.nanmin(self.m_axis[0])
-        max_fringe = numpy.nanmax(self.m_axis[0])
-        
-        fringe_range = int(max_fringe - min_fringe + 1)
-        channels, n_steps = numpy.shape(self.m[0])
-        
-        # custom axis, with all fringes, even though the negative ones will be discarded    
-        # it should not be mistaken with self.r_axis and self.r
-        r_axis = [0] * 3   
-        # the fringes 
-        r_axis[0] = numpy.arange(min_fringe, max_fringe + 1)
-        # the times
-        r_axis[1] = 2.11 * numpy.arange(min_fringe, max_fringe + 1)
-        # the counter
-        r_axis[2] = numpy.zeros(fringe_range)
+        return m_axis, counter     
 
-        r = numpy.zeros((fringe_range, channels))
-        
-        # iterate over the data
-        for i in range(n_steps):
-            # find the fringe
-            j = int(self.m_axis[0][i]) - min_fringe
 
-            # add the data to the correct fringe            
-            r[j] += self.m[0][:,i]
-            
-            # add 1 to the counter
-            r_axis[2][j] += 1 
-       
-       
-        for i in range(fringe_range):
-            r[i] /= r_axis[2][i]
-            
-        self.r = r
-        self.r_axis[0] = r_axis[1]
+
+
+
+
+
+
+
+
+    def fourier_helper(self, array, window_function = "none", window_length = 0):
+        """
+        fourier_helper
         
-        print("Number of bins with a low amount of samples:")
-        print("==3: ", numpy.shape(numpy.where(r_axis[2] == 3))[1])
-        print("==4: ", numpy.shape(numpy.where(r_axis[2] == 4))[1])
-        print("==5: ", numpy.shape(numpy.where(r_axis[2] == 5))[1])   
+        20101204/RB: started
+        20110909 RB: continued
         
-            
-            
-        
-            
+        This is a function to Fourier Transform experimental 2DIR spectra, ie, spectra with a time and frequency axis. It basically repeats the Fourier function for all pixels.
+         
+        """
     
-    
+        # you need a new array that also has complex numbers  
+        # the length depends on zeropadding      
+        [x, y] = numpy.shape(array)
+        if self.zeropad_to != None:
+            x = self.zeropad_to
+        ft_array = numpy.reshape( numpy.zeros(x*y, dtype=numpy.cfloat), (x, y))
+
+        # iterate over all the pixels
         
+        for i in range(y):
+            ft_array[:,i] = croc.Absorptive.fourier(array[:,i], zero_in_middle = False, first_correction = True, zeropad_to = self.zeropad_to, window_function = window_function, window_length = window_length)  
+        return ft_array  
+        
+      
+        
+          
+
+
+  
+                
+    def absorptive(self, window_function = "none", window_length = 0):
+        """
+        croc.Pe.pefs.absorptive
+        
+        This function does the Fourier transform.
+        It checks the undersampling.
+        It phases the spectrum.
+        It makes the axes.
+        """
+
+        
+        # do the fft
+        # copy the arrays to prevent changing the originals
+        try:
+            self.f[0] = self.fourier_helper(numpy.copy(self.r[0]), window_function = window_function, window_length = window_length)
+            self.f[1] = self.fourier_helper(numpy.copy(self.r[1]), window_function = window_function, window_length = window_length)
+        except ValueError:
+            print("\nERROR (croc.Pe.pefs.absorptive): Problem with the Fourier Transforms. Are r[0] and r[1] assigned?")
+            return 0
+        
+        # phase the spectrum
+        self.s = numpy.real(numpy.exp(-1j * self.phase_rad) * self.f[0] + numpy.exp(1j * self.phase_rad) * self.f[1])
+        
+        # select part of the data
+        self.f[0] = self.f[0][:(len(self.f[0])/2)][:]
+        self.f[1] = self.f[1][:(len(self.f[1])/2)][:]
+        self.s = self.s[:(len(self.s)/2)][:]
+        
+        # fix the axes
+        try:
+            self.s_axis[0] = croc.Absorptive.make_ft_axis(length = 2*numpy.shape(self.s)[0], dt = self.r_axis[0][1]-self.r_axis[0][0], undersampling = self.undersampling)
+        except TypeError:
+            print("\nERROR (croc.pe.pefs.absorptive): Problem with making the Fourier Transformed axis. Is r_axis[0] assigned?")
+            return 0
+            
+        self.s_axis[0] = self.s_axis[0][0:len(self.s_axis[0])/2]
+        self.s_axis[2] = self.r_axis[2] + self.r_correction[2]  
+        
+        # add some stuff to self
+        self.s_units = ["cm-1", "fs", "cm-1"]
+        try:
+            self.s_resolution = [(self.s_axis[0][1] - self.s_axis[0][0]), 0, (self.s_axis[2][1] - self.s_axis[2][0])]
+        except TypeError:
+            print("\nERROR (croc.pe.pefs.absorptive): The resolution of the spectrum can not be determined. This can mean that the original axes (r_axis) or the spectral axes (s_axis) contains an error.")
+            print("r_axis[0]:", self.r_axis[0])
+            print("r_axis[2]:", self.r_axis[2])
+            print("s_axis[0]:", self.s_axis[0])
+            print("s_axis[2]:", self.s_axis[2])
+            return 0                
+            
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

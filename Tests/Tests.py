@@ -3,6 +3,7 @@ from __future__ import division
 
 
 import os
+import time
 import numpy
 import pylab 
 import matplotlib 
@@ -314,9 +315,8 @@ def FTIR1():
     print("=== TEST ===\nSimple test of FTIR routines\n")
 
     mess = [0]  
-    mess[0] = croc.Ftir.ftir_abs("FTIR1", "sample") 
+    mess[0] = croc.Ftir.ftir_abs("FTIR1", "sample") # left the .txt out on purpose
     mess[0].path = os.path.join(os.path.dirname(__file__), "TestData/")
-#    mess[0].base_filename = "sample" # left the .txt out on purpose
     mess[0].import_data()
     mess[0].plot(x_range = [1000, 3000])
     print(mess[0])
@@ -336,20 +336,69 @@ def FTIR2():
     mess = [0]  
     mess[0] = croc.Ftir.ftir_diffabs("FTIR2", "sample", "buffer.txt")
     mess[0].path = os.path.join(os.path.dirname(__file__), "TestData/")
-#    mess[0].base_filename = ["sample", "buffer.txt"]
-#    mess[0].sec_filename = "buffer.txt"
     mess[0].import_data()
     mess[0].plot(x_range = [2000, 2200])
     print(mess[0])
     
 
+
 def FS1():
+
+    print(time.strftime("%d/%m/%Y %H:%M:%S", time.localtime()))
     mess = [0]
-    mess[0] = croc.Pe.pefs("FS1", "stage1_R1_1.bin", 300, 1000)
-    mess[0].path = os.path.join(os.path.dirname(__file__), "TestData/")
-    mess[0].import_data()
-    mess[0].reconstruct_counter()
-    mess[0].bin_data()
-    print(mess[0])
+    #mess[0] = croc.Pe.pefs("FS1", "scan", 0, 1329)
+    #mess[0].path = ("/Volumes/public_hamm/PML3/data/20110920/scan_1329_T0/")
+    
+    mess[0] = croc.Pe.pefs("FS1", "scan", 0, 1621)
+    mess[0].path = ("/Volumes/public_hamm/PML3/data/20110920/scan_1621_T0/")
+    mess[0].phase = 0 #numpy.pi 
+    mess[0].add_data(scan = 1)
+    mess[0].absorptive(window_function = "gaussian")
+    
+    #print(numpy.shape(mess[0].r[1])) 
+    #plt.contour(mess[0].r[0])   
+    #plt.show()
+    #print(mess[0].r[0][:,17])
+    #print(mess[0].f[0][:,17])
+#     
+#     #mess[0].plot_T()
+    plt.plot(mess[0].r[0][:,17])
+    plt.plot(mess[0].s[:,17])
+
+    plt.show()
+    #mess[0].plot()
+    
+    
+    #mess[0].add_data(scan = 1, flag_import_override = True)
+    #print(mess[0].b_count)
+    #print(mess[0])
+    print(time.strftime("%d/%m/%Y %H:%M:%S: ", time.localtime()))
+
+def FS2():
+    print(time.strftime("%d/%m/%Y %H:%M:%S", time.localtime()))
+    mess = [0]
+    mess[0] = croc.Pe.pefs("FS2", "scan", 0, 1704)
+    mess[0].path = ("/Volumes/public_hamm/PML3/data/20110920/scan_1704_T0/")
+    mess[0].phase = 0 
+    for i in range(1,11):
+        mess[0].add_data(scan = i)
+    
+    mess[0].absorptive(window_function = "gaussian")
+    
+    plt.plot(mess[0].r[0][:,17])
+    plt.plot(mess[0].f[0][:,17])
+    plt.plot(mess[0].s[:,17])
+
+    plt.show()
+    print(time.strftime("%d/%m/%Y %H:%M:%S", time.localtime()))
+    #print(mess[0])
+    
+
+
+
+
+
+
+
 
 
