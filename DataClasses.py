@@ -215,13 +215,14 @@ def make_db(array_of_class_instances, base_filename):
     If the database already exists, it will update the values. Make
         sure that everything stored in the database has the same class.
     """
-    """
-    Ninye i prisno i vo vyeki vyekov
-    """
-    db=shelve.open(base_filename + ".db")
+    db = shelve.open(base_filename + ".pickle")
+    
     for object in array_of_class_instances:
-        db[object.name]=object
+        db[object.objectname] = object
+    
     db.close()
+
+
 
 def import_db(base_filename):
     """
@@ -231,13 +232,19 @@ def import_db(base_filename):
         class instances.
     """
 
-    if os.path.isfile(base_filename + ".db") == True:
-        db=shelve.open(base_filename + ".db")
-        array_of_class_instances=[]
+    if os.path.isfile(base_filename + ".pickle") == True:
+        
+        db=shelve.open(base_filename + ".pickle")
+        
+        array_of_class_instances = []
+        
         for key in db:
             array_of_class_instances.append(db[key])
+        
         db.close()
+        
         return array_of_class_instances
+    
     else:
         print("classtools.import_db: The file doesn't exist!")
         return False

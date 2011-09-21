@@ -10,6 +10,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 import croc
+import croc.DataClasses
 import croc.Ftir
 import croc.Pe
 import croc.Absorptive
@@ -20,6 +21,7 @@ reload(croc.Debug)
 
 if croc.Debug.reload_flag:
     reload(croc)
+    reload(croc.DataClasses)
     reload(croc.Ftir)
     reload(croc.Pe)
     reload(croc.Absorptive)
@@ -342,108 +344,47 @@ def FTIR2():
     
 
 
-def FS1():
-
-    #print(time.strftime("%d/%m/%Y %H:%M:%S", time.localtime()))
-    mess = [0]
-    #mess[0] = croc.Pe.pefs("FS1", "scan", 0, 1329)
-    #mess[0].path = ("/Volumes/public_hamm/PML3/data/20110920/scan_1329_T0/")
-    
-    mess[0] = croc.Pe.pefs("FS1", "scan", 0, 1621)
-    mess[0].path = ("/Volumes/public_hamm/PML3/data/20110920/scan_1621_T0/")
-    mess[0].phase = 0 #numpy.pi 
-    mess[0].add_data(scan = 1)
-    mess[0].absorptive(window_function = "gaussian")
-    
-    #print(numpy.shape(mess[0].r[1])) 
-    #plt.contour(mess[0].r[0])   
-    #plt.show()
-    #print(mess[0].r[0][:,17])
-    #print(mess[0].f[0][:,17])
-#     
-#     #mess[0].plot_T()
-    plt.plot(mess[0].r[0][:,17])
-    plt.plot(mess[0].s[:,17])
-    plt.plot(mess[0].b_count[0][20:]/1000)
-
-    plt.show()
-    #mess[0].plot()
-    
-    
-    #mess[0].add_data(scan = 1, flag_import_override = True)
-    #print(mess[0].b_count)
-    #print(mess[0])
-    #print(time.strftime("%d/%m/%Y %H:%M:%S: ", time.localtime()))
-
-def FS2():
-    print(time.strftime("%d/%m/%Y %H:%M:%S", time.localtime()))
-    mess = [0]
-    mess[0] = croc.Pe.pefs("FS2", "scan", 0, 1704)
-    mess[0].path = ("/Volumes/public_hamm/PML3/data/20110920/scan_1704_T0/")
-    mess[0].phase = 0 
-    for i in range(1,2):
-        mess[0].add_data(scan = i)
-    
-    
-    
-    mess[0].absorptive(window_function = "gaussian")
-
-    mess[0].bin_info()
-    
-    print(mess[0].r_axis[0])
-    print(mess[0].r_axis[2])
-    
-    mess[0].plot(plot_type = "S")
-
-#     plt.figure()
-#     plt.plot(mess[0].b[0][:,17])
-#     plt.plot(mess[0].b[1][:,17])
-# 
-# 
-#     
-#     plt.figure()
-#     plt.plot(mess[0].r[0][:,17])
-#     plt.plot(mess[0].r[1][:,17])
-#     plt.figure()
-#     plt.plot(mess[0].s_axis[0],mess[0].s[:,17])
-
-    plt.show()
-    print(time.strftime("%d/%m/%Y %H:%M:%S", time.localtime()))
-    #print(mess[0])
-    
 
 
-def FS3():
+
+def FS1a():
+    """
+    croc.Tests.Tests.FS1a
+    
+    Test to import data. It will save the data as a pickle (python data structure), which will be read in and processed in part B.
+    
+    """
+
     mess = [0]
     mess[0] = croc.Pe.pefs("FS3", "azide", 300, 1343)
-    mess[0].path = ("/Volumes/public_hamm/PML3/data/20110921/azide_1343_T300/")
+    mess[0].path = os.path.join(os.path.dirname(__file__), "TestData/azide_1343_T300/")
     mess[0].phase_degrees = -132 + 180 - 90
+    
     for i in range(1,21):
-        mess[0].add_data(scan = i)
+        mess[0].add_data(scan = i, flag_construct_r = False)
     
-    mess[0].absorptive()#window_function = "gaussian")
-    
-    #mess[0].plot_T()
-#     plt.figure()
-#     plt.plot(mess[0].b[1][:,16])
-#     
-    plt.figure()
-    #plt.plot(mess[0].r[0][:,15])
-    #plt.plot(mess[0].r[0][:,16])
-    plt.plot(mess[0].r[0][:,17])
-    #plt.plot(mess[0].r[0][:,18])
-    #plt.plot(mess[0].r[0][:,19])
-    plt.show()
-    
-    #mess[0].plot_R()
-    #mess[0].plot_NR()
-    
-    mess[0].plot(plot_type = "S", x_range = [1930, 2150])
+    path_and_filename = os.path.join(os.path.dirname(__file__), "TestData/azide_1343_T300/azide_1343_T300")
+    croc.DataClasses.make_db(mess, path_and_filename)
 
-    #mess[0].bin_info()
 
-    print(mess[0])
 
+def FS1b():
+    """
+    
+    
+    """
+    
+    path_and_filename = os.path.join(os.path.dirname(__file__), "TestData/azide_1343_T300/azide_1343_T300")
+
+    pick = croc.DataClasses.import_db(path_and_filename)
+    
+    pick[0].construct_r()
+    
+    pick[0].absorptive()
+    
+    pick[0].plot(plot_type = "S", x_range = [1930, 2150])
+
+    print(pick[0])    
 
 
 def PE6():

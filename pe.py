@@ -536,6 +536,8 @@ class pefs(pe):
         self.imported_scans = []
 
         self.reference = []
+        
+        self.incorrect_count = 0
 
 
 
@@ -624,8 +626,8 @@ class pefs(pe):
             # reconstruct the counter
             m_axis, counter = self.reconstruct_counter(m, fringes[0])
             
-            if k == 0 or k == 2:
-                print(m_axis)
+#             if k == 0 or k == 2:
+#                 print(m_axis)
             
             if k == 0:
                 n_fringes = counter - 4000
@@ -638,6 +640,8 @@ class pefs(pe):
                 print("Fringes counted to:", counter) 
                 print("File:", filename[k])
                 print("This run will be skipped!\n")
+                
+                self.incorrect_count += 1
 
             # if it is consistent, continue
             else:
@@ -764,10 +768,10 @@ class pefs(pe):
         # average the data for the two diagrams
         for j in range(2):
             for i in range(n_fringes):
-                #if self.b_count[j][i] == 0:
-                temp[j,i,:] = self.b[j][i,:] / self.b_count[j][i]    
-                #else:    
-                #    temp[j,i,:] = 0                
+                if self.b_count[j][i] != 0:
+                    temp[j,i,:] = self.b[j][i,:] / self.b_count[j][i]    
+                else:    
+                    temp[j,i,:] = 0                
 
         # now only select the part where fringes are not negative
         temp = temp[:,self.extra_fringes:,:self.n_pixels]
