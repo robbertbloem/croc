@@ -13,3 +13,5 @@ wavenumberToInvFs = c_cms * 1e-15
 wavenumberToInvPs = c_cms * 1e-12
 wavenumberToInvSec = c_cms
 
+# fringes
+hene_fringe_fs = 1e15 * 632e-9 / c_ms

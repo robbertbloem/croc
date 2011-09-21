@@ -643,7 +643,7 @@ class pefs(pe):
                 # make b the correct size, if it isn't already
                 if numpy.shape(self.b_axis)[-1] == 2:
                     #print("make b")
-                    self.b = [numpy.zeros((counter + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((counter + 2 * self.extra_fringes, self.n_channels))]
+                    self.b = [numpy.zeros((n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((n_fringes + 2 * self.extra_fringes, self.n_channels))]
                     self.b_axis[0] = numpy.arange(-self.extra_fringes, n_fringes + self.extra_fringes)
                     self.b_axis[1] = numpy.arange(-self.extra_fringes, n_fringes + self.extra_fringes)
                     self.b_count = numpy.zeros((2, n_fringes + 2 * self.extra_fringes))
@@ -667,8 +667,13 @@ class pefs(pe):
         self.n_scans = len(self.imported_scans)
 
 
- 
-            
+    def bin_info(self):
+        plt.figure()
+        plt.plot(self.b_axis[0], self.b_count[0])
+        plt.plot(self.b_axis[0], self.b_count[1])    
+        plt.show()
+        
+        print(numpy.count(numpy.where(self.b_count[0] == 25)))
                      
                 
                 
@@ -748,7 +753,7 @@ class pefs(pe):
         temp = temp[:,self.extra_fringes:,:self.n_pixels]
               
         # make the r_axis
-        self.r_axis[0] = self.b_axis[0][self.extra_fringes:] * 2.11
+        self.r_axis[0] = self.b_axis[0][self.extra_fringes:] * croc.Constants.hene_fringe_fs
 
         # now convert it to mOD
         for j in range(2):
