@@ -128,7 +128,7 @@ class pe(croc.DataClasses.mess_data):
 
   
     # plot the non-rephasing part of the spectrum
-    def plot_R(self, x_range = [0, 0], y_range = [0, -1], zlimit = -1, contours = 12, filled = True, black_contour = True, title = "", x_label = "", y_label = "", new_figure = True):          
+    def plot_NR(self, x_range = [0, 0], y_range = [0, -1], zlimit = -1, contours = 12, filled = True, black_contour = True, title = "", x_label = "", y_label = "", new_figure = True):          
     
         print("ADVISE (croc.pe.plot_NR): The function only calls croc.pe.plot(plot_type='NR'), but may not be completely up-to-date.\n")          
         self.plot(plot_type = "NR", x_range = x_range, y_range = y_range, zlimit = zlimit, contours = contours, filled = filled, black_contour = black_contour, title = title, x_label = x_label, y_label = y_label, new_figure = new_figure)
@@ -624,6 +624,8 @@ class pefs(pe):
             # reconstruct the counter
             m_axis, counter = self.reconstruct_counter(m, fringes[0])
             
+            print(m_axis[0])
+            
             if k == 0:
                 n_fringes = counter - 4000
             
@@ -654,6 +656,11 @@ class pefs(pe):
                 self.bin_data(m, m_axis, diagram)
                 
                 # all the data is now written into self.b* 
+                
+#                 if k == 1:
+#                     plt.figure()
+#                     plt.plot(m[17,:])
+#                     plt.show()
         
         #print(self.b_count[0][500:510])
         
@@ -671,10 +678,21 @@ class pefs(pe):
         plt.figure()
         plt.plot(self.b_axis[0], self.b_count[0])
         plt.plot(self.b_axis[0], self.b_count[1])    
-        plt.show()
+        plt.title("Samples per bin (4000 = 0)")
+        plt.xlabel("Fringe")
+        plt.ylabel("Samples per bin")
+
+        plt.figure()
+        plt.plot(numpy.bincount(numpy.array(self.b_count[0], dtype=numpy.int)))
+        plt.plot(numpy.bincount(numpy.array(self.b_count[1], dtype=numpy.int)))
+        plt.title("Bins with certain number of samples")
+        plt.xlabel("Number of samples")
+        plt.ylabel("Number of bins")
         
-        print(numpy.count(numpy.where(self.b_count[0] == 25)))
-                     
+        plt.show()           
+        
+        #print(numpy.where(numpy.nanmax(numpy.bincount(numpy.array(self.b_count[0], dtype=numpy.int))))[0])
+        
                 
                 
     def import_meta(self):
@@ -788,7 +806,7 @@ class pefs(pe):
             j = int(m_axis[i]) + self.extra_fringes - 4000
             
             # add it to the bin            
-            self.b[diagram][j, :] += m[:,i] * (-1**pem_state)
+            self.b[diagram][j, :] += m[:,i] * (-1)**pem_state
             
             self.b_count[diagram, j] += 1
             

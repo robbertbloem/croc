@@ -389,29 +389,80 @@ def FS2():
     mess[0].absorptive(window_function = "gaussian")
 
     mess[0].bin_info()
-
-    plt.figure()
-    plt.plot(mess[0].b[0][:,17])
-    plt.plot(mess[0].b[1][:,17])
-
-
     
-    plt.figure()
-    plt.plot(mess[0].r[0][:,17])
-    plt.plot(mess[0].r[1][:,17])
+    print(mess[0].r_axis[0])
+    print(mess[0].r_axis[2])
+    
+    mess[0].plot(plot_type = "S")
+
+#     plt.figure()
+#     plt.plot(mess[0].b[0][:,17])
+#     plt.plot(mess[0].b[1][:,17])
+# 
+# 
+#     
+#     plt.figure()
+#     plt.plot(mess[0].r[0][:,17])
+#     plt.plot(mess[0].r[1][:,17])
 #     plt.figure()
 #     plt.plot(mess[0].s_axis[0],mess[0].s[:,17])
 
     plt.show()
     print(time.strftime("%d/%m/%Y %H:%M:%S", time.localtime()))
-    print(mess[0])
+    #print(mess[0])
     
 
 
+def FS3():
+    mess = [0]
+    mess[0] = croc.Pe.pefs("FS3", "azide", 300, 1305)
+    mess[0].path = ("/Volumes/public_hamm/PML3/data/20110921/azide_1305_T300/")
+    mess[0].phase_degrees = -132 
+    for i in range(1,3):
+        mess[0].add_data(scan = i)
+    
+    mess[0].absorptive(window_function = "gaussian")
+    
+    #mess[0].plot_T()
+    plt.figure()
+    plt.plot(mess[0].b[1][:,16])
+    
+    plt.figure()
+    plt.plot(mess[0].r[1][:,16])
+    
+    plt.show()
+    
+#     mess[0].plot_R()
+#     mess[0].plot_NR()
+#     
+#     mess[0].plot(plot_type = "S")#, y_range = [0,0], zlimit = 1)
+
+    #mess[0].bin_info()
+
+    print(mess[0])
 
 
 
-
-
+def PE6():
+    """
+    croc.Tests.tests.singlePE
+    
+    Simplest test of the photon echo routines.
+    
+    CHANGELOG:
+    - 20110910 RB: init
+    
+    """
+    
+    print("=== TEST ===\nSimple test of PE routines\n")
+    
+    mess = [0]
+    mess[0] = croc.Pe.pe_exp("PE6", "azide", 300, undersampling = 5, time_stamp = 1251)
+    mess[0].path = ("/Volumes/public_hamm/PML3/data/20110921/azide_1251_T300/")
+#    mess[0].path = os.path.join(os.path.dirname(__file__), "TestData/azide_1251_T300/")
+    mess[0].import_data()  
+    mess[0].absorptive()
+    mess[0].plot()
+    print(mess[0])
 
 
