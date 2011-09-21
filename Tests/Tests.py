@@ -353,36 +353,50 @@ def FS1a():
     
     Test to import data. It will save the data as a pickle (python data structure), which will be read in and processed in part B.
     
+    This test will only work if the data is present, which needs a separate download.
+    
     """
 
     mess = [0]
     mess[0] = croc.Pe.pefs("FS3", "azide", 300, 1343)
     mess[0].path = os.path.join(os.path.dirname(__file__), "TestData/azide_1343_T300/")
+    
+    # there was an issue with the measure phase for this measurement
     mess[0].phase_degrees = -132 + 180 - 90
     
+    # import all data
+    # it ranges from 1 to last_scan + 1
+    # self.r will not be constructed after every import
     for i in range(1,21):
         mess[0].add_data(scan = i, flag_construct_r = False)
     
-    path_and_filename = os.path.join(os.path.dirname(__file__), "TestData/azide_1343_T300/azide_1343_T300")
+    # make the pickle
+    path_and_filename = os.path.join(os.path.dirname(__file__), "TestData/azide_1343_T300/azide_1343_T300_pickle")
     croc.DataClasses.make_db(mess, path_and_filename)
 
 
 
 def FS1b():
     """
+    croc.Tests.Tests.FS1b
     
+    This will import the pickle and do things with the data. This prevents you from having to reimport all the data all the time. 
     
+
     """
     
-    path_and_filename = os.path.join(os.path.dirname(__file__), "TestData/azide_1343_T300/azide_1343_T300")
-
+    # import the pickle
+    path_and_filename = os.path.join(os.path.dirname(__file__), "TestData/azide_1343_T300_pickle/azide_1343_T300")
     pick = croc.DataClasses.import_db(path_and_filename)
     
+    # construct r 
     pick[0].construct_r()
     
+    # calculate the spectrum
     pick[0].absorptive()
     
-    pick[0].plot(plot_type = "S", x_range = [1930, 2150])
+    # plot the spectrum
+    pick[0].plot(plot_type = "S")#, x_range = [1930, 2150])
 
     print(pick[0])    
 

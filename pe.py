@@ -425,8 +425,8 @@ class pe_exp(pe):
         
         # CHECKS
         # checks the undersampling. It can be 0, but that is hardly used
-        if self.undersampling == 0:
-            print("\nWARNING (croc.pe.pe_exp.absorptive): undersampling is 0!\n")
+#         if self.undersampling == 0:
+#             print("\nWARNING (croc.pe.pe_exp.absorptive): undersampling is 0!\n")
         
         # do the fft
         # copy the arrays to prevent changing the originals
@@ -476,7 +476,7 @@ class pe_exp(pe):
 
 
 
-class pefs(pe):
+class pefs(pe_exp):
 
     """
     croc.Pe.pefs
@@ -699,61 +699,61 @@ class pefs(pe):
         #print(numpy.where(numpy.nanmax(numpy.bincount(numpy.array(self.b_count[0], dtype=numpy.int))))[0])
         
                 
-                
-    def import_meta(self):
-        """
-        croc.pe.import_meta
-        
-        Import data from the meta-data files.
-
-        INPUT: 
-        - a class
-        
-        COMMENTS
-        - it will scan the meta-file for n_scans, n_shots, phase and comments
-        
-        CHANGELOG
-        RB 20110909: started function        
-        
-        
-        """
-        
-        # construct file name
-        filebase = self.path + self.base_filename + "_" + str(self.time_stamp) + "_T" + str(self.r_axis[1]) + "_meta.txt"
-        
-        # close older files
-        fileinput.close()
-        
-        # found at: http://docs.python.org/library/re.html#matching-vs-searching , is equivalent to scanf(..%f..)
-        regex = re.compile("[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?")
-        
-        # scan the file
-        try:
-            for line in fileinput.input(filebase):
-            
-                if re.match("Shots", line): 
-                    self.n_shots = int((re.search(regex, line)).group())
-            
-                #if re.match("Phase", line):
-                #    self.phase_degrees = float((re.search(regex, line)).group()) + 180.0
-                
-                if re.match("Comments", line):
-                    self.comment = line[9:]
-                    
-                #if re.match("Scan", line):
-                #    temp_scans = int((re.search(regex, line[4:7])).group())
-        except IOError:
-            print("ERROR (croc.pe.import_meta): unable to load file:", filebase)
-            raise
-            return 0            
-  
-        # close the file     
-        fileinput.close()
-        
-        # number of scans is (number of scans started) - 1, because the last one wasn't finished
-        #self.n_scans = temp_scans - 1
-
-
+#                 
+#     def import_meta(self):
+#         """
+#         croc.pe.import_meta
+#         
+#         Import data from the meta-data files.
+# 
+#         INPUT: 
+#         - a class
+#         
+#         COMMENTS
+#         - it will scan the meta-file for n_scans, n_shots, phase and comments
+#         
+#         CHANGELOG
+#         RB 20110909: started function        
+#         
+#         
+#         """
+#         
+#         # construct file name
+#         filebase = self.path + self.base_filename + "_" + str(self.time_stamp) + "_T" + str(self.r_axis[1]) + "_meta.txt"
+#         
+#         # close older files
+#         fileinput.close()
+#         
+#         # found at: http://docs.python.org/library/re.html#matching-vs-searching , is equivalent to scanf(..%f..)
+#         regex = re.compile("[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?")
+#         
+#         # scan the file
+#         try:
+#             for line in fileinput.input(filebase):
+#             
+#                 if re.match("Shots", line): 
+#                     self.n_shots = int((re.search(regex, line)).group())
+#             
+#                 #if re.match("Phase", line):
+#                 #    self.phase_degrees = float((re.search(regex, line)).group()) + 180.0
+#                 
+#                 if re.match("Comments", line):
+#                     self.comment = line[9:]
+#                     
+#                 #if re.match("Scan", line):
+#                 #    temp_scans = int((re.search(regex, line[4:7])).group())
+#         except IOError:
+#             print("ERROR (croc.pe.import_meta): unable to load file:", filebase)
+#             raise
+#             return 0            
+#   
+#         # close the file     
+#         fileinput.close()
+#         
+#         # number of scans is (number of scans started) - 1, because the last one wasn't finished
+#         #self.n_scans = temp_scans - 1
+# 
+# 
 
 
 
@@ -877,92 +877,92 @@ class pefs(pe):
 
 
 
-
-
-
-
-    def fourier_helper(self, array, window_function = "none", window_length = 0):
-        """
-        fourier_helper
-        
-        20101204/RB: started
-        20110909 RB: continued
-        
-        This is a function to Fourier Transform experimental 2DIR spectra, ie, spectra with a time and frequency axis. It basically repeats the Fourier function for all pixels.
-         
-        """
-    
-        # you need a new array that also has complex numbers  
-        # the length depends on zeropadding      
-        [x, y] = numpy.shape(array)
-        if self.zeropad_to != None:
-            x = self.zeropad_to
-        ft_array = numpy.reshape( numpy.zeros(x*y, dtype=numpy.cfloat), (x, y))
-
-        # iterate over all the pixels
-        
-        for i in range(y):
-            ft_array[:,i] = croc.Absorptive.fourier(array[:,i], zero_in_middle = False, first_correction = True, zeropad_to = self.zeropad_to, window_function = window_function, window_length = window_length)  
-        return ft_array  
-        
-      
-        
-          
+# 
+# 
+# 
+# 
+#     def fourier_helper(self, array, window_function = "none", window_length = 0):
+#         """
+#         fourier_helper
+#         
+#         20101204/RB: started
+#         20110909 RB: continued
+#         
+#         This is a function to Fourier Transform experimental 2DIR spectra, ie, spectra with a time and frequency axis. It basically repeats the Fourier function for all pixels.
+#          
+#         """
+#     
+#         # you need a new array that also has complex numbers  
+#         # the length depends on zeropadding      
+#         [x, y] = numpy.shape(array)
+#         if self.zeropad_to != None:
+#             x = self.zeropad_to
+#         ft_array = numpy.reshape( numpy.zeros(x*y, dtype=numpy.cfloat), (x, y))
+# 
+#         # iterate over all the pixels
+#         
+#         for i in range(y):
+#             ft_array[:,i] = croc.Absorptive.fourier(array[:,i], zero_in_middle = False, first_correction = True, zeropad_to = self.zeropad_to, window_function = window_function, window_length = window_length)  
+#         return ft_array  
+#         
+#       
+#         
+#           
 
 
   
-                
-    def absorptive(self, window_function = "none", window_length = 0):
-        """
-        croc.Pe.pefs.absorptive
-        
-        This function does the Fourier transform.
-        It checks the undersampling.
-        It phases the spectrum.
-        It makes the axes.
-        """
-
-        
-        # do the fft
-        # copy the arrays to prevent changing the originals
-        try:
-            self.f[0] = self.fourier_helper(numpy.copy(self.r[0]), window_function = window_function, window_length = window_length)
-            self.f[1] = self.fourier_helper(numpy.copy(self.r[1]), window_function = window_function, window_length = window_length)
-        except ValueError:
-            print("\nERROR (croc.Pe.pefs.absorptive): Problem with the Fourier Transforms. Are r[0] and r[1] assigned?")
-            return 0
-        
-        # phase the spectrum
-        self.s = numpy.real(numpy.exp(-1j * self.phase_rad) * self.f[0] + numpy.exp(1j * self.phase_rad) * self.f[1])
-        
-        # select part of the data
-        self.f[0] = self.f[0][:(len(self.f[0])/2)][:]
-        self.f[1] = self.f[1][:(len(self.f[1])/2)][:]
-        self.s = self.s[:(len(self.s)/2)][:]
-        
-        # fix the axes
-        try:
-            self.s_axis[0] = croc.Absorptive.make_ft_axis(length = 2*numpy.shape(self.s)[0], dt = self.r_axis[0][1]-self.r_axis[0][0], undersampling = self.undersampling)
-        except TypeError:
-            print("\nERROR (croc.pe.pefs.absorptive): Problem with making the Fourier Transformed axis. Is r_axis[0] assigned?")
-            return 0
-            
-        self.s_axis[0] = self.s_axis[0][0:len(self.s_axis[0])/2]
-        self.s_axis[2] = self.r_axis[2] + self.r_correction[2]  
-        
-        # add some stuff to self
-        self.s_units = ["cm-1", "fs", "cm-1"]
-        try:
-            self.s_resolution = [(self.s_axis[0][1] - self.s_axis[0][0]), 0, (self.s_axis[2][1] - self.s_axis[2][0])]
-        except TypeError:
-            print("\nERROR (croc.pe.pefs.absorptive): The resolution of the spectrum can not be determined. This can mean that the original axes (r_axis) or the spectral axes (s_axis) contains an error.")
-            print("r_axis[0]:", self.r_axis[0])
-            print("r_axis[2]:", self.r_axis[2])
-            print("s_axis[0]:", self.s_axis[0])
-            print("s_axis[2]:", self.s_axis[2])
-            return 0                
-            
-            
+#                 
+#     def absorptive(self, window_function = "none", window_length = 0):
+#         """
+#         croc.Pe.pefs.absorptive
+#         
+#         This function does the Fourier transform.
+#         It checks the undersampling.
+#         It phases the spectrum.
+#         It makes the axes.
+#         """
+# 
+#         
+#         # do the fft
+#         # copy the arrays to prevent changing the originals
+#         try:
+#             self.f[0] = self.fourier_helper(numpy.copy(self.r[0]), window_function = window_function, window_length = window_length)
+#             self.f[1] = self.fourier_helper(numpy.copy(self.r[1]), window_function = window_function, window_length = window_length)
+#         except ValueError:
+#             print("\nERROR (croc.Pe.pefs.absorptive): Problem with the Fourier Transforms. Are r[0] and r[1] assigned?")
+#             return 0
+#         
+#         # phase the spectrum
+#         self.s = numpy.real(numpy.exp(-1j * self.phase_rad) * self.f[0] + numpy.exp(1j * self.phase_rad) * self.f[1])
+#         
+#         # select part of the data
+#         self.f[0] = self.f[0][:(len(self.f[0])/2)][:]
+#         self.f[1] = self.f[1][:(len(self.f[1])/2)][:]
+#         self.s = self.s[:(len(self.s)/2)][:]
+#         
+#         # fix the axes
+#         try:
+#             self.s_axis[0] = croc.Absorptive.make_ft_axis(length = 2*numpy.shape(self.s)[0], dt = self.r_axis[0][1]-self.r_axis[0][0], undersampling = self.undersampling)
+#         except TypeError:
+#             print("\nERROR (croc.pe.pefs.absorptive): Problem with making the Fourier Transformed axis. Is r_axis[0] assigned?")
+#             return 0
+#             
+#         self.s_axis[0] = self.s_axis[0][0:len(self.s_axis[0])/2]
+#         self.s_axis[2] = self.r_axis[2] + self.r_correction[2]  
+#         
+#         # add some stuff to self
+#         self.s_units = ["cm-1", "fs", "cm-1"]
+#         try:
+#             self.s_resolution = [(self.s_axis[0][1] - self.s_axis[0][0]), 0, (self.s_axis[2][1] - self.s_axis[2][0])]
+#         except TypeError:
+#             print("\nERROR (croc.pe.pefs.absorptive): The resolution of the spectrum can not be determined. This can mean that the original axes (r_axis) or the spectral axes (s_axis) contains an error.")
+#             print("r_axis[0]:", self.r_axis[0])
+#             print("r_axis[2]:", self.r_axis[2])
+#             print("s_axis[0]:", self.s_axis[0])
+#             print("s_axis[2]:", self.s_axis[2])
+#             return 0                
+#             
+#             
 
 
 
