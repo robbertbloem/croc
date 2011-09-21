@@ -398,6 +398,8 @@ def FS1b():
     # plot the spectrum
     pick[0].plot(plot_type = "S")#, x_range = [1930, 2150])
 
+    pick[0].bin_info()
+
     print(pick[0])    
 
 
