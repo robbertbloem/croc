@@ -624,7 +624,8 @@ class pefs(pe):
             # reconstruct the counter
             m_axis, counter = self.reconstruct_counter(m, fringes[0])
             
-            print(m_axis[0])
+            if k == 0 or k == 2:
+                print(m_axis)
             
             if k == 0:
                 n_fringes = counter - 4000
@@ -646,8 +647,8 @@ class pefs(pe):
                 if numpy.shape(self.b_axis)[-1] == 2:
                     #print("make b")
                     self.b = [numpy.zeros((n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((n_fringes + 2 * self.extra_fringes, self.n_channels))]
-                    self.b_axis[0] = numpy.arange(-self.extra_fringes, n_fringes + self.extra_fringes)
-                    self.b_axis[1] = numpy.arange(-self.extra_fringes, n_fringes + self.extra_fringes)
+                    self.b_axis[0] = numpy.arange(- self.extra_fringes, n_fringes + self.extra_fringes)
+                    self.b_axis[1] = numpy.arange(- self.extra_fringes, n_fringes + self.extra_fringes)
                     self.b_count = numpy.zeros((2, n_fringes + 2 * self.extra_fringes))
                 
                     self.r = [numpy.zeros((n_fringes + self.extra_fringes, 32)),numpy.zeros((n_fringes + self.extra_fringes, 32))]
@@ -763,9 +764,10 @@ class pefs(pe):
         # average the data for the two diagrams
         for j in range(2):
             for i in range(n_fringes):
+                #if self.b_count[j][i] == 0:
                 temp[j,i,:] = self.b[j][i,:] / self.b_count[j][i]    
-            else:    
-                temp[j,i,:] = 0                
+                #else:    
+                #    temp[j,i,:] = 0                
 
         # now only select the part where fringes are not negative
         temp = temp[:,self.extra_fringes:,:self.n_pixels]
@@ -803,7 +805,7 @@ class pefs(pe):
             pem_state = (i + pem) % 2
             
             # find the fringe
-            j = int(m_axis[i]) + self.extra_fringes - 4000
+            j = (-1)**diagram * int(m_axis[i]) + self.extra_fringes - (-1)**diagram * 4000
             
             # add it to the bin            
             self.b[diagram][j, :] += m[:,i] * (-1)**pem_state

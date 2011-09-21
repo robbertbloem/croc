@@ -274,9 +274,13 @@ def contourplot(data, x_axis, y_axis, x_range = [0, 0], y_range = [0, -1], zlimi
         x_max_i = numpy.where(x_axis > x_max)[0][0]
     except: 
         x_max_i = len(x_axis)
-     
+    
+    
+    
     # now make the actual contours   
     V = make_contours_2d(data[y_min_i:y_max_i, x_min_i:x_max_i], zlimit, contours)
+    
+    print(V[-1])
     
     # print some extra stuff if the debug flag is set
     if debug_flag:
