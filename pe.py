@@ -522,6 +522,8 @@ class pefs(pe_exp):
         self.b_axis = [0] * 2
         self.b_count = [0] * 2
         
+        self.n = [0] * 2
+        
         # some channels have a special meaning
         self.n_channels = 37
         self.x_channel = 32
@@ -559,7 +561,7 @@ class pefs(pe_exp):
                 
 
     
-    def add_data(self, scan, flag_import_override = False, flag_construct_r = True):
+    def add_data(self, scan, flag_import_override = False, flag_construct_r = True, flag_calculate_noise = False):
         """
         Adds data for a single scan.
         The data is imported as data.
@@ -626,9 +628,6 @@ class pefs(pe_exp):
             # reconstruct the counter
             m_axis, counter = self.reconstruct_counter(m, fringes[0])
             
-#             if k == 0 or k == 2:
-#                 print(m_axis)
-            
             if k == 0:
                 n_fringes = counter - 4000
             
@@ -636,14 +635,6 @@ class pefs(pe_exp):
             if counter != fringes[1]:
                 print("\nWARNING (croc.Pe.pefs.add_data): There is a miscount with the fringes!")
                 print("Scan: ", scan, ", File:", k, "\n")
-                
-                
-                #print("Fringe start:", fringes[0])
-                #print("Fringe end:", fringes[1])
-                #print("Fringes counted to:", counter) 
-                #print("File:", filename[k])
-                #print("This run will be skipped!\n")
-                
                 self.incorrect_count += 1
 
             # if it is consistent, continue
@@ -659,22 +650,22 @@ class pefs(pe_exp):
                     self.b_count = numpy.zeros((2, n_fringes + 2 * self.extra_fringes))
                 
                     self.r = [numpy.zeros((n_fringes + self.extra_fringes, 32)),numpy.zeros((n_fringes + self.extra_fringes, 32))]
+                    
+#                     if flag_calculate_noise:
+#                         print("fiets")
+#                         self.n = [numpy.zeros((n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((n_fringes + 2 * self.extra_fringes, self.n_channels))]
+#                         self.r_noise = [numpy.zeros((n_fringes + self.extra_fringes, 32)),numpy.zeros((n_fringes + self.extra_fringes, 32))]
+                        
+            
             
                 # bin the data
-                self.bin_data(m, m_axis, diagram)
+                self.bin_data(m, m_axis, diagram, flag_calculate_noise = flag_calculate_noise)
                 
                 # all the data is now written into self.b* 
-                
-#                 if k == 1:
-#                     plt.figure()
-#                     plt.plot(m[17,:])
-#                     plt.show()
-        
-        #print(self.b_count[0][500:510])
-        
+
         # construct the actual measurement
         if flag_construct_r:
-            self.construct_r()
+            self.construct_r(flag_calculate_noise = flag_calculate_noise)
 
         # now append that we already imported this scan
         self.imported_scans.append(scan)
@@ -682,19 +673,20 @@ class pefs(pe_exp):
         self.n_scans = len(self.imported_scans)
 
 
+
     def bin_info(self):
         plt.figure()
         plt.plot(self.b_axis[0], self.b_count[0])
         plt.plot(self.b_axis[0], self.b_count[1])    
-        plt.title("Samples per bin (4000 = 0)")
+        plt.title("Shots per fringe (4000 = 0)")
         plt.xlabel("Fringe")
-        plt.ylabel("Samples per bin")
+        plt.ylabel("Shots per fringe")
 
         plt.figure()
         plt.plot(numpy.bincount(numpy.array(self.b_count[0], dtype=numpy.int)))
         plt.plot(numpy.bincount(numpy.array(self.b_count[1], dtype=numpy.int)))
-        plt.title("Bins with certain number of samples")
-        plt.xlabel("Number of samples")
+        plt.title("Bins with certain number of shots")
+        plt.xlabel("Number of shots")
         plt.ylabel("Number of bins")
         
         plt.show()           
@@ -703,7 +695,7 @@ class pefs(pe_exp):
 
 
 
-    def construct_r(self):
+    def construct_r(self, flag_calculate_noise = False):
     
         n_fringes = len(self.b_axis[0])
         
@@ -716,7 +708,7 @@ class pefs(pe_exp):
                     temp[j,i,:] = self.b[j][i,:] / self.b_count[j][i]    
                 else:    
                     temp[j,i,:] = 0                
-
+        
         # now only select the part where fringes are not negative
         temp = temp[:,self.extra_fringes:,:self.n_pixels]
               
@@ -732,13 +724,43 @@ class pefs(pe_exp):
         
         self.r_units = ["fs", "fs", "cm-1"]
         
-        
-            
-            
+#         # calculate signal to noise
+#         if flag_calculate_noise:
+#             
+#             temp = numpy.zeros((2, n_fringes, self.n_channels)) 
+#             
+#             ref = numpy.append(self.reference, [1])
+#             
+#             for j in range(2):
+#                 for i in range(n_fringes):
+#                     if self.b_count[j][i] != 0:
+#                         temp[j,i,:] = numpy.sqrt(
+#                             (
+#                                 #+ numpy.log10(
+#                                     (
+#                                         4 * self.n[j][i,:] / (
+#                                             500*self.b_count[j][i] * ref**2 * 0.002303**2
+#                                         ) 
+#                                     #) + 1
+#                                 ) - #numpy.log10(
+#                                     (
+#                                         2 * self.b[j][i,:] / (
+#                                             500*self.b_count[j][i] * ref * 0.002303
+#                                         )
+#                                     )**2 #+ 1
+#                                 #)
+#                             ) / (
+#                                 500*self.b_count[j][i]
+#                             )
+#                         )
+#                     else:    
+#                         temp[j,i,:] = 0             
+#             
+#             self.r_noise = temp[:,self.extra_fringes:,:self.n_pixels]
 
                 
 
-    def bin_data(self, m, m_axis, diagram):
+    def bin_data(self, m, m_axis, diagram, flag_calculate_noise = False):
     
         #print("binning, diagram:", diagram)
     
@@ -758,6 +780,11 @@ class pefs(pe_exp):
             # add it to the bin            
             self.b[diagram][j, :] += m[:,i] * (-1)**pem_state
             
+#             if flag_calculate_noise:
+#                 self.n[diagram][j, :] += (m[:,i] * (-1)**pem_state)**2
+                
+            
+            # add to the counter            
             self.b_count[diagram, j] += 1
             
         

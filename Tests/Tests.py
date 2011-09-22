@@ -360,18 +360,18 @@ def FS1a():
     mess = [0]
     mess[0] = croc.Pe.pefs("FS3", "azide", 300, 1343)
     mess[0].path = os.path.join(os.path.dirname(__file__), "TestData/azide_1343_T300/")
-    
-    # there was an issue with the measure phase for this measurement
-    mess[0].phase_degrees = -132 + 180 - 90
-    
+
     # import all data
     # it ranges from 1 to last_scan + 1
     # self.r will not be constructed after every import
     for i in range(1,21):
-        mess[0].add_data(scan = i, flag_construct_r = False)
+        mess[0].add_data(scan = i, flag_construct_r = False, flag_calculate_noise = True)
+
+    # there was an issue with the measure phase for this measurement
+    mess[0].phase_degrees = -132 + 180 - 90
     
     # make the pickle
-    path_and_filename = os.path.join(os.path.dirname(__file__), "TestData/azide_1343_T300/azide_1343_T300_pickle")
+    path_and_filename = os.path.join(os.path.dirname(__file__), "TestData/azide_1343_T300_pickle/azide_1343_T300")
     croc.DataClasses.make_db(mess, path_and_filename)
 
 
@@ -390,7 +390,7 @@ def FS1b():
     pick = croc.DataClasses.import_db(path_and_filename)
     
     # construct r 
-    pick[0].construct_r()
+    pick[0].construct_r(flag_calculate_noise = True)
     
     # calculate the spectrum
     pick[0].absorptive()
@@ -401,6 +401,11 @@ def FS1b():
     pick[0].bin_info()
 
     print(pick[0])    
+
+
+
+
+
 
 
 def PE6():
@@ -430,5 +435,7 @@ def PE6():
     
     mess[0].plot(x_range = [1930, 2150])
     print(mess[0])
+    
+
 
 
