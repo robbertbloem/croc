@@ -404,6 +404,45 @@ def FS1b():
 
 
 
+def FS2():
+    """
+    croc.Tests.Tests.FS1a
+    
+    Test to import data. It will save the data as a pickle (python data structure), which will be read in and processed in part B.
+    
+    This test will only work if the data is present, which needs a separate download.
+    
+    """
+
+    mess = [0]
+    mess[0] = croc.Pe.pefs("FS2", "scan", 0, 1308)
+    mess[0].path = ("/Volumes/public_hamm/PML3/data/20110922/scan_1308_T0/")
+    #mess[0].path = os.path.join(os.path.dirname(__file__), "TestData/azide_1343_T300/")
+
+    # import all data
+    # it ranges from 1 to last_scan + 1
+    # self.r will not be constructed after every import
+    for i in range(1,11):
+        mess[0].add_data(scan = i, flag_construct_r = False, flag_calculate_noise = False)
+        
+    print(mess[0].incorrect_count)
+
+#     # there was an issue with the measure phase for this measurement
+#     mess[0].phase_degrees = 0
+#     
+#     # construct r 
+#     mess[0].construct_r(flag_calculate_noise = True)
+#     
+#     # calculate the spectrum
+#     mess[0].absorptive()
+#     
+#     # plot the spectrum
+#     mess[0].plot(plot_type = "S")#, x_range = [1930, 2150])
+# 
+#     mess[0].bin_info()
+# 
+#     print(pick[0]) 
+
 
 
 

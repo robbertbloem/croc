@@ -355,8 +355,8 @@ class pe_exp(pe):
                 if re.match("Shots", line): 
                     self.n_shots = int((re.search(regex, line)).group())
             
-                if re.match("Phase", line):
-                    self.phase_degrees = float((re.search(regex, line)).group()) + 180.0
+                #if re.match("Phase", line):
+                #    self.phase_degrees = float((re.search(regex, line)).group()) + 180.0
                 
                 if re.match("Comments", line):
                     self.comment = line[9:]
