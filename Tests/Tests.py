@@ -458,7 +458,7 @@ def FS2b():
     pick[0].construct_r(flag_calculate_noise = False)
     
     # calculate the spectrum
-    pick[0].absorptive(window_function = "none", window_length = 900, flag_plot = True)
+    pick[0].absorptive(window_function = "gaussian", window_length = 900, flag_plot = False)
     
     # plot the spectrum
     pick[0].plot(plot_type = "S", x_range = [1930, 2150])#, zlimit = 1)
@@ -560,7 +560,17 @@ def PE6():
     
     mess[0].plot(x_range = [1930, 2150])
     print(mess[0])
-    
 
+    
+def F1():
+    length = 50
+    
+    wa = croc.Absorptive.window_functions(numpy.ones(length), window_function = "experimental", window_length = 0, flag_plot = False)  
+    
+    print(wa[-1])
+    
+    plt.figure()
+    plt.plot(wa)
+    plt.show() 
 
 

@@ -113,7 +113,11 @@ def window_functions(array, window_function, window_length = 0, flag_plot = Fals
             window = numpy.concatenate((numpy.linspace(1, 0, n_max).T, zeros))   
 
         elif window_function == "gaussian":
-            window = numpy.exp(-numpy.arange(0, array_length)**2 / (n_max**1.7)).T    
+            window = numpy.exp(-(2.2*numpy.arange(0, array_length)/(n_max))**2)
+            #window = numpy.exp(-numpy.arange(0, array_length)**2 / (n_max**1.7)).T  
+        
+        elif window_function == "experimental": 
+            window = numpy.exp(-(2.2*numpy.arange(0, array_length)/(n_max))**2)
 
         else:
             print("ERROR (croc.Absorptive.window_functions): Unknown window function.")
