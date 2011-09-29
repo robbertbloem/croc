@@ -107,10 +107,12 @@ class pe(croc.DataClasses.mess_data):
         
         x_axis = self.s_axis[2]
         y_axis = self.s_axis[0]
+        
         if x_label == "":
-            x_label = self.s_units[2]
+            x_label = "w3 (" + str(self.s_units[2]) + ")"
         if y_label == "":
-            y_label = self.s_units[0] 
+            y_label = "w1 (" +  str(self.s_units[0]) + ")"
+        
         if title == "":
             title = self.objectname + ", t2: " + str(self.r_axis[1]) + "\n scans x shots: " + str(self.n_scans) + "x" + str(self.n_shots)
         
@@ -135,23 +137,42 @@ class pe(croc.DataClasses.mess_data):
 
 
     # plot the time domain
-    def plot_T(self, x_range = [0, 0], y_range = [0, 0], zlimit = -1, contours = 12, filled = True, black_contour = True, title = "", x_label = "", y_label = "", new_figure = True):
+    def plot_T(self, pixel = 0, x_range = [0, 0], y_range = [0, 0], zlimit = -1, contours = 12, filled = True, black_contour = True, title = "", x_label = "", y_label = "", new_figure = True, flag_no_units = False):
         """
         croc.pe.plot_T
         
         This function will plot the measured data, still in the time domain. It is a wrapper function for croc.Plotting.contourplot. It will put the data in the right format, adds some labels etc. This should do for 99% of the cases. 
         For details about the options, see croc.Plotting.contourplot.    
         """
+        
         # concatenate the two diagrams
         data = numpy.concatenate((numpy.flipud(self.r[1]), self.r[0])).T
-        x_axis = numpy.concatenate((-numpy.flipud(self.r_axis[0]), self.r_axis[0])) 
-        y_axis = self.r_axis[2]
-        if x_label == "":
-            x_label = self.r_units[0]
-        if y_label == "":
-            y_label = self.r_units[2]
         
-        croc.Plotting.contourplot(data, x_axis, y_axis, x_range = x_range, y_range = y_range, zlimit = zlimit, contours = contours, filled = filled, black_contour = black_contour, title = title, x_label = x_label, y_label = y_label, new_figure = new_figure,  diagonal_line = False)  
+        x_axis = numpy.concatenate((-numpy.flipud(self.r_axis[0]), self.r_axis[0]))
+         
+        if flag_no_units == False:
+            y_axis = self.r_axis[2]
+            
+            if x_label == "":
+                x_label = "Time (" + str(self.r_units[0]) + ")"
+            if y_label == "":
+                y_label = "Frequency (" + str(self.r_units[2]) + ")"
+                
+                  
+        else:
+            x_axis = 4000 + x_axis / 2.11
+            y_axis = numpy.arange(len(self.r_axis[2]))
+            if x_label == "":
+                x_label = "Fringes"
+            if y_label == "":
+                y_label = "Pixels"
+
+        
+        if pixel == 0:
+            croc.Plotting.contourplot(data, x_axis, y_axis, x_range = x_range, y_range = y_range, zlimit = zlimit, contours = contours, filled = filled, black_contour = black_contour, title = title, x_label = x_label, y_label = y_label, new_figure = new_figure,  diagonal_line = False)  
+        
+        else:
+            croc.Plotting.linear(data[pixel,:], x_axis, x_range = [0, 0], y_range = [0, 0], x_label = "Time (fs)", y_label = "Absorbance", title = "Time", new_figure = True)
 
 
 
@@ -382,7 +403,7 @@ class pe_exp(pe):
 
 
 
-    def fourier_helper(self, array, window_function = "none", window_length = 0):
+    def fourier_helper(self, array, window_function = "none", window_length = 0, flag_plot = False):
         """
         fourier_helper
         
@@ -390,6 +411,12 @@ class pe_exp(pe):
         20110909 RB: continued
         
         This is a function to Fourier Transform experimental 2DIR spectra, ie, spectra with a time and frequency axis. It basically repeats the Fourier function for all pixels.
+        
+        INPUT:
+        - array (numpy.ndarray): a 2d array of time * pixels
+        - window_function (name, "none"): "none", "guassian" etc
+        - window_length (int, 0): length of the window. 0 means the whole range
+        - flag_plot (BOOL, False): will plot the windowed time domain
          
         """
     
@@ -403,7 +430,8 @@ class pe_exp(pe):
         # iterate over all the pixels
         
         for i in range(y):
-            ft_array[:,i] = croc.Absorptive.fourier(array[:,i], zero_in_middle = False, first_correction = True, zeropad_to = self.zeropad_to, window_function = window_function, window_length = window_length)  
+            ft_array[:,i] = croc.Absorptive.fourier(array[:,i], zero_in_middle = False, first_correction = True, zeropad_to = self.zeropad_to, window_function = window_function, window_length = window_length, flag_plot = flag_plot)  
+            flag_plot = False
         return ft_array  
         
       
@@ -413,7 +441,7 @@ class pe_exp(pe):
 
   
                 
-    def absorptive(self, window_function = "none", window_length = 0):
+    def absorptive(self, window_function = "none", window_length = 0, flag_plot = False):
         """
         croc.pe.fourier
         
@@ -421,6 +449,12 @@ class pe_exp(pe):
         It checks the undersampling.
         It phases the spectrum.
         It makes the axes.
+        
+        INPUT:
+        - window_function (name, "none"): "none", "guassian" etc
+        - window_length (int, 0): length of the window. 0 means the whole range
+        - flag_plot (BOOL, False): will plot the windowed time domain
+        
         """
         
         # CHECKS
@@ -431,8 +465,8 @@ class pe_exp(pe):
         # do the fft
         # copy the arrays to prevent changing the originals
         try:
-            self.f[0] = self.fourier_helper(numpy.copy(self.r[0]), window_function = window_function, window_length = window_length)
-            self.f[1] = self.fourier_helper(numpy.copy(self.r[1]), window_function = window_function, window_length = window_length)
+            self.f[0] = self.fourier_helper(numpy.copy(self.r[0]), window_function = window_function, window_length = window_length, flag_plot = flag_plot)
+            self.f[1] = self.fourier_helper(numpy.copy(self.r[1]), window_function = window_function, window_length = window_length, flag_plot = flag_plot)
         except ValueError:
             print("\nERROR (croc.pe.pe_exp.absorptive): Problem with the Fourier Transforms. Are r[0] and r[1] assigned?")
             return 0
@@ -644,22 +678,17 @@ class pefs(pe_exp):
                 # make b the correct size, if it isn't already
                 if numpy.shape(self.b_axis)[-1] == 2:
                     #print("make b")
-                    self.b = [numpy.zeros((n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((n_fringes + 2 * self.extra_fringes, self.n_channels))]
+                    self.b = [numpy.zeros((n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((n_fringes + 2 * self.extra_fringes, self.n_channels))]
                     self.b_axis[0] = numpy.arange(- self.extra_fringes, n_fringes + self.extra_fringes)
                     self.b_axis[1] = numpy.arange(- self.extra_fringes, n_fringes + self.extra_fringes)
-                    self.b_count = numpy.zeros((2, n_fringes + 2 * self.extra_fringes))
+                    self.b_count = numpy.zeros((4, n_fringes + 2 * self.extra_fringes))
                 
-                    self.r = [numpy.zeros((n_fringes + self.extra_fringes, 32)),numpy.zeros((n_fringes + self.extra_fringes, 32))]
-                    
-#                     if flag_calculate_noise:
-#                         print("fiets")
-#                         self.n = [numpy.zeros((n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((n_fringes + 2 * self.extra_fringes, self.n_channels))]
-#                         self.r_noise = [numpy.zeros((n_fringes + self.extra_fringes, 32)),numpy.zeros((n_fringes + self.extra_fringes, 32))]
-                        
-            
+                    self.r = [numpy.zeros((n_fringes + self.extra_fringes, 32)),numpy.zeros((n_fringes + self.extra_fringes, 32))]         
             
                 # bin the data
                 self.bin_data(m, m_axis, diagram, flag_calculate_noise = flag_calculate_noise)
+                
+
                 
                 # all the data is now written into self.b* 
 
@@ -676,8 +705,10 @@ class pefs(pe_exp):
 
     def bin_info(self):
         plt.figure()
-        plt.plot(self.b_axis[0], self.b_count[0])
-        plt.plot(self.b_axis[0], self.b_count[1])    
+        plt.plot(self.b_axis[0], self.b_count[0], ".-")
+        plt.plot(self.b_axis[0], self.b_count[1], ".-") 
+        plt.plot(self.b_axis[0], self.b_count[2], ".-")
+        plt.plot(self.b_axis[0], self.b_count[3], ".-")   
         plt.title("Shots per fringe (4000 = 0)")
         plt.xlabel("Fringe")
         plt.ylabel("Shots per fringe")
@@ -699,10 +730,10 @@ class pefs(pe_exp):
     
         n_fringes = len(self.b_axis[0])
         
-        temp = numpy.zeros((2, n_fringes, self.n_channels))
+        temp = numpy.zeros((4, n_fringes, self.n_channels))
         
         # average the data for the two diagrams
-        for j in range(2):
+        for j in range(4):
             for i in range(n_fringes):
                 if self.b_count[j][i] != 0:
                     temp[j,i,:] = self.b[j][i,:] / self.b_count[j][i]    
@@ -717,77 +748,33 @@ class pefs(pe_exp):
 
         # now convert it to mOD
         for j in range(2):
-            for i in range(self.n_pixels):
-                self.r[j][:,i] = -numpy.log10(2 * temp[j,:,i] / self.reference[i] + 1)
+            self.r[j][:,:self.n_pixels] = -numpy.log10(1+ 2*(temp[2*j,:,:self.n_pixels] - temp[2*j+1,:,:self.n_pixels])/self.reference[:self.n_pixels])
         
         self.r = numpy.nan_to_num(self.r)
         
         self.r_units = ["fs", "fs", "cm-1"]
-        
-#         # calculate signal to noise
-#         if flag_calculate_noise:
-#             
-#             temp = numpy.zeros((2, n_fringes, self.n_channels)) 
-#             
-#             ref = numpy.append(self.reference, [1])
-#             
-#             for j in range(2):
-#                 for i in range(n_fringes):
-#                     if self.b_count[j][i] != 0:
-#                         temp[j,i,:] = numpy.sqrt(
-#                             (
-#                                 #+ numpy.log10(
-#                                     (
-#                                         4 * self.n[j][i,:] / (
-#                                             500*self.b_count[j][i] * ref**2 * 0.002303**2
-#                                         ) 
-#                                     #) + 1
-#                                 ) - #numpy.log10(
-#                                     (
-#                                         2 * self.b[j][i,:] / (
-#                                             500*self.b_count[j][i] * ref * 0.002303
-#                                         )
-#                                     )**2 #+ 1
-#                                 #)
-#                             ) / (
-#                                 500*self.b_count[j][i]
-#                             )
-#                         )
-#                     else:    
-#                         temp[j,i,:] = 0             
-#             
-#             self.r_noise = temp[:,self.extra_fringes:,:self.n_pixels]
 
-                
+
+
+       
 
     def bin_data(self, m, m_axis, diagram, flag_calculate_noise = False):
     
-        #print("binning, diagram:", diagram)
-    
-        if m[self.chopper_channel, 0] < 2.5:
-            pem = 0
-        else:
-            pem = 1
-        
         n_shots = len(m_axis)
         
-        for i in range(n_shots):
-            pem_state = (i + pem) % 2
-            
+        for i in range(n_shots):            
             # find the fringe
             j = (-1)**diagram * int(m_axis[i]) + self.extra_fringes - (-1)**diagram * 4000
-            
-            # add it to the bin            
-            self.b[diagram][j, :] += m[:,i] * (-1)**pem_state
-            
-#             if flag_calculate_noise:
-#                 self.n[diagram][j, :] += (m[:,i] * (-1)**pem_state)**2
+
+            # add it to the bin, depending on pem-state and diagram
+            # and add 1 to counter 
+            if m[self.chopper_channel, i] < 2.5:         
+                self.b[2 * diagram][j, :] += m[:,i] 
+                self.b_count[2 * diagram, j] += 1
+            else:
+                self.b[2 * diagram + 1][j, :] += m[:,i] 
+                self.b_count[2 * diagram + 1, j] += 1
                 
-            
-            # add to the counter            
-            self.b_count[diagram, j] += 1
-            
-        
     
     
     
