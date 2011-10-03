@@ -26,6 +26,8 @@ import numpy
 import matplotlib 
 import matplotlib.pyplot as plt
 
+import scipy
+
 import croc
 # to prevent a conflict with other classes (like ftir)
 from croc.DataClasses import mess_data
@@ -360,6 +362,8 @@ class pe_exp(pe):
         
         """
         
+        temp_scans = 0
+        
         # construct file name
         filebase = self.path + self.base_filename + "_" + str(self.time_stamp) + "_T" + str(self.r_axis[1]) + "_meta.txt"
         
@@ -393,7 +397,10 @@ class pe_exp(pe):
         fileinput.close()
         
         # number of scans is (number of scans started) - 1, because the last one wasn't finished
-        self.n_scans = temp_scans - 1
+        if temp_scans:
+            self.n_scans = temp_scans - 1
+        else:
+            self.n_scans = 1
 
 
 
@@ -556,7 +563,9 @@ class pefs(pe_exp):
         self.b_axis = [0] * 2
         self.b_count = [0] * 2
         
-        self.n = [0] * 2
+        self.n = [[],[]]
+#        self.n0 = numpy.ndarray([0])
+#        self.n1 = numpy.ndarray([0])
         
         # some channels have a special meaning
         self.n_channels = 37
@@ -595,7 +604,7 @@ class pefs(pe_exp):
                 
 
     
-    def add_data(self, scan, flag_import_override = False, flag_construct_r = True, flag_calculate_noise = False):
+    def add_data(self, scan, flag_import_override = False, flag_construct_r = True, flag_calculate_noise = False, flag_find_correlation = False, flag_find_angle = False):
         """
         Adds data for a single scan.
         The data is imported as data.
@@ -688,6 +697,16 @@ class pefs(pe_exp):
                 # bin the data
                 self.bin_data(m, m_axis, diagram, flag_calculate_noise = flag_calculate_noise)
                 
+                # calculate the noise
+                if flag_calculate_noise:
+                    self.bin_for_noise(m, m_axis, diagram)
+                    
+                if flag_find_correlation:
+                    self.find_correlation(m)
+                    
+                if flag_find_angle:
+                    self.find_angle(m, m_axis, k)
+                
 
                 
                 # all the data is now written into self.b* 
@@ -700,6 +719,220 @@ class pefs(pe_exp):
         self.imported_scans.append(scan)
         
         self.n_scans = len(self.imported_scans)
+
+
+
+
+
+
+
+    def find_correlation(self, m):
+        
+        n_channels, n_shots = numpy.shape(m)
+        
+        channel = 16
+        
+#         n = int(n_shots/2)
+#         
+#         r = numpy.zeros(n)
+#         
+#         for i in range(n):
+#             for j in range(n):
+#                 r[i] += m[channel, j] * m[channel, j+i]
+        
+        
+#         f = numpy.fft.fft(m[channel,:])
+#         s = f * numpy.conj(f)
+#         r = numpy.fft.ifft(s)
+#         
+#         r = r[:len(r)/2]
+
+        r = scipy.correlate(m[channel,:], m[channel,:])
+        
+        #print(len(r))
+        
+        #plt.plot(m[channel,:])
+        plt.plot(r)
+
+
+
+    def find_angle(self, m, m_axis, k):    
+        
+        l = len(m_axis)#numpy.shape(m_axis)
+        
+        #m_angle = numpy.zeros(length)
+        
+        start = 0
+        end = -10900
+        
+        m = m[:,start:(l+end)]
+        m_axis = m_axis[start:(l+end)]
+        
+        l = len(m_axis)
+        
+        x_max = numpy.nanmax(m[32,:])
+        x_min = numpy.nanmin(m[32,:]) 
+        x_ave = x_min + (x_max - x_min)/2
+        
+        y_max = numpy.nanmax(m[33,:])
+        y_min = numpy.nanmin(m[33,:]) 
+        y_ave = y_min + (y_max - y_min)/2
+        
+        m_angle = numpy.zeros(numpy.shape(m_axis))
+        
+        for i in range(l):
+            if (m[33,i]-y_ave) > 0:
+                m_angle[i] = numpy.arctan((m[32,i]-x_ave)/(m[33,i]-y_ave)) * 180 /numpy.pi
+            else:
+                m_angle[i] = numpy.arctan((m[32,i]-x_ave)/(m[33,i]-y_ave)) * 180 /numpy.pi + 180
+        
+        plt.plot(m_axis, m_angle, "b.")
+        
+#         bin_size = 10 # in degrees
+#         n_bins = 360 / bin_size
+#         
+#         h, b_e = numpy.histogram(m_angle, bins = n_bins)
+#         
+#         axis = b_e[:-1]
+#         #numpy.arange(0, 360, step = bin_size)
+# 
+#         #print(b_e)
+#         #print(axis)
+#     
+#         if k == 0:
+#             plt.plot(axis, h, "b")
+#         elif k == 1:
+#             plt.plot(axis, h, "g")
+#         elif k == 2:
+#             plt.plot(axis, -h, "b")
+#         elif k == 3:
+#             plt.plot(axis, -h, "g")        
+
+
+
+
+    def bin_for_noise(self, m, m_axis, diagram):
+        
+        b_fringes = len(self.b_axis[0]) 
+        
+        n_shots = len(m_axis)
+        
+        b = numpy.zeros((2, b_fringes, self.n_channels))
+        b_count = numpy.zeros((2, b_fringes))
+        
+        r = numpy.zeros((b_fringes - self.extra_fringes, 32)) 
+        
+        
+        for i in range(n_shots):            
+            # find the fringe
+            j = (-1)**diagram * int(m_axis[i]) + self.extra_fringes - (-1)**diagram * 4000
+
+            # add it to the bin, depending on pem-state and diagram
+            # and add 1 to counter 
+            if m[self.chopper_channel, i] < 2.5:         
+                b[0, j, :] += m[:,i] 
+                b_count[0, j] += 1
+            else:
+                b[1, j, :] += m[:,i] 
+                b_count[1, j] += 1        
+        
+        temp = numpy.zeros((2, b_fringes, self.n_channels))
+        
+        # average the data for the two diagrams
+        for j in range(2):
+            for i in range(b_fringes):
+                if b_count[j][i] != 0:
+                    temp[j,i,:] = b[j,i,:] / b_count[j][i]    
+                else:    
+                    temp[j,i,:] = 0                
+        
+        # now only select the part where fringes are not negative
+        temp = temp[:,self.extra_fringes:,:self.n_pixels]
+        
+        # now convert it to mOD
+        r[:,:self.n_pixels] = -numpy.log10(1+ 2*(temp[0,:,:self.n_pixels] - temp[1,:,:self.n_pixels])/self.reference[:self.n_pixels])
+        
+        r = numpy.nan_to_num(r)
+        
+        f = self.fourier_helper(numpy.copy(r))
+        
+        f = f[:len(f)/2]
+        
+        self.n[diagram].append(f)  
+        
+        if diagram == 1:
+            plt.plot(numpy.abs(r[:,14])      )
+    
+        
+
+
+    def calculate_noise(self, pixel = 12):
+        
+        shape0 = numpy.shape(self.n[0])
+        shape1 = numpy.shape(self.n[1])
+        #print(shape)
+        
+        std0 = numpy.zeros((shape0[1]))
+        std1 = numpy.zeros((shape1[1]))
+        
+        #f0 = numpy.zeros((shape0[1]))
+        #f1 = numpy.zeros((shape1[1]))        
+        
+        a0 = numpy.zeros(shape0[1])
+        a1 = numpy.zeros(shape1[1])
+
+        for i in range(shape0[1]): # frequency
+            for j in range(shape0[0]): # scans
+                a0[j] = self.n[0][j][i][pixel]
+            
+            std0[i] = numpy.std(a0)
+            #f0[i] = numpy.mean(a0)
+
+        for i in range(shape1[1]): # frequency
+            for j in range(shape1[0]): # scans
+                a1[j] = self.n[1][j][i][pixel]
+            
+            std1[i] = numpy.std(a1)
+            #f1[i] = numpy.mean(a1)
+
+        plt.figure()
+        plt.plot(self.s_axis[0], std0[:])
+        plt.plot(self.s_axis[0], std1[:])
+        
+        plt.show()
+
+        
+        
+        
+        
+        
+        
+
+        
+        
+        
+        
+        
+        
+        
+
+
+    def bin_data(self, m, m_axis, diagram, flag_calculate_noise = False):
+    
+        n_shots = len(m_axis)
+        
+        for i in range(n_shots):            
+            # find the fringe
+            j = (-1)**diagram * int(m_axis[i]) + self.extra_fringes - (-1)**diagram * 4000
+
+            # add it to the bin, depending on pem-state and diagram
+            # and add 1 to counter 
+            if m[self.chopper_channel, i] < 2.5:         
+                self.b[2 * diagram][j, :] += m[:,i] 
+                self.b_count[2 * diagram, j] += 1
+            else:
+                self.b[2 * diagram + 1][j, :] += m[:,i] 
+                self.b_count[2 * diagram + 1, j] += 1
 
 
 
@@ -758,22 +991,6 @@ class pefs(pe_exp):
 
        
 
-    def bin_data(self, m, m_axis, diagram, flag_calculate_noise = False):
-    
-        n_shots = len(m_axis)
-        
-        for i in range(n_shots):            
-            # find the fringe
-            j = (-1)**diagram * int(m_axis[i]) + self.extra_fringes - (-1)**diagram * 4000
-
-            # add it to the bin, depending on pem-state and diagram
-            # and add 1 to counter 
-            if m[self.chopper_channel, i] < 2.5:         
-                self.b[2 * diagram][j, :] += m[:,i] 
-                self.b_count[2 * diagram, j] += 1
-            else:
-                self.b[2 * diagram + 1][j, :] += m[:,i] 
-                self.b_count[2 * diagram + 1, j] += 1
                 
     
     

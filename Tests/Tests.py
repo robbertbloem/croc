@@ -458,7 +458,7 @@ def FS2b():
     pick[0].construct_r(flag_calculate_noise = False)
     
     # calculate the spectrum
-    pick[0].absorptive(window_function = "gaussian", window_length = 900, flag_plot = False)
+    pick[0].absorptive()
     
     # plot the spectrum
     pick[0].plot(plot_type = "S", x_range = [1930, 2150])#, zlimit = 1)
@@ -470,14 +470,14 @@ def FS2b():
 #     plt.plot(pick[0].r[1][:,12], ".-")
 #     plt.show()
     
-#     pick[0].bin_info()
+    pick[0].bin_info()
 
     print(pick[0])    
 
 
 
 
-def FS2():
+def FS3():
     """
     croc.Tests.Tests.FS1a
     
@@ -490,41 +490,51 @@ def FS2():
     mess = [0]
     mess[0] = croc.Pe.pefs("FS2", "azide", 300, 1522)
     mess[0].path = ("/Volumes/public_hamm/PML3/data/20110928/azide_1522_T300/")
-    #mess[0].path = os.path.join(os.path.dirname(__file__), "TestData/azide_1343_T300/")
+
 
     # import all data
     # it ranges from 1 to last_scan + 1
     # self.r will not be constructed after every import
-    for i in range(1,2):
-        mess[0].add_data(scan = i, flag_construct_r = False, flag_calculate_noise = False)
-        
-    print(mess[0].incorrect_count)
+    plt.figure()
+    for i in range(2, 3):
+        mess[0].add_data(scan = i, flag_construct_r = True, flag_calculate_noise = False, flag_find_angle = True)
+    plt.show()
+    
+    
+    #print(mess[0].incorrect_count)
 
     # there was an issue with the measure phase for this measurement
     #mess[0].phase_degrees = 0
     
     # construct r 
-    mess[0].construct_r(flag_calculate_noise = False)
-    mess[0].phase_degrees = mess[0].phase_degrees + 120
-    # calculate the spectrum
-    mess[0].absorptive()
+    #mess[0].construct_r(flag_calculate_noise = True)
     
-    # plot the spectrum
-    mess[0].plot(plot_type = "S", x_range = [1930, 2150])
-    #pick[0].plot_T()#(plot_type = "T")
     
-    plt.figure()
-#     plt.plot(mess[0].r[0][:,12], ".-")
+    
+    #mess[0].phase_degrees = mess[0].phase_degrees + 120
+#     # calculate the spectrum
+    #mess[0].absorptive()
+     
+    
+    #mess[0].calculate_noise(pixel = 26)
+    
+#     
+#     # plot the spectrum
+    #mess[0].plot(plot_type = "S", x_range = [1930, 2150])
+#     #pick[0].plot_T()#(plot_type = "T")
+#     
+    #plt.figure()
+    #plt.plot(mess[0].f[1][:,12])
 #     plt.plot(mess[0].r[1][:,12], ".-")
-
-    plt.plot(mess[0].b[0][:,12], ".-")
-    plt.plot(mess[0].b[1][:,12], ".-")
-    plt.plot(mess[0].b[2][:,12], ".-")
-    plt.plot(mess[0].b[3][:,12], ".-")
-
-    plt.show()
-    
-    mess[0].bin_info()
+# 
+#     plt.plot(mess[0].b[0][:,12], ".-")
+#     plt.plot(mess[0].b[1][:,12], ".-")
+#     plt.plot(mess[0].b[2][:,12], ".-")
+#     plt.plot(mess[0].b[3][:,12], ".-")
+# 
+    #plt.show()
+#     
+#     mess[0].bin_info()
 
 
 
@@ -572,5 +582,24 @@ def F1():
     plt.figure()
     plt.plot(wa)
     plt.show() 
+
+
+
+def corr():
+
+    mess = [0]
+#     mess[0] = croc.Pe.pefs("corr", "corT1", 0, 1419)
+#     mess[0].path = ("/Volumes/public_hamm/PML3/data/20110930/corT1_1419_T0/")
+    mess[0] = croc.Pe.pefs("corr", "corT2", 0, 1422)
+    mess[0].path = ("/Volumes/public_hamm/PML3/data/20110930/corT2_1422_T0/")
+        
+    plt.figure()
+    for i in range(1, 2):
+        mess[0].add_data(scan = i, flag_construct_r = False, flag_calculate_noise = False, flag_find_correlation = True)    
+    plt.show()
+
+
+
+
 
 
