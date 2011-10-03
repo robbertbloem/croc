@@ -428,8 +428,8 @@ def FS2a():
     # import all data
     # it ranges from 1 to last_scan + 1
     # self.r will not be constructed after every import
-    for i in range(1, 47):
-        mess[0].add_data(scan = i, flag_construct_r = False, flag_calculate_noise = True)
+    for i in range(1, 11):
+        mess[0].add_data(scan = i, flag_construct_r = False, flag_calculate_noise = False)
 
     # there was an issue with the measure phase for this measurement
     mess[0].phase_degrees = mess[0].phase_degrees + 120
@@ -497,11 +497,11 @@ def FS3():
     # self.r will not be constructed after every import
     plt.figure()
     for i in range(2, 3):
-        mess[0].add_data(scan = i, flag_construct_r = True, flag_calculate_noise = False, flag_find_angle = True)
+        mess[0].add_data(scan = i, flag_construct_r = False, flag_calculate_noise = False, flag_find_angle = True)
     plt.show()
     
     
-    #print(mess[0].incorrect_count)
+    print(mess[0].incorrect_count)
 
     # there was an issue with the measure phase for this measurement
     #mess[0].phase_degrees = 0

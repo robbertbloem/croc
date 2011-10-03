@@ -582,7 +582,7 @@ class pefs(pe_exp):
 
         self.reference = []
         
-        self.incorrect_count = 0
+        self.incorrect_count = [0,0,0,0]
 
 
 
@@ -604,7 +604,13 @@ class pefs(pe_exp):
                 
 
     
-    def add_data(self, scan, flag_import_override = False, flag_construct_r = True, flag_calculate_noise = False, flag_find_correlation = False, flag_find_angle = False):
+    def add_data(self, 
+        scan, 
+        flag_import_override = False, 
+        flag_construct_r = True, 
+        flag_calculate_noise = False, 
+        flag_find_correlation = False, 
+        flag_find_angle = False):
         """
         Adds data for a single scan.
         The data is imported as data.
@@ -616,6 +622,9 @@ class pefs(pe_exp):
         - scan (integer): the number of the scan to be imported
         - flag_import_override (BOOL, False): If set to False, it will prevent a scan from being re-imported. If set to True, it will give a warning, but will continue anyway.
         - flag_construct_r (BOOL, True): will construct self.r at the end.  
+        - flag_calculate_noise (BOOL, False): (experimental) will calculate the noise
+        - flag_find_correlation (BOOL, False): (experimental) will calculate the correlation function
+        - flag_find_angle (BOOL, False): (experimental) will show the distribution of the measured points
         
         """
         
@@ -631,7 +640,6 @@ class pefs(pe_exp):
             else:
                 print("WARNING (croc.Pe.pefs.add_data): Scan is already imported, but will be imported anyway because flag_import_override is set to True.")
             
-    
         # construct filenames
         filename = [0] * 4  # the filenames
 
@@ -678,7 +686,7 @@ class pefs(pe_exp):
             if counter != fringes[1]:
                 print("\nWARNING (croc.Pe.pefs.add_data): There is a miscount with the fringes!")
                 print("Scan: ", scan, ", File:", k, "\n")
-                self.incorrect_count += 1
+                self.incorrect_count[k] += 1
 
             # if it is consistent, continue
             else:
@@ -686,13 +694,11 @@ class pefs(pe_exp):
             
                 # make b the correct size, if it isn't already
                 if numpy.shape(self.b_axis)[-1] == 2:
-                    #print("make b")
-                    self.b = [numpy.zeros((n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((n_fringes + 2 * self.extra_fringes, self.n_channels))]
+                    self.b = [numpy.zeros((n_fringes + 2 * self.extra_fringes, self.n_channels))] * 4
                     self.b_axis[0] = numpy.arange(- self.extra_fringes, n_fringes + self.extra_fringes)
                     self.b_axis[1] = numpy.arange(- self.extra_fringes, n_fringes + self.extra_fringes)
                     self.b_count = numpy.zeros((4, n_fringes + 2 * self.extra_fringes))
-                
-                    self.r = [numpy.zeros((n_fringes + self.extra_fringes, 32)),numpy.zeros((n_fringes + self.extra_fringes, 32))]         
+                    self.r = [numpy.zeros((n_fringes + self.extra_fringes, 32))] * 2
             
                 # bin the data
                 self.bin_data(m, m_axis, diagram, flag_calculate_noise = flag_calculate_noise)
@@ -758,34 +764,42 @@ class pefs(pe_exp):
 
     def find_angle(self, m, m_axis, k):    
         
-        l = len(m_axis)#numpy.shape(m_axis)
-        
-        #m_angle = numpy.zeros(length)
-        
-        start = 0
-        end = -10900
-        
-        m = m[:,start:(l+end)]
-        m_axis = m_axis[start:(l+end)]
-        
         l = len(m_axis)
         
-        x_max = numpy.nanmax(m[32,:])
-        x_min = numpy.nanmin(m[32,:]) 
+        # option to ignore the start and finish, when the motors are not moving
+        start = 1000
+        end = -1000
+        
+        # select the desired part of the data
+        m = m[:,start:(l+end)]
+        m_axis = m_axis[start:(l+end)]
+        l = len(m_axis)
+        
+        # determine the average of the data, select the data and subtract the average
+        x_max = numpy.nanmax(m[self.x_channel,:])
+        x_min = numpy.nanmin(m[self.x_channel,:]) 
         x_ave = x_min + (x_max - x_min)/2
-        
-        y_max = numpy.nanmax(m[33,:])
-        y_min = numpy.nanmin(m[33,:]) 
+        m_x = m[self.x_channel,:] - x_ave
+
+        # determine the average etc. ALSO: normalize it so that it is a true circle        
+        y_max = numpy.nanmax(m[self.y_channel,:])
+        y_min = numpy.nanmin(m[self.y_channel,:]) 
         y_ave = y_min + (y_max - y_min)/2
+        m_y = (m[self.y_channel,:] - y_ave) * (x_max - x_min)/(y_max - y_min)
         
+        # make the array where the angles will be written to
         m_angle = numpy.zeros(numpy.shape(m_axis))
         
         for i in range(l):
-            if (m[33,i]-y_ave) > 0:
-                m_angle[i] = numpy.arctan((m[32,i]-x_ave)/(m[33,i]-y_ave)) * 180 /numpy.pi
+            if m_y[i] > 0:
+                m_angle[i] = numpy.arctan(m_x[i] / m_y[i]) * 180 /numpy.pi
+            elif m_y[i] < 0:
+                m_angle[i] = numpy.arctan(m_x[i] / m_y[i]) * 180 /numpy.pi + 180
             else:
-                m_angle[i] = numpy.arctan((m[32,i]-x_ave)/(m[33,i]-y_ave)) * 180 /numpy.pi + 180
+                m_angle[i] = 0
+                print("Divide by zero")
         
+        # make an - in effect - scatter plot
         plt.plot(m_axis, m_angle, "b.")
         
 #         bin_size = 10 # in degrees
@@ -1018,24 +1032,30 @@ class pefs(pe_exp):
         c_lock = False
         cc_lock = False
         
-        # the first value is always zero
+        # where did the counter start
         m_axis[0] = counter
+        
+        #change_array = numpy.zeros(length)
         
         # do the loop
         for i in range(1, length - 1):
             # count can only change when y > 0
             if y[i] > med_y:
                 if c_lock == False:
-                    if x[i-1] < med_x and x[i+1] > med_x: 
+                    if x[i-1] < med_x and x[i+1] > med_x and x[i-1] < x[i] and x[i+1] > x[i]: 
                         counter += 1               
                         c_lock = True
                         cc_lock = False
+                        
+                        #change_array[i] = 0.05
 
                 if cc_lock == False:
-                    if x[i-1] > med_x and x[i+1] < med_x:
+                    if x[i-1] > med_x and x[i+1] < med_x and x[i-1] > x[i] and x[i+1] < x[i]:
                         counter -= 1
                         c_lock = False
                         cc_lock = True  
+                        
+                        #change_array[i] = -0.05
 
             else:
                 c_lock = False
@@ -1045,6 +1065,12 @@ class pefs(pe_exp):
         
         m_axis[-1] = counter
         
+#         plt.figure()
+#         plt.plot(x, ".-")
+#         plt.plot(y, ".-")
+#         plt.plot(change_array, ".")
+#         plt.show()
+
         return m_axis, counter     
 
 
