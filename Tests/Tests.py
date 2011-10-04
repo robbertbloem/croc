@@ -55,7 +55,6 @@ def PE1():
 
 
 
-
 def PE2():
     """
     croc.Tests.tests.PE2
@@ -114,7 +113,6 @@ def PE2():
 
     print(mess[0])
 
-
 def PE3():
     """
     croc.Tests.tests.PE3
@@ -162,6 +160,7 @@ def PE3():
 
    
     
+
 def PE4():
     """
     croc.Tests.Tests.PE4
@@ -200,6 +199,7 @@ def PE4():
         mess[0].plot(new_figure = False)
         
  
+
 def PE5():
     """
     croc.Tests.Tests.PE5
@@ -265,7 +265,6 @@ def PLOTTING1():
     croc.Plotting.contourplot(S, x_axis, y_axis, zlimit = -1)
 
 
-
 def ABSORPTIVE1():
     """
     
@@ -300,7 +299,6 @@ def ABSORPTIVE1():
         plt.ylim(0,1.1)
     plt.show()
     
-
 
 
 def FTIR1():
@@ -346,7 +344,6 @@ def FTIR2():
 
 
 
-
 def FS1a():
     """
     croc.Tests.Tests.FS1a
@@ -375,7 +372,6 @@ def FS1a():
     croc.DataClasses.make_db(mess, path_and_filename)
 
 
-
 def FS1b():
     """
     croc.Tests.Tests.FS1b
@@ -390,7 +386,7 @@ def FS1b():
     pick = croc.DataClasses.import_db(path_and_filename)
     
     # construct r 
-    pick[0].construct_r(flag_calculate_noise = True)
+    pick[0].construct_r()
     
     # calculate the spectrum
     pick[0].absorptive()
@@ -407,7 +403,6 @@ def FS1b():
     pick[0].bin_info()
 
     print(pick[0])    
-
 
 
 
@@ -439,7 +434,6 @@ def FS2a():
     croc.DataClasses.make_db(mess, path_and_filename)
 
 
-
 def FS2b():
     """
     croc.Tests.Tests.FS2b
@@ -455,7 +449,7 @@ def FS2b():
     
     pick[0].zeropad_by = 2
     # construct r 
-    pick[0].construct_r(flag_calculate_noise = False)
+    pick[0].construct_r()
     
     pick[0].calculate_noise()
     
@@ -467,10 +461,7 @@ def FS2b():
 
     pick[0].plot_T(pixel = 12, flag_no_units = True)
 
-#     plt.figure()
-#     plt.plot(pick[0].r[0][:,12], ".-")
-#     plt.plot(pick[0].r[1][:,12], ".-")
-#     plt.show()
+
     
     pick[0].bin_info()
 
@@ -551,23 +542,26 @@ def FS5(flag_test = False):
     """
     
     if flag_test:
+        # number of samples
         n_samples = 10000
     
         mess = [0]
         mess[0] = croc.Pe.pefs("FS5", "test", 0, 0)
         
+        # make the array
         m = numpy.zeros((37, n_samples))
         
-        #print(numpy.shape(m))
-        
+        # for a little bit of randomness        
         rnd = (numpy.random.randn(n_samples) - 0.5)/4
-        
+
+        # make the x and y wave
         m[mess[0].x_channel,:] = -numpy.sin(numpy.arange(n_samples) + rnd)
         m[mess[0].y_channel,:] = -2*numpy.cos(numpy.arange(n_samples) + rnd)
         
         start_counter = 4000
         
-        [m_axis, counter] = mess[0].reconstruct_counter(data = m, start_counter = 0)    
+        [m_axis, counter] = mess[0].reconstruct_counter(data = m, start_counter = 0, flag_plot = False)    
+        # plot the circle
         plt.figure()
         plt.plot(m[mess[0].x_channel,:],m[mess[0].y_channel,:])
         plt.show()
@@ -578,17 +572,18 @@ def FS5(flag_test = False):
         mess[0] = croc.Pe.pefs("FS2", "azide", 300, 1522)
         mess[0].path = ("/Volumes/public_hamm/PML3/data/20110928/azide_1522_T300/")
         scan = 2
-    
+        
+        # construct the path and filename
         path_and_filename = mess[0].path + mess[0].base_filename + "_" + str(mess[0].time_stamp) + "_T" + str(mess[0].r_axis[1]) + "_R1" + "_" + str(scan) + ".bin"
     
+        # import the raw data
         [m, fringes] = mess[0].import_raw_data(path_and_filename)
         
-        
-    
-        [m_axis, counter] = mess[0].reconstruct_counter(data = m, start_counter = 0)
+        # reconstruct the counter
+        [m_axis, counter] = mess[0].reconstruct_counter(data = m, start_counter = 0, flag_plot = True)
 
     
-
+    # plot the angle
     plt.figure()
     mess[0].find_angle(m, m_axis, k = 0, skip_first = 1000, skip_last = 1000, flag_normalize_circle = True, flag_scatter_plot = False)
     plt.show()

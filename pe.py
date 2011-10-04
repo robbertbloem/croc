@@ -223,7 +223,7 @@ class pe_exp(pe):
     
     
     """
-
+    
 
     def __init__(self, objectname, base_filename, population_time, undersampling, time_stamp = 0000):
     
@@ -234,9 +234,8 @@ class pe_exp(pe):
         self.undersampling = undersampling
         self.time_stamp = time_stamp   
         self.path = self.base_filename + "_" + str(self.time_stamp) + "_T" + str(self.r_axis[1]) + "/"     
-        
-
-         
+    
+    
         
     def import_data(self, scans = [0], noise = True, meta = True):
         """
@@ -542,9 +541,8 @@ class pefs(pe_exp):
         - time_stamp (integer): when the measurement started.
         
         SPECIAL STUFF:
-        Fast scanning will result in more data. This is why the data should not be imported, but should be added. The addition of data is done in add_data. Each shot will be assigned a fringe. Then the data is binned per fringe. This is saved in self.b, the particular fringes in self.b_axis and the count of how much data there is in each bin is saved in self.b_count. 
+        Fast scanning will result in more data. This is why the data should not be imported, but should be added. The addition of data is done in add_data. Each shot will be assigned a fringe. Then the data is binned per fringe and per PEM-state. This is saved in self.b, the particular fringes in self.b_axis and the count of how much data there is in each bin is saved in self.b_count. 
         Each measurement can be added to these bins. Then the rephasing and non-rephasing diagram can be constructed. 
-        
         
         
         """
@@ -564,8 +562,6 @@ class pefs(pe_exp):
         self.b_count = [0] * 2
         
         self.n = [[],[]]
-#        self.n0 = numpy.ndarray([0])
-#        self.n1 = numpy.ndarray([0])
         
         # some channels have a special meaning
         self.n_channels = 37
@@ -598,12 +594,9 @@ class pefs(pe_exp):
         
         self.reference = data[1,1:]
         
-        
-        
-        
-                
-
     
+    
+
     def add_data(self, 
         scan, 
         flag_import_override = False, 
@@ -685,7 +678,7 @@ class pefs(pe_exp):
                     self.r = [numpy.zeros((n_fringes + self.extra_fringes, 32))] * 2
             
                 # bin the data
-                self.bin_data(m, m_axis, diagram, flag_calculate_noise = flag_calculate_noise)
+                self.bin_data(m, m_axis, diagram)
                 
                 # calculate the noise
                 if flag_calculate_noise:
@@ -701,7 +694,7 @@ class pefs(pe_exp):
 
         # construct the actual measurement
         if flag_construct_r:
-            self.construct_r(flag_calculate_noise = flag_calculate_noise)
+            self.construct_r()
 
         # now append that we imported this scan
         self.imported_scans.append(scan)
@@ -711,6 +704,22 @@ class pefs(pe_exp):
 
 
     def import_raw_data(self, path_and_filename):
+        """
+        croc.Pe.pefs.import_raw_data()
+        
+        Imports the actual data and parses it.
+        
+        The data comes in binary form as an array. Also, the start and stop fringe are added to the end. 
+        
+        INPUT:
+        - path_and_filename (string): where the file can be found
+        
+        OUTPUT:
+        - m (2d array): the data in channels x samples format
+        - fringes (array): an array with the fringe at the beginning ([0]) and the end ([1])
+        
+        
+        """
         
         # import the data
         data = numpy.fromfile(path_and_filename) 
@@ -735,12 +744,25 @@ class pefs(pe_exp):
 
 
 
-    def find_correlation(self, m):
+    def find_correlation(self, m, channel = 16):
+        """
+        croc.Pe.pefs.find_correlation
+        
+        Check the correlation of the laser. 
+    
+        INSTRUCTIONS FOR THE MEASUREMENT:
+        - get the OPA to work 
+        - align the experiment
+        - balance the incoupling as if it were a serious measurment
+        - block the other beams (to prevent scattering etc)
+        - measure the fast scanning for as long as possible, without moving the motors
+        
+        INPUT:
+        - m (2d-array, channels x samples): the data
+        - channel (int, 16): the channel you want to look at         
+        """
         
         n_channels, n_shots = numpy.shape(m)
-        
-        # select the channel we want to use
-        channel = 16
         
         # select the data we want to use
         m_x = m[channel,:] 
@@ -793,7 +815,7 @@ class pefs(pe_exp):
         x_ave = x_min + (x_max - x_min)/2
         m_x = m[self.x_channel,:] - x_ave
 
-        # determine the average etc. ALSO: normalize it so that it is a true circle        
+        # determine the average etc. and normalize it so that it is a true circle        
         y_max = numpy.nanmax(m[self.y_channel,:])
         y_min = numpy.nanmin(m[self.y_channel,:]) 
         y_ave = y_min + (y_max - y_min)/2
@@ -856,6 +878,13 @@ class pefs(pe_exp):
 
 
     def bin_for_noise(self, m, m_axis, diagram):
+        """
+        croc.Pe.pefs.bin_for_noise()
+        
+        Allows the calculation of the noise. It will bin the data and fourier transform it. Using croc.Pe.pefs.calculate_noise() the mean square noise is calculated.
+        Note: this will use a large amount of memory and slows the data importing down quite a bit.
+        
+        """
         
         b_fringes = len(self.b_axis[0]) 
         
@@ -904,25 +933,29 @@ class pefs(pe_exp):
         
         self.n[diagram].append(f)  
         
+        # plot a subset of the FT. 
         if diagram == 1:
-            plt.plot(numpy.abs(r[:,14]))
+            plt.plot(numpy.abs(f[:,14]))
     
         
 
 
-    def calculate_noise(self, pixel = 12):
+    def calculate_noise(self, pixel = 16):
+        """
+        croc.Pe.pefs.calculate_noise()
+        
+        This function calculates the noise between the FT of different measurements. 
+        The data is stored in self.n. The data has first to be unpacked. Then it will take the standard deviation of the different FT's. 
+        
+        """
         
         if numpy.shape(self.n)[1] != 0:
         
             shape0 = numpy.shape(self.n[0])
             shape1 = numpy.shape(self.n[1])
-            #print(shape)
             
             std0 = numpy.zeros((shape0[1]))
-            std1 = numpy.zeros((shape1[1]))
-            
-            #f0 = numpy.zeros((shape0[1]))
-            #f1 = numpy.zeros((shape1[1]))        
+            std1 = numpy.zeros((shape1[1]))     
             
             a0 = numpy.zeros(shape0[1])
             a1 = numpy.zeros(shape1[1])
@@ -930,21 +963,16 @@ class pefs(pe_exp):
             for i in range(shape0[1]): # frequency
                 for j in range(shape0[0]): # scans
                     a0[j] = self.n[0][j][i][pixel]
-                
                 std0[i] = numpy.std(a0)
-                #f0[i] = numpy.mean(a0)
     
             for i in range(shape1[1]): # frequency
                 for j in range(shape1[0]): # scans
-                    a1[j] = self.n[1][j][i][pixel]
-                
+                    a1[j] = self.n[1][j][i][pixel]                
                 std1[i] = numpy.std(a1)
-                #f1[i] = numpy.mean(a1)
     
             plt.figure()
             plt.plot(self.s_axis[0], std0[:])
             plt.plot(self.s_axis[0], std1[:])
-            
             plt.show()
         
         else:
@@ -965,7 +993,22 @@ class pefs(pe_exp):
         
 
 
-    def bin_data(self, m, m_axis, diagram, flag_calculate_noise = False):
+    def bin_data(self, m, m_axis, diagram):
+        """
+        croc.Pe.pefs.bin_data()
+        
+        After determining the fringe for all shots, this will bin the data in the correct bin. There are 4 bins: 2 (for rephasinga and non-rephasing) x 2 (for the two PEM-states). 
+        The PEM trigger should vary between ~0V and ~5V. It will check if the first state of the PEM is higher or lower than 2.5V. 
+        
+        INPUT:
+        - m (2d-ndarray, channels x samples): the data
+        - m_axis (1d-ndarray, length of samples): the fringe for each sample
+        - diagram (number): rephasing (0) or non-rephasing (1)
+        
+        
+        
+        """
+        
     
         n_shots = len(m_axis)
         
@@ -985,6 +1028,15 @@ class pefs(pe_exp):
 
 
     def bin_info(self):
+        """
+        croc.Pe.pefs.bin_info()
+        
+        Will plot some stuff related to the binning. 
+        The first plot shows the amount of samples for every fringe.
+        The second plot shows a histogram of the samples per bin.
+        
+        """
+    
         plt.figure()
         plt.plot(self.b_axis[0], self.b_count[0], ".-")
         plt.plot(self.b_axis[0], self.b_count[1], ".-") 
@@ -1007,7 +1059,16 @@ class pefs(pe_exp):
 
 
 
-    def construct_r(self, flag_calculate_noise = False):
+    def construct_r(self):
+        """
+        croc.Pe.pefs.construct_r()
+        
+        This function will construct the rephasing and non-rephasing diagrams. 
+        
+        It will first average the data. Then it will select the part where the fringes are not negative. Then it will take the difference between the two PEM-states and calculate the optical density. Data points that are not-a-number will be converted to zero.
+        
+        """
+    
     
         n_fringes = len(self.b_axis[0])
         
@@ -1045,7 +1106,32 @@ class pefs(pe_exp):
     
     
     
-    def reconstruct_counter(self, data, start_counter):
+    def reconstruct_counter(self, data, start_counter = 0, flag_plot = False):
+        """
+        croc.Pe.pefs.reconstruct_counter()
+        
+        
+        
+        This function will use the feedback from the HeNe's and reconstruct the fringes. It will check whether y > 0 and whether x changes from x[i-1] < 0 to x[i+1] > 0 and whether x[i-1] < x[i] < x[i+1] (or the other way around for a count back). 
+        After a count in a clockwise direction, it can only count again in the clockwise direction after y < 0. 
+        
+        INPUT:
+        - data (2darray, channels x samples): data. It will use self.x_channel and self.y_channel to find the data.
+        - start_counter (int, 0): where the count starts. 
+        - flag_plot (BOOL, False): plot the x and y axis and the counts. Should be used for debugging purposes.
+        
+        OUTPUT:
+        - m_axis (1d-ndarray, length of samples): the exact fringe for that sample
+        - counter (int): the last value of the fringes. It is the same as m_axis[-1]. For legacy's sake.
+        
+        
+        CHANGELOG:
+        20110920 RB: started the function
+        20111003 RB: change the way it counts. It will now not only check if the x goes through zero, it will also make sure that the point in between is actually in between. This reduced the miscounts from 80/400 t0 30/400.
+        
+        
+        """
+        
         
         # put the required data in some better readable arrays
         x = data[self.x_channel,:]
@@ -1069,7 +1155,8 @@ class pefs(pe_exp):
         # where did the counter start
         m_axis[0] = counter
         
-        #change_array = numpy.zeros(length)
+        if flag_plot:
+            change_array = numpy.zeros(length)
         
         # do the loop
         for i in range(1, length - 1):
@@ -1080,16 +1167,16 @@ class pefs(pe_exp):
                         counter += 1               
                         c_lock = True
                         cc_lock = False
-                        
-                        #change_array[i] = 0.05
+                        if flag_plot:
+                            change_array[i] = 0.05
 
                 if cc_lock == False:
                     if x[i-1] > med_x and x[i+1] < med_x and x[i-1] > x[i] and x[i+1] < x[i]:
                         counter -= 1
                         c_lock = False
                         cc_lock = True  
-                        
-                        #change_array[i] = -0.05
+                        if flag_plot:
+                            change_array[i] = -0.05
 
             else:
                 c_lock = False
@@ -1099,11 +1186,15 @@ class pefs(pe_exp):
         
         m_axis[-1] = counter
         
-#         plt.figure()
-#         plt.plot(x, ".-")
-#         plt.plot(y, ".-")
-#         plt.plot(change_array, ".")
-#         plt.show()
+        if flag_plot:        
+            plt.figure()
+            plt.plot(x, ".-")
+            plt.plot(y, ".-")
+            plt.plot(change_array, ".")
+            plt.xlabel("Shots")
+            plt.ylabel("Volts")
+            plt.title("x (blue), y (green) and counts up or down (red)")
+            plt.show()
 
         return m_axis, counter     
 
