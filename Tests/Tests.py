@@ -457,6 +457,8 @@ def FS2b():
     # construct r 
     pick[0].construct_r(flag_calculate_noise = False)
     
+    pick[0].calculate_noise()
+    
     # calculate the spectrum
     pick[0].absorptive()
     
@@ -503,40 +505,100 @@ def FS3():
     
     print(mess[0].incorrect_count)
 
-    # there was an issue with the measure phase for this measurement
-    #mess[0].phase_degrees = 0
-    
-    # construct r 
-    #mess[0].construct_r(flag_calculate_noise = True)
-    
-    
-    
-    #mess[0].phase_degrees = mess[0].phase_degrees + 120
-#     # calculate the spectrum
-    #mess[0].absorptive()
-     
-    
-    #mess[0].calculate_noise(pixel = 26)
-    
-#     
-#     # plot the spectrum
-    #mess[0].plot(plot_type = "S", x_range = [1930, 2150])
-#     #pick[0].plot_T()#(plot_type = "T")
-#     
-    #plt.figure()
-    #plt.plot(mess[0].f[1][:,12])
-#     plt.plot(mess[0].r[1][:,12], ".-")
-# 
-#     plt.plot(mess[0].b[0][:,12], ".-")
-#     plt.plot(mess[0].b[1][:,12], ".-")
-#     plt.plot(mess[0].b[2][:,12], ".-")
-#     plt.plot(mess[0].b[3][:,12], ".-")
-# 
-    #plt.show()
-#     
-#     mess[0].bin_info()
 
 
+def FS4():
+    """
+    croc.Tests.Tests.FS4
+    
+    Check the correlation of the laser. 
+    
+    INSTRUCTIONS FOR THE MEASUREMENT:
+    - get the OPA to work 
+    - align the experiment
+    - balance the incoupling as if it were a serious measurment
+    - block the other beams (to prevent scattering etc)
+    - measure the fast scanning for as long as possible, without moving the motors
+    
+    """
+
+    mess = [0]  
+    mess[0] = croc.Pe.pefs("corr", "corT1", 0, 1419)
+    mess[0].path = ("/Volumes/public_hamm/PML3/data/20110930/corT1_1419_T0/")
+    scan = 1
+
+    path_and_filename = mess[0].path + mess[0].base_filename + "_" + str(mess[0].time_stamp) + "_T" + str(mess[0].r_axis[1]) + "_R1" + "_" + str(scan) + ".bin"
+
+    [m, fringes] = mess[0].import_raw_data(path_and_filename)
+
+    plt.figure()
+    mess[0].find_correlation(m)
+    plt.show()
+
+
+
+
+    
+def FS5(flag_test = False):
+    """
+    croc.Tests.Tests.FS4
+    
+    Check if the samples are equally spaced within the fringes.
+    
+    The test routine is to verify the routine.
+    
+    
+    """
+    
+    if flag_test:
+        n_samples = 10000
+    
+        mess = [0]
+        mess[0] = croc.Pe.pefs("FS5", "test", 0, 0)
+        
+        m = numpy.zeros((37, n_samples))
+        
+        #print(numpy.shape(m))
+        
+        rnd = (numpy.random.randn(n_samples) - 0.5)/4
+        
+        m[mess[0].x_channel,:] = -numpy.sin(numpy.arange(n_samples) + rnd)
+        m[mess[0].y_channel,:] = -2*numpy.cos(numpy.arange(n_samples) + rnd)
+        
+        start_counter = 4000
+        
+        [m_axis, counter] = mess[0].reconstruct_counter(data = m, start_counter = 0)    
+        plt.figure()
+        plt.plot(m[mess[0].x_channel,:],m[mess[0].y_channel,:])
+        plt.show()
+        
+    else:
+    
+        mess = [0]
+        mess[0] = croc.Pe.pefs("FS2", "azide", 300, 1522)
+        mess[0].path = ("/Volumes/public_hamm/PML3/data/20110928/azide_1522_T300/")
+        scan = 2
+    
+        path_and_filename = mess[0].path + mess[0].base_filename + "_" + str(mess[0].time_stamp) + "_T" + str(mess[0].r_axis[1]) + "_R1" + "_" + str(scan) + ".bin"
+    
+        [m, fringes] = mess[0].import_raw_data(path_and_filename)
+        
+        
+    
+        [m_axis, counter] = mess[0].reconstruct_counter(data = m, start_counter = 0)
+
+    
+
+    plt.figure()
+    mess[0].find_angle(m, m_axis, k = 0, skip_first = 1000, skip_last = 1000, flag_normalize_circle = True, flag_scatter_plot = False)
+    plt.show()
+    
+    
+    
+    
+    
+    
+    
 
 
 def PE6():
@@ -588,10 +650,10 @@ def F1():
 def corr():
 
     mess = [0]
-#     mess[0] = croc.Pe.pefs("corr", "corT1", 0, 1419)
-#     mess[0].path = ("/Volumes/public_hamm/PML3/data/20110930/corT1_1419_T0/")
-    mess[0] = croc.Pe.pefs("corr", "corT2", 0, 1422)
-    mess[0].path = ("/Volumes/public_hamm/PML3/data/20110930/corT2_1422_T0/")
+    mess[0] = croc.Pe.pefs("corr", "corT1", 0, 1419)
+    mess[0].path = ("/Volumes/public_hamm/PML3/data/20110930/corT1_1419_T0/")
+#     mess[0] = croc.Pe.pefs("corr", "corT2", 0, 1422)
+#     mess[0].path = ("/Volumes/public_hamm/PML3/data/20110930/corT2_1422_T0/")
         
     plt.figure()
     for i in range(1, 2):

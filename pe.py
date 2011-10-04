@@ -658,23 +658,7 @@ class pefs(pe_exp):
                 diagram = 1
             
             # import the data
-            data = numpy.fromfile(filename[k]) 
-           
-            # read the fringes and remove them
-            fringes = [data[-2], data[-1]]
-            data = data[:-2]
-            
-            # determine the length
-            if self.n_shots == 0:
-                self.n_shots = int(numpy.shape(data)[0] / self.n_channels)            
-            
-            # construct m
-            m = numpy.zeros((self.n_channels, self.n_shots))
-            
-            # read in the data
-            for i in range(self.n_shots):
-                for j in range(self.n_channels):
-                    m[j, i] = data[j + i * self.n_channels] 
+            [m, fringes] = self.import_raw_data(filename[k])
             
             # reconstruct the counter
             m_axis, counter = self.reconstruct_counter(m, fringes[0])
@@ -712,23 +696,42 @@ class pefs(pe_exp):
                     
                 if flag_find_angle:
                     self.find_angle(m, m_axis, k)
-                
 
-                
                 # all the data is now written into self.b* 
 
         # construct the actual measurement
         if flag_construct_r:
             self.construct_r(flag_calculate_noise = flag_calculate_noise)
 
-        # now append that we already imported this scan
+        # now append that we imported this scan
         self.imported_scans.append(scan)
         
         self.n_scans = len(self.imported_scans)
 
 
 
-
+    def import_raw_data(self, path_and_filename):
+        
+        # import the data
+        data = numpy.fromfile(path_and_filename) 
+       
+        # read the fringes and remove them from the measurement data
+        fringes = [data[-2], data[-1]]
+        data = data[:-2]
+        
+        # determine the length
+        if self.n_shots == 0:
+            self.n_shots = int(numpy.shape(data)[0] / self.n_channels)            
+        
+        # construct m
+        m = numpy.zeros((self.n_channels, self.n_shots))
+        
+        # order the data in a 2d array
+        for i in range(self.n_shots):
+            for j in range(self.n_channels):
+                m[j, i] = data[j + i * self.n_channels] 
+        
+        return m, fringes
 
 
 
@@ -736,43 +739,52 @@ class pefs(pe_exp):
         
         n_channels, n_shots = numpy.shape(m)
         
+        # select the channel we want to use
         channel = 16
         
-#         n = int(n_shots/2)
-#         
-#         r = numpy.zeros(n)
-#         
-#         for i in range(n):
-#             for j in range(n):
-#                 r[i] += m[channel, j] * m[channel, j+i]
+        # select the data we want to use
+        m_x = m[channel,:] 
         
+        # fix that is proposed for numpy, but not implemented yet
+        a = (m_x - numpy.mean(m_x)) / (numpy.std(m_x) * len(m_x))
+        v = (m_x - numpy.mean(m_x)) /  numpy.std(m_x)
         
-#         f = numpy.fft.fft(m[channel,:])
-#         s = f * numpy.conj(f)
-#         r = numpy.fft.ifft(s)
-#         
-#         r = r[:len(r)/2]
+        # calculate the autocorrelation
+        r = numpy.correlate(a,v, mode="full")
+        
+        # select the part we want
+        r = r[len(r)/2:]
 
-        r = scipy.correlate(m[channel,:], m[channel,:])
-        
-        #print(len(r))
-        
-        #plt.plot(m[channel,:])
+        # plot it
         plt.plot(r)
 
 
 
-    def find_angle(self, m, m_axis, k):    
+
+    def find_angle(self, m, m_axis, k = 0, skip_first = 0, skip_last = 0, flag_normalize_circle = True, flag_scatter_plot = True):   
+        """
+        croc.pe.pefs.find_angle()
+        
+        Checks the distribution of the samples within the fringes, ie. it checks whether there is a bias-angle.
+        
+        INPUT:
+        - m (2d-array (channels*samples)): data, with an x and y channel defined in the data structure
+        - m_axis (1d-array (length of samples)): the fringes corresponding to the data in m
+        - k (int, 0): makes a difference between different files. 
+        - skip_first (int, 0): option to skip the first n samples. The first few and last fringes the motors are stationary, which should result in the feedback not changing. This would appear as to bias the measurement.
+        - skip_last (int, 0): option to skip the last n samples
+        - flag_normalize_circle (BOOL, True): The circle can be a bit ellipsoid, which would bias the results. This will make the ellipsoid into a circle and prevents the bias.
+        - flag_scatter_plot (BOOL, True): will make a scatter plot (fringes by angle). If false, it will make a histogram. Note that the histogram will have different colors and orientation depending on 'k'. This is to compare the different runs (2 motors, moving forward and backward).
+        
+        
+        
+        """ 
         
         l = len(m_axis)
-        
-        # option to ignore the start and finish, when the motors are not moving
-        start = 1000
-        end = -1000
-        
+
         # select the desired part of the data
-        m = m[:,start:(l+end)]
-        m_axis = m_axis[start:(l+end)]
+        m = m[:,skip_first:(l-skip_last)]
+        m_axis = m_axis[skip_first:(l-skip_last)]
         l = len(m_axis)
         
         # determine the average of the data, select the data and subtract the average
@@ -785,11 +797,15 @@ class pefs(pe_exp):
         y_max = numpy.nanmax(m[self.y_channel,:])
         y_min = numpy.nanmin(m[self.y_channel,:]) 
         y_ave = y_min + (y_max - y_min)/2
-        m_y = (m[self.y_channel,:] - y_ave) * (x_max - x_min)/(y_max - y_min)
+        if flag_normalize_circle:
+            m_y = (m[self.y_channel,:] - y_ave) * (x_max - x_min)/(y_max - y_min)
+        else:
+            m_y = (m[self.y_channel,:] - y_ave)
         
         # make the array where the angles will be written to
         m_angle = numpy.zeros(numpy.shape(m_axis))
         
+        # calculate the angle
         for i in range(l):
             if m_y[i] > 0:
                 m_angle[i] = numpy.arctan(m_x[i] / m_y[i]) * 180 /numpy.pi
@@ -799,30 +815,44 @@ class pefs(pe_exp):
                 m_angle[i] = 0
                 print("Divide by zero")
         
-        # make an - in effect - scatter plot
-        plt.plot(m_axis, m_angle, "b.")
-        
-#         bin_size = 10 # in degrees
-#         n_bins = 360 / bin_size
-#         
-#         h, b_e = numpy.histogram(m_angle, bins = n_bins)
-#         
-#         axis = b_e[:-1]
-#         #numpy.arange(0, 360, step = bin_size)
-# 
-#         #print(b_e)
-#         #print(axis)
-#     
-#         if k == 0:
-#             plt.plot(axis, h, "b")
-#         elif k == 1:
-#             plt.plot(axis, h, "g")
-#         elif k == 2:
-#             plt.plot(axis, -h, "b")
-#         elif k == 3:
-#             plt.plot(axis, -h, "g")        
+        if flag_scatter_plot:
+            # make an - in effect - scatter plot
+            plt.plot(m_axis, m_angle, "b.")
+            plt.xlabel("Fringes")
+            plt.ylabel("Angle (deg)")
+            plt.title("Distribution of samples over the fringes (0 = top)")
+             
+        else:
+            
+            # decide on the bin size
+            if l <= 1000:
+                bin_size = 15 # in degrees
+                n_bins = 360 / bin_size  
+            elif l <= 1800:                        
+                bin_size = 10 # in degrees
+                n_bins = 360 / bin_size              
+            elif l <= 3600:                        
+                bin_size = 5 # in degrees
+                n_bins = 360 / bin_size
+            else:                
+                bin_size = 5 # in degrees
+                n_bins = 360 / bin_size
+            
+            # make the histogram       
+            h, b_e = numpy.histogram(m_angle, bins = n_bins)
+            
+            # make the axis
+            axis = b_e[:-1]
 
-
+            # plot it
+            if k == 0:
+                plt.plot(axis, h, "b")
+            elif k == 1:
+                plt.plot(axis, h, "g")
+            elif k == 2:
+                plt.plot(axis, -h, "b")
+            elif k == 3:
+                plt.plot(axis, -h, "g")    
 
 
     def bin_for_noise(self, m, m_axis, diagram):
@@ -875,46 +905,50 @@ class pefs(pe_exp):
         self.n[diagram].append(f)  
         
         if diagram == 1:
-            plt.plot(numpy.abs(r[:,14])      )
+            plt.plot(numpy.abs(r[:,14]))
     
         
 
 
     def calculate_noise(self, pixel = 12):
         
-        shape0 = numpy.shape(self.n[0])
-        shape1 = numpy.shape(self.n[1])
-        #print(shape)
+        if numpy.shape(self.n)[1] != 0:
         
-        std0 = numpy.zeros((shape0[1]))
-        std1 = numpy.zeros((shape1[1]))
-        
-        #f0 = numpy.zeros((shape0[1]))
-        #f1 = numpy.zeros((shape1[1]))        
-        
-        a0 = numpy.zeros(shape0[1])
-        a1 = numpy.zeros(shape1[1])
-
-        for i in range(shape0[1]): # frequency
-            for j in range(shape0[0]): # scans
-                a0[j] = self.n[0][j][i][pixel]
+            shape0 = numpy.shape(self.n[0])
+            shape1 = numpy.shape(self.n[1])
+            #print(shape)
             
-            std0[i] = numpy.std(a0)
-            #f0[i] = numpy.mean(a0)
-
-        for i in range(shape1[1]): # frequency
-            for j in range(shape1[0]): # scans
-                a1[j] = self.n[1][j][i][pixel]
+            std0 = numpy.zeros((shape0[1]))
+            std1 = numpy.zeros((shape1[1]))
             
-            std1[i] = numpy.std(a1)
-            #f1[i] = numpy.mean(a1)
-
-        plt.figure()
-        plt.plot(self.s_axis[0], std0[:])
-        plt.plot(self.s_axis[0], std1[:])
+            #f0 = numpy.zeros((shape0[1]))
+            #f1 = numpy.zeros((shape1[1]))        
+            
+            a0 = numpy.zeros(shape0[1])
+            a1 = numpy.zeros(shape1[1])
+    
+            for i in range(shape0[1]): # frequency
+                for j in range(shape0[0]): # scans
+                    a0[j] = self.n[0][j][i][pixel]
+                
+                std0[i] = numpy.std(a0)
+                #f0[i] = numpy.mean(a0)
+    
+            for i in range(shape1[1]): # frequency
+                for j in range(shape1[0]): # scans
+                    a1[j] = self.n[1][j][i][pixel]
+                
+                std1[i] = numpy.std(a1)
+                #f1[i] = numpy.mean(a1)
+    
+            plt.figure()
+            plt.plot(self.s_axis[0], std0[:])
+            plt.plot(self.s_axis[0], std1[:])
+            
+            plt.show()
         
-        plt.show()
-
+        else:
+            print("ERROR (croc.pe.pefs.calculate_noise): There is no data to work with. Make sure that during the import you select 'flag_calculate_noise'. ")
         
         
         
