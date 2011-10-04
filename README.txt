@@ -11,9 +11,9 @@ This software comes without warranty.
 - copy everything to a convenient place
 - add that place to the PATH
 - run the following commands from ipython:
-    > import croc
-    > import croc.Tests.Tests
-    > croc.Tests.Tests.PE1()
+>> import croc
+>> import croc.Tests.Tests
+>> croc.Tests.Tests.PE1()
 This should result in a 2D spectrum.
 
 
@@ -40,10 +40,31 @@ The directory Tests contains some stuff for testing. In the file Tests there are
 
 See croc.Tests.Tests for several examples of how the routines can be used. This file is mainly for testing code and some of it is therefore slightly convoluted, but it should help you on the way. 
 
-
 3.1 croc.DataClasses.mess_data
 
-mess_data contains the most default information. 
+mess_data contains the default structure and is initialized when you initialize a particular class (photon echo, ftir etc). 
+Some names are semi-protected. For example, to write the phase, you will write
+>> self.phase_degrees = 90
+But you don't call the variable, you call a function that will write to self._phase_degrees and will also calculate the phase in radians and writes it to self._phase_rad. When you need the phase in radians 
+>> self.phase_rad
+>1.57
+You can write directly to self._phase_degrees, but then the value in radians will not be set. 
+It also contains some methods to save the data as a pickle and to print it nicely.
+
+3.2 croc.Pe.pe
+
+This is the general class for photon echo experiments. It contains some plotting functions.
+
+3.2.1 croc.Pe.pe_exp
+
+This is a subclass of croc.Pe.pe for experimental photon echo experiments. It should be used for stepped scan measurements. It really should have its own class, but that would break things.
+
+3.2.2 croc.Pe.pefs
+
+This is a subclass of croc.Pe.pe_exp for fast scanning. It contains methods to import the data, reconstruct the fringes and bin the data. After the data is binned, the spectrum can be calculated. 
+
+
+
 
 
 
