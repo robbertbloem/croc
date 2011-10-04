@@ -360,7 +360,7 @@ def FS1a():
 
     # import all data
     # it ranges from 1 to last_scan + 1
-    # self.r will not be constructed after every import
+    # mess[0].r will not be constructed after every import
     for i in range(1,21):
         mess[0].add_data(scan = i, flag_construct_r = False, flag_calculate_noise = True)
 
@@ -422,7 +422,7 @@ def FS2a():
 
     # import all data
     # it ranges from 1 to last_scan + 1
-    # self.r will not be constructed after every import
+    # mess[0].r will not be constructed after every import
     for i in range(1, 11):
         mess[0].add_data(scan = i, flag_construct_r = False, flag_calculate_noise = False)
 
@@ -487,7 +487,7 @@ def FS3():
 
     # import all data
     # it ranges from 1 to last_scan + 1
-    # self.r will not be constructed after every import
+    # mess[0].r will not be constructed after every import
     plt.figure()
     for i in range(2, 3):
         mess[0].add_data(scan = i, flag_construct_r = False, flag_calculate_noise = False, flag_find_angle = True)
@@ -498,7 +498,7 @@ def FS3():
 
 
 
-def FS4():
+def FS4(scans = 1, data_large = False):
     """
     croc.Tests.Tests.FS4
     
@@ -511,19 +511,38 @@ def FS4():
     - block the other beams (to prevent scattering etc)
     - measure the fast scanning for as long as possible, without moving the motors
     
+    INPUT:
+    - scans (int, 1): the number of runs plotted.
+    - data_large (BOOL, False): when False, a measurement with 1000 shots is used, when True, it will use a measurement with 20000 shots.
+    
     """
 
     mess = [0]  
-    mess[0] = croc.Pe.pefs("corr", "corT1", 0, 1419)
-    mess[0].path = ("/Volumes/public_hamm/PML3/data/20110930/corT1_1419_T0/")
+    if data_large:
+        mess[0] = croc.Pe.pefs("corr", "corT2", 0, 1422)
+        mess[0].path = ("/Volumes/public_hamm/PML3/data/20110930/corT2_1422_T0/")
+    else:
+        mess[0] = croc.Pe.pefs("corr", "corT1", 0, 1419)
+        mess[0].path = ("/Volumes/public_hamm/PML3/data/20110930/corT1_1419_T0/")
+
     scan = 1
+        
+    filename = [0] * 4  # the filenames
 
-    path_and_filename = mess[0].path + mess[0].base_filename + "_" + str(mess[0].time_stamp) + "_T" + str(mess[0].r_axis[1]) + "_R1" + "_" + str(scan) + ".bin"
-
-    [m, fringes] = mess[0].import_raw_data(path_and_filename)
+    # construct the filenames
+    filename[0] = mess[0].path + mess[0].base_filename + "_" + str(mess[0].time_stamp) + "_T" + str(mess[0].r_axis[1]) + "_R1" + "_" + str(scan) + ".bin"
+    filename[1] = mess[0].path + mess[0].base_filename + "_" + str(mess[0].time_stamp) + "_T" + str(mess[0].r_axis[1]) + "_R2" + "_" + str(scan) + ".bin"
+    filename[2] = mess[0].path + mess[0].base_filename + "_" + str(mess[0].time_stamp) + "_T" + str(mess[0].r_axis[1]) + "_NR1" + "_" + str(scan) + ".bin"
+    filename[3] = mess[0].path + mess[0].base_filename + "_" + str(mess[0].time_stamp) + "_T" + str(mess[0].r_axis[1]) + "_NR2" + "_" + str(scan) + ".bin"
 
     plt.figure()
-    mess[0].find_correlation(m)
+    for i in range(scans):
+        # import the raw data
+        [m, fringes] = mess[0].import_raw_data(filename[i])
+    
+        # plot the correlation
+        mess[0].find_correlation(m)
+    
     plt.show()
 
 
@@ -645,10 +664,7 @@ def F1():
 def corr():
 
     mess = [0]
-    mess[0] = croc.Pe.pefs("corr", "corT1", 0, 1419)
-    mess[0].path = ("/Volumes/public_hamm/PML3/data/20110930/corT1_1419_T0/")
-#     mess[0] = croc.Pe.pefs("corr", "corT2", 0, 1422)
-#     mess[0].path = ("/Volumes/public_hamm/PML3/data/20110930/corT2_1422_T0/")
+
         
     plt.figure()
     for i in range(1, 2):
