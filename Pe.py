@@ -378,9 +378,12 @@ class pe_exp(pe):
             
                 if re.match("Shots", line): 
                     self.n_shots = int((re.search(regex, line)).group())
-            
-                #if re.match("Phase", line):
-                #    self.phase_degrees = float((re.search(regex, line)).group()) + 180.0
+                
+                if re.match("Fringes", line): 
+                    self.n_fringes = int((re.search(regex, line)).group())            
+                
+                if re.match("Phase", line):
+                    self.phase_degrees = float((re.search(regex, line)).group()) + 180.0
                 
                 if re.match("Comments", line):
                     self.comment = line[9:]
@@ -396,10 +399,11 @@ class pe_exp(pe):
         fileinput.close()
         
         # number of scans is (number of scans started) - 1, because the last one wasn't finished
-        if temp_scans:
-            self.n_scans = temp_scans - 1
-        else:
-            self.n_scans = 1
+        if self.mess_type != "FastScan":
+            if temp_scans:
+                self.n_scans = temp_scans - 1
+            else:
+                self.n_scans = 1
 
 
 
@@ -561,18 +565,22 @@ class pefs(pe_exp):
         self.b_axis = [0] * 2
         self.b_count = [0] * 2
         
+        # for the noise
         self.n = [[],[]]
         
         # some channels have a special meaning
-        self.n_channels = 37
         self.x_channel = 32
         self.y_channel = 33
         self.chopper_channel = 36
         
-        self.n_pixels = 32
         
-        # the number of fringes should be nearly the same, but this will 
-        self.extra_fringes = 20
+        
+        # the following parameters are to shape the arrays.
+        self.n_channels = 37    # all channels
+        self.n_pixels = 32      # the number of channels for pixels
+        self.n_fringes = 0      # the set number of fringes
+        self.extra_fringes = 20 # some extra fringes for if the motor overshoots
+        
         
         self.imported_scans = []
 
@@ -618,7 +626,9 @@ class pefs(pe_exp):
         """
         
         if len(self.imported_scans) == 0:
+            # set self.reference
             self.import_reference()
+            # set phase, shots, 
             self.import_meta()
     
         # see if we already imported this file
@@ -643,11 +653,15 @@ class pefs(pe_exp):
             # import the data
             [m, fringes] = self.import_raw_data(filename[k])
             
+            # if the number of fringes can not be set using the meta file, find it here 
+            if self.n_fringes == 0:
+                self.n_fringes = int(numpy.abs(fringes[1] - fringes[0]))
+            
             # reconstruct the counter
             m_axis, counter = self.reconstruct_counter(m, fringes[0], flag_plot = False)
             
-            if k == 0:
-                n_fringes = counter - 4000
+            #if k == 0:
+            #    n_fringes = counter - 4000
             
             # check for consistency
             if counter != fringes[1]:
@@ -661,7 +675,7 @@ class pefs(pe_exp):
             
                 # make b the correct size, if it isn't already
                 if numpy.shape(self.b_axis)[-1] == 2:
-                    self.make_arrays(n_fringes)
+                    self.make_arrays()
         
                 # bin the data
                 self.bin_data(m, m_axis, diagram)
@@ -697,12 +711,25 @@ class pefs(pe_exp):
 
 
 
-    def make_arrays(self, n_fringes):
-        self.b = [numpy.zeros((n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((n_fringes + 2 * self.extra_fringes, self.n_channels))] 
-        self.b_axis[0] = numpy.arange(- self.extra_fringes, n_fringes + self.extra_fringes)
-        self.b_axis[1] = numpy.arange(- self.extra_fringes, n_fringes + self.extra_fringes)
-        self.b_count = numpy.zeros((4, n_fringes + 2 * self.extra_fringes))
-        self.r = [numpy.zeros((n_fringes + self.extra_fringes, 32)),numpy.zeros((n_fringes + self.extra_fringes, 32))] 
+
+
+
+    def make_arrays(self):
+        """
+        INPUT:
+        - none
+        
+        """
+    
+        self.b = [numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels))] 
+        self.b_axis[0] = numpy.arange(- self.extra_fringes, self.n_fringes + self.extra_fringes)
+        self.b_axis[1] = numpy.arange(- self.extra_fringes, self.n_fringes + self.extra_fringes)
+        self.b_count = numpy.zeros((4, self.n_fringes + 2 * self.extra_fringes))
+        self.r = [numpy.zeros((self.n_fringes, 32)),numpy.zeros((self.n_fringes, 32))] 
+
+
+
+
 
 
 
@@ -758,19 +785,24 @@ class pefs(pe_exp):
         
         After determining the fringe for all shots, this will bin the data in the correct bin. There are 4 bins: 2 (for rephasinga and non-rephasing) x 2 (for the two PEM-states). 
         The PEM trigger should vary between ~0V and ~5V. It will check if the state of the PEM is higher or lower than 2.5V. 
+
         
         INPUT:
         - m (2d-ndarray, channels x samples): the data
         - m_axis (1d-ndarray, length of samples): the fringe for each sample
         - diagram (number): rephasing (0) or non-rephasing (1)
+
         
-        
+        IMPLICIT REQUIREMENTS:
+        In the data structure, the following variables should be set:
+        - self.n_shots
+        - self.chopper_channel
+        - self.b
+        - self.b_count        
         
         """
-    
-        n_shots = len(m_axis)
         
-        for i in range(n_shots):            
+        for i in range(self.n_shots):            
             # find the fringe
             j = (-1)**diagram * int(m_axis[i]) + self.extra_fringes - (-1)**diagram * 4000
 
@@ -835,26 +867,40 @@ class pefs(pe_exp):
         
         It will first average the data. Then it will select the part where the fringes are not negative. Then it will take the difference between the two PEM-states and calculate the optical density. Data points that are not-a-number will be converted to zero.
         
-        """
-    
-    
-        n_fringes = len(self.b_axis[0])
         
-        temp = numpy.zeros((4, n_fringes, self.n_channels))
+        IMPLICIT REQUIREMENTS:
+        In the data structure, the following variables should be set:
+        - self.n_fringes
+        - self.extra_fringes
+        - self.b
+        - self.b_count
+        - self.b_axis
+        - self.n_pixels
+        
+        
+        OUTPUT:
+        - self.r_axis[0]: the times
+        - self.r
+        - self.r_units
+        
+        """
+        b_fringes = self.n_fringes + 2 * self.extra_fringes
+        
+        temp = numpy.zeros((4, b_fringes, self.n_channels))
         
         # average the data for the two diagrams
         for j in range(4):
-            for i in range(n_fringes):
+            for i in range(b_fringes):
                 if self.b_count[j][i] != 0:
                     temp[j,i,:] = self.b[j][i,:] / self.b_count[j,i]    
                 else:    
                     temp[j,i,:] = 0                
         
-        # now only select the part where fringes are not negative
-        temp = temp[:,self.extra_fringes:,:self.n_pixels]
+        # select n_fringes, ie. discard the extra fringes
+        temp = temp[:,self.extra_fringes:(self.n_fringes+self.extra_fringes),:self.n_pixels]
               
         # make the r_axis
-        self.r_axis[0] = self.b_axis[0][self.extra_fringes:] * croc.Constants.hene_fringe_fs
+        self.r_axis[0] = self.b_axis[0][self.extra_fringes:(self.n_fringes+self.extra_fringes)] * croc.Constants.hene_fringe_fs
 
         if flag_no_log:
             # for testing purposes
@@ -893,6 +939,14 @@ class pefs(pe_exp):
         - data (2darray, channels x samples): data. It will use self.x_channel and self.y_channel to find the data.
         - start_counter (int, 0): where the count starts. 
         - flag_plot (BOOL, False): plot the x and y axis and the counts. Should be used for debugging purposes.
+
+
+        IMPLICIT REQUIREMENTS:
+        In the data structure, the following variables should be set:
+        - self.x_channel, self.y_channel
+        
+        
+        
         
         OUTPUT:
         - m_axis (1d-ndarray, length of samples): the exact fringe for that sample
@@ -999,7 +1053,11 @@ class pefs(pe_exp):
         
         INPUT:
         - m (2d-array, channels x samples): the data
-        - channel (int, 16): the channel you want to look at         
+        - channel (int, 16): the channel you want to look at  
+        
+        IMPLICIT REQUIREMENTS:
+        In the data structure, the following variables should be set:   
+        - none    
         """
         
         n_channels, n_shots = numpy.shape(m)
@@ -1037,6 +1095,12 @@ class pefs(pe_exp):
         - skip_last (int, 0): option to skip the last n samples
         - flag_normalize_circle (BOOL, True): The circle can be a bit ellipsoid, which would bias the results. This will make the ellipsoid into a circle and prevents the bias.
         - flag_scatter_plot (BOOL, True): will make a scatter plot (fringes by angle). If false, it will make a histogram. Note that the histogram will have different colors and orientation depending on 'k'. This is to compare the different runs (2 motors, moving forward and backward).
+        
+        
+        
+        IMPLICIT REQUIREMENTS:
+        In the data structure, the following variables should be set:
+        - self.x_channel, self.y_channel
         
         
         
@@ -1123,10 +1187,22 @@ class pefs(pe_exp):
         
         Allows the calculation of the noise. It will bin the data and fourier transform it. Using croc.Pe.pefs.calculate_noise() the mean square noise is calculated.
         Note: this will use a large amount of memory and slows the data importing down quite a bit.
+
+        IMPLICIT REQUIREMENTS:
+        In the data structure, the following variables should be set:
+        - self.n_fringes
+        - self.extra_fringes
+        - self.n_channels
+        - self.n_pixels
+        - self.reference
+
+        OUTPUT:
+        - self.n: it will write FT's to self.n
         
         """
         
-        b_fringes = len(self.b_axis[0]) 
+        b_fringes = self.n_fringes + 2 * self.extra_fringes
+        #len(self.b_axis[0]) 
         
         n_shots = len(m_axis)
         
