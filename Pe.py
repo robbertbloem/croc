@@ -620,7 +620,7 @@ class pefs(pe_exp):
         INPUT:
         - scan (integer): the number of the scan to be imported
         - flag_import_override (BOOL, False): If set to False, it will prevent a scan from being re-imported. If set to True, it will give a warning, but will continue anyway.
-        - flag_construct_r (BOOL, True): will construct self.r at the end.  
+        - flag_construct_r (BOOL, True): will construct self.r. Set to False and do it separately if you import a lot of files.  
         - flag_calculate_noise (BOOL, False): (experimental) will calculate the noise
         
         """
@@ -700,6 +700,26 @@ class pefs(pe_exp):
 
 
     def make_filenames(self, scan):
+        """
+        croc.Pe.pefs.make_filenames()
+        
+        Makes the filenames. Apart from the path, all the variables should have been entered in the init. 
+        
+        INPUT:
+        - scan (int): the number of the scan
+        
+        IMPLICIT REQUIREMENTS:
+        In the data structure, the following variables should be set:
+        - self.path
+        - self.base_filename
+        - self.time_stamp
+        - self.r_axis[1]: (population time)
+
+        
+        
+        """
+        
+    
         # construct filenames
         filename = [0] * 4  # the filenames
 
@@ -716,8 +736,18 @@ class pefs(pe_exp):
 
     def make_arrays(self):
         """
+        croc.Pe.pefs.make_arrays()
+        
+        Creates correctly sized arrays for self.b, self.b_count, self.b_axis and self.r.
+        
         INPUT:
         - none
+        
+        IMPLICIT REQUIREMENTS:
+        In the data structure, the following variables should be set:
+        - self.n_fringes
+        - self.extra_fringes
+        - self.n_channels
         
         """
     
@@ -744,10 +774,17 @@ class pefs(pe_exp):
         
         INPUT:
         - path_and_filename (string): where the file can be found
+
+
+        IMPLICIT REQUIREMENTS:
+        In the data structure, the following variables should be set:
+        - self.n_shots (optional)
+        - self.n_channels
         
         OUTPUT:
         - m (2d array): the data in channels x samples format
         - fringes (array): an array with the fringe at the beginning ([0]) and the end ([1])
+        - self.n_shots: number of shots, if not determined earlier
         
         
         """
@@ -876,6 +913,7 @@ class pefs(pe_exp):
         - self.b_count
         - self.b_axis
         - self.n_pixels
+        - self.r: this will be overwritten
         
         
         OUTPUT:
@@ -1209,7 +1247,7 @@ class pefs(pe_exp):
         b = numpy.zeros((2, b_fringes, self.n_channels))
         b_count = numpy.zeros((2, b_fringes))
         
-        r = numpy.zeros((b_fringes - self.extra_fringes, 32)) 
+        r = numpy.zeros((self.n_fringes, 32)) 
         
         
         for i in range(n_shots):            
@@ -1236,7 +1274,8 @@ class pefs(pe_exp):
                     temp[j,i,:] = 0                
         
         # now only select the part where fringes are not negative
-        temp = temp[:,self.extra_fringes:,:self.n_pixels]
+        #temp = temp[:,self.extra_fringes:,:self.n_pixels]
+        temp = temp[:,self.extra_fringes:(self.n_fringes+self.extra_fringes),:self.n_pixels]
         
         # now convert it to mOD
         r[:,:self.n_pixels] = -numpy.log10(1+ 2*(temp[0,:,:self.n_pixels] - temp[1,:,:self.n_pixels])/self.reference[:self.n_pixels])
@@ -1265,34 +1304,38 @@ class pefs(pe_exp):
         
         """
         
-        if numpy.shape(self.n)[1] != 0:
+#         if numpy.shape(self.n)[1] != 0:
         
-            shape0 = numpy.shape(self.n[0])
-            shape1 = numpy.shape(self.n[1])
-            
-            std0 = numpy.zeros((shape0[1]))
-            std1 = numpy.zeros((shape1[1]))     
-            
-            a0 = numpy.zeros(shape0[1])
-            a1 = numpy.zeros(shape1[1])
-    
-            for i in range(shape0[1]): # frequency
-                for j in range(shape0[0]): # scans
-                    a0[j] = self.n[0][j][i][pixel]
-                std0[i] = numpy.std(a0)
-    
-            for i in range(shape1[1]): # frequency
-                for j in range(shape1[0]): # scans
-                    a1[j] = self.n[1][j][i][pixel]                
-                std1[i] = numpy.std(a1)
-    
-            plt.figure()
-            plt.plot(self.s_axis[0], std0[:])
-            plt.plot(self.s_axis[0], std1[:])
-            plt.show()
+        shape0 = numpy.shape(self.n[0])
+        shape1 = numpy.shape(self.n[1])
         
-        else:
-            print("ERROR (croc.pe.pefs.calculate_noise): There is no data to work with. Make sure that during the import you select 'flag_calculate_noise'. ")
+        std0 = numpy.zeros((shape0[1]))
+        std1 = numpy.zeros((shape1[1]))     
+        
+        a0 = numpy.zeros(shape0[1])
+        a1 = numpy.zeros(shape1[1])
+
+        for i in range(shape0[1]): # frequency
+            for j in range(shape0[0]): # scans
+                a0[j] = self.n[0][j][i][pixel]
+            std0[i] = numpy.std(a0)
+
+        for i in range(shape1[1]): # frequency
+            for j in range(shape1[0]): # scans
+                a1[j] = self.n[1][j][i][pixel]                
+            std1[i] = numpy.std(a1)
+
+        print(numpy.shape(self.s_axis[0]))
+        print(numpy.shape(std0[:]))
+
+
+        plt.figure()
+        plt.plot(std0[:])
+        plt.plot(std1[:])
+        plt.show()
+        
+#         else:
+#             print("ERROR (croc.pe.pefs.calculate_noise): There is no data to work with. Make sure that during the import you select 'flag_calculate_noise'. ")
         
         
         

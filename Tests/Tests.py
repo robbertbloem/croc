@@ -362,7 +362,7 @@ def FS1a():
     # it ranges from 1 to last_scan + 1
     # mess[0].r will not be constructed after every import
     for i in range(1,2):
-        mess[0].add_data(scan = i, flag_construct_r = False, flag_calculate_noise = False)
+        mess[0].add_data(scan = i, flag_construct_r = False, flag_calculate_noise = True)
 
     # there was an issue with the measure phase for this measurement
     mess[0].phase_degrees = -132 + 180 - 90
@@ -390,6 +390,8 @@ def FS1b():
     
     # calculate the spectrum
     pick[0].absorptive()
+    
+    pick[0].calculate_noise(pixel=12)
     
     
     plt.figure()
