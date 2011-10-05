@@ -601,9 +601,9 @@ class pefs(pe_exp):
         scan, 
         flag_import_override = False, 
         flag_construct_r = True, 
-        flag_calculate_noise = False, 
-        flag_find_correlation = False, 
-        flag_find_angle = False):
+        flag_calculate_noise = False):
+#         flag_find_correlation = False, 
+#         flag_find_angle = False
         """
         Adds data for a single scan.
         The data is imported as data.
@@ -654,7 +654,7 @@ class pefs(pe_exp):
             [m, fringes] = self.import_raw_data(filename[k])
             
             # reconstruct the counter
-            m_axis, counter = self.reconstruct_counter(m, fringes[0])
+            m_axis, counter = self.reconstruct_counter(m, fringes[0], flag_plot = False)
             
             if k == 0:
                 n_fringes = counter - 4000
@@ -671,24 +671,27 @@ class pefs(pe_exp):
             
                 # make b the correct size, if it isn't already
                 if numpy.shape(self.b_axis)[-1] == 2:
-                    self.b = [numpy.zeros((n_fringes + 2 * self.extra_fringes, self.n_channels))] * 4
+                    self.b = [numpy.zeros((n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((n_fringes + 2 * self.extra_fringes, self.n_channels))] 
                     self.b_axis[0] = numpy.arange(- self.extra_fringes, n_fringes + self.extra_fringes)
                     self.b_axis[1] = numpy.arange(- self.extra_fringes, n_fringes + self.extra_fringes)
                     self.b_count = numpy.zeros((4, n_fringes + 2 * self.extra_fringes))
-                    self.r = [numpy.zeros((n_fringes + self.extra_fringes, 32))] * 2
-            
+                    self.r = [numpy.zeros((n_fringes + self.extra_fringes, 32)),numpy.zeros((n_fringes + self.extra_fringes, 32))] 
+        
                 # bin the data
                 self.bin_data(m, m_axis, diagram)
+                
+                #print(self.b)
                 
                 # calculate the noise
                 if flag_calculate_noise:
                     self.bin_for_noise(m, m_axis, diagram)
                     
-                if flag_find_correlation:
-                    self.find_correlation(m)
-                    
-                if flag_find_angle:
-                    self.find_angle(m, m_axis, k)
+#                 if flag_find_correlation:
+#                     self.find_correlation(m)
+#                     
+#                 if flag_find_angle:
+#                     self.find_angle(m, m_axis, k)
+
 
                 # all the data is now written into self.b* 
 
@@ -741,6 +744,233 @@ class pefs(pe_exp):
                 m[j, i] = data[j + i * self.n_channels] 
         
         return m, fringes
+
+
+   
+        
+        
+
+
+    def bin_data(self, m, m_axis, diagram):
+        """
+        croc.Pe.pefs.bin_data()
+        
+        After determining the fringe for all shots, this will bin the data in the correct bin. There are 4 bins: 2 (for rephasinga and non-rephasing) x 2 (for the two PEM-states). 
+        The PEM trigger should vary between ~0V and ~5V. It will check if the first state of the PEM is higher or lower than 2.5V. 
+        
+        INPUT:
+        - m (2d-ndarray, channels x samples): the data
+        - m_axis (1d-ndarray, length of samples): the fringe for each sample
+        - diagram (number): rephasing (0) or non-rephasing (1)
+        
+        
+        
+        """
+    
+        n_shots = len(m_axis)
+        
+        for i in range(n_shots):            
+            # find the fringe
+            j = (-1)**diagram * int(m_axis[i]) + self.extra_fringes - (-1)**diagram * 4000
+
+            # add it to the bin, depending on pem-state and diagram
+            # and add 1 to counter 
+            if m[self.chopper_channel, i] < 2.5:         
+                self.b[2 * diagram][j, :] += m[:,i] 
+                self.b_count[2 * diagram, j] += 1
+            else:
+                self.b[2 * diagram + 1][j, :] += m[:,i] 
+                self.b_count[2 * diagram + 1, j] += 1
+
+        print(self.b[0][100:110,16])
+        print(self.b[1][100:110,16])
+        print(self.b[2][100:110,16])
+        print(self.b[3][100:110,16])
+#         plt.figure()
+#         plt.plot(self.b[1][16,:])
+#         plt.show()
+        
+
+    def bin_info(self):
+        """
+        croc.Pe.pefs.bin_info()
+        
+        Will plot some stuff related to the binning. 
+        The first plot shows the amount of samples for every fringe.
+        The second plot shows a histogram of the samples per bin.
+        
+        """
+    
+        plt.figure()
+        plt.plot(self.b_axis[0], self.b_count[0], ".-")
+        plt.plot(self.b_axis[0], self.b_count[1], ".-") 
+        plt.plot(self.b_axis[0], self.b_count[2], ".-")
+        plt.plot(self.b_axis[0], self.b_count[3], ".-")   
+        plt.title("Shots per fringe (4000 = 0)")
+        plt.xlabel("Fringe")
+        plt.ylabel("Shots per fringe")
+
+        plt.figure()
+        plt.plot(numpy.bincount(numpy.array(self.b_count[0], dtype=numpy.int)))
+        plt.plot(numpy.bincount(numpy.array(self.b_count[1], dtype=numpy.int)))
+        plt.title("Bins with certain number of shots")
+        plt.xlabel("Number of shots")
+        plt.ylabel("Number of bins")
+        
+        plt.show()           
+        
+
+
+
+
+    def construct_r(self):
+        """
+        croc.Pe.pefs.construct_r()
+        
+        This function will construct the rephasing and non-rephasing diagrams. 
+        
+        It will first average the data. Then it will select the part where the fringes are not negative. Then it will take the difference between the two PEM-states and calculate the optical density. Data points that are not-a-number will be converted to zero.
+        
+        """
+    
+    
+        n_fringes = len(self.b_axis[0])
+        
+        temp = numpy.zeros((4, n_fringes, self.n_channels))
+        
+        # average the data for the two diagrams
+        for j in range(4):
+            for i in range(n_fringes):
+                if self.b_count[j][i] != 0:
+                    temp[j,i,:] = self.b[j][i,:] / self.b_count[j][i]    
+                else:    
+                    temp[j,i,:] = 0                
+        
+        # now only select the part where fringes are not negative
+        temp = temp[:,self.extra_fringes:,:self.n_pixels]
+              
+        # make the r_axis
+        self.r_axis[0] = self.b_axis[0][self.extra_fringes:] * croc.Constants.hene_fringe_fs
+
+        # now convert it to mOD
+        for j in range(2):
+            self.r[j][:,:self.n_pixels] = -numpy.log10(1+ 2*(temp[2*j,:,:self.n_pixels] - temp[2*j+1,:,:self.n_pixels])/self.reference[:self.n_pixels])
+        
+        self.r = numpy.nan_to_num(self.r)
+        
+        self.r_units = ["fs", "fs", "cm-1"]
+
+
+
+       
+
+                
+    
+    
+    
+    
+    
+    def reconstruct_counter(self, data, start_counter = 0, flag_plot = False):
+        """
+        croc.Pe.pefs.reconstruct_counter()
+        
+        
+        
+        This function will use the feedback from the HeNe's and reconstruct the fringes. It will check whether y > 0 and whether x changes from x[i-1] < 0 to x[i+1] > 0 and whether x[i-1] < x[i] < x[i+1] (or the other way around for a count back). 
+        After a count in a clockwise direction, it can only count again in the clockwise direction after y < 0. 
+        
+        INPUT:
+        - data (2darray, channels x samples): data. It will use self.x_channel and self.y_channel to find the data.
+        - start_counter (int, 0): where the count starts. 
+        - flag_plot (BOOL, False): plot the x and y axis and the counts. Should be used for debugging purposes.
+        
+        OUTPUT:
+        - m_axis (1d-ndarray, length of samples): the exact fringe for that sample
+        - counter (int): the last value of the fringes. It is the same as m_axis[-1]. For legacy's sake.
+        
+        
+        CHANGELOG:
+        20110920 RB: started the function
+        20111003 RB: change the way it counts. It will now not only check if the x goes through zero, it will also make sure that the point in between is actually in between. This reduced the miscounts from 80/400 t0 30/400.
+        
+        
+        """
+        
+        
+        # put the required data in some better readable arrays
+        x = data[self.x_channel,:]
+        y = data[self.y_channel,:]
+        
+        # determine the median values
+        med_x = numpy.min(x) + (numpy.max(x) - numpy.min(x))/2
+        med_y = numpy.min(y) + (numpy.max(y) - numpy.min(y))/2
+        
+        # some stuff
+        length = len(x)
+        counter = start_counter
+        
+        # the fringe count will be written in this array
+        m_axis = numpy.zeros(length)
+        
+        # this is the (counter-) clockwise lock
+        c_lock = False
+        cc_lock = False
+        
+        # where did the counter start
+        m_axis[0] = counter
+        
+        if flag_plot:
+            change_array = numpy.zeros(length)
+        
+        # do the loop
+        for i in range(1, length - 1):
+            # count can only change when y > 0
+            if y[i] > med_y:
+                if c_lock == False:
+                    if x[i-1] < med_x and x[i+1] > med_x and x[i-1] < x[i] and x[i+1] > x[i]: 
+                        counter += 1               
+                        c_lock = True
+                        cc_lock = False
+                        if flag_plot:
+                            change_array[i] = 0.05
+
+                if cc_lock == False:
+                    if x[i-1] > med_x and x[i+1] < med_x and x[i-1] > x[i] and x[i+1] < x[i]:
+                        counter -= 1
+                        c_lock = False
+                        cc_lock = True  
+                        if flag_plot:
+                            change_array[i] = -0.05
+
+            else:
+                c_lock = False
+                cc_lock = False
+            
+            m_axis[i] = counter
+        
+        m_axis[-1] = counter
+        
+        if flag_plot:        
+            plt.figure()
+            plt.plot(x, ".-")
+            plt.plot(y, ".-")
+            plt.plot(change_array, ".")
+            plt.xlabel("Shots")
+            plt.ylabel("Volts")
+            plt.title("x (blue), y (green) and counts up or down (red)")
+            plt.show()
+
+        return m_axis, counter     
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -988,228 +1218,7 @@ class pefs(pe_exp):
         
         
         
-        
-        
-        
-
-
-    def bin_data(self, m, m_axis, diagram):
-        """
-        croc.Pe.pefs.bin_data()
-        
-        After determining the fringe for all shots, this will bin the data in the correct bin. There are 4 bins: 2 (for rephasinga and non-rephasing) x 2 (for the two PEM-states). 
-        The PEM trigger should vary between ~0V and ~5V. It will check if the first state of the PEM is higher or lower than 2.5V. 
-        
-        INPUT:
-        - m (2d-ndarray, channels x samples): the data
-        - m_axis (1d-ndarray, length of samples): the fringe for each sample
-        - diagram (number): rephasing (0) or non-rephasing (1)
-        
-        
-        
-        """
-        
-    
-        n_shots = len(m_axis)
-        
-        for i in range(n_shots):            
-            # find the fringe
-            j = (-1)**diagram * int(m_axis[i]) + self.extra_fringes - (-1)**diagram * 4000
-
-            # add it to the bin, depending on pem-state and diagram
-            # and add 1 to counter 
-            if m[self.chopper_channel, i] < 2.5:         
-                self.b[2 * diagram][j, :] += m[:,i] 
-                self.b_count[2 * diagram, j] += 1
-            else:
-                self.b[2 * diagram + 1][j, :] += m[:,i] 
-                self.b_count[2 * diagram + 1, j] += 1
-
-
-
-    def bin_info(self):
-        """
-        croc.Pe.pefs.bin_info()
-        
-        Will plot some stuff related to the binning. 
-        The first plot shows the amount of samples for every fringe.
-        The second plot shows a histogram of the samples per bin.
-        
-        """
-    
-        plt.figure()
-        plt.plot(self.b_axis[0], self.b_count[0], ".-")
-        plt.plot(self.b_axis[0], self.b_count[1], ".-") 
-        plt.plot(self.b_axis[0], self.b_count[2], ".-")
-        plt.plot(self.b_axis[0], self.b_count[3], ".-")   
-        plt.title("Shots per fringe (4000 = 0)")
-        plt.xlabel("Fringe")
-        plt.ylabel("Shots per fringe")
-
-        plt.figure()
-        plt.plot(numpy.bincount(numpy.array(self.b_count[0], dtype=numpy.int)))
-        plt.plot(numpy.bincount(numpy.array(self.b_count[1], dtype=numpy.int)))
-        plt.title("Bins with certain number of shots")
-        plt.xlabel("Number of shots")
-        plt.ylabel("Number of bins")
-        
-        plt.show()           
-        
-
-
-
-
-    def construct_r(self):
-        """
-        croc.Pe.pefs.construct_r()
-        
-        This function will construct the rephasing and non-rephasing diagrams. 
-        
-        It will first average the data. Then it will select the part where the fringes are not negative. Then it will take the difference between the two PEM-states and calculate the optical density. Data points that are not-a-number will be converted to zero.
-        
-        """
-    
-    
-        n_fringes = len(self.b_axis[0])
-        
-        temp = numpy.zeros((4, n_fringes, self.n_channels))
-        
-        # average the data for the two diagrams
-        for j in range(4):
-            for i in range(n_fringes):
-                if self.b_count[j][i] != 0:
-                    temp[j,i,:] = self.b[j][i,:] / self.b_count[j][i]    
-                else:    
-                    temp[j,i,:] = 0                
-        
-        # now only select the part where fringes are not negative
-        temp = temp[:,self.extra_fringes:,:self.n_pixels]
-              
-        # make the r_axis
-        self.r_axis[0] = self.b_axis[0][self.extra_fringes:] * croc.Constants.hene_fringe_fs
-
-        # now convert it to mOD
-        for j in range(2):
-            self.r[j][:,:self.n_pixels] = -numpy.log10(1+ 2*(temp[2*j,:,:self.n_pixels] - temp[2*j+1,:,:self.n_pixels])/self.reference[:self.n_pixels])
-        
-        self.r = numpy.nan_to_num(self.r)
-        
-        self.r_units = ["fs", "fs", "cm-1"]
-
-
-
-       
-
-                
-    
-    
-    
-    
-    
-    def reconstruct_counter(self, data, start_counter = 0, flag_plot = False):
-        """
-        croc.Pe.pefs.reconstruct_counter()
-        
-        
-        
-        This function will use the feedback from the HeNe's and reconstruct the fringes. It will check whether y > 0 and whether x changes from x[i-1] < 0 to x[i+1] > 0 and whether x[i-1] < x[i] < x[i+1] (or the other way around for a count back). 
-        After a count in a clockwise direction, it can only count again in the clockwise direction after y < 0. 
-        
-        INPUT:
-        - data (2darray, channels x samples): data. It will use self.x_channel and self.y_channel to find the data.
-        - start_counter (int, 0): where the count starts. 
-        - flag_plot (BOOL, False): plot the x and y axis and the counts. Should be used for debugging purposes.
-        
-        OUTPUT:
-        - m_axis (1d-ndarray, length of samples): the exact fringe for that sample
-        - counter (int): the last value of the fringes. It is the same as m_axis[-1]. For legacy's sake.
-        
-        
-        CHANGELOG:
-        20110920 RB: started the function
-        20111003 RB: change the way it counts. It will now not only check if the x goes through zero, it will also make sure that the point in between is actually in between. This reduced the miscounts from 80/400 t0 30/400.
-        
-        
-        """
-        
-        
-        # put the required data in some better readable arrays
-        x = data[self.x_channel,:]
-        y = data[self.y_channel,:]
-        
-        # determine the median values
-        med_x = numpy.min(x) + (numpy.max(x) - numpy.min(x))/2
-        med_y = numpy.min(y) + (numpy.max(y) - numpy.min(y))/2
-        
-        # some stuff
-        length = len(x)
-        counter = start_counter
-        
-        # the fringe count will be written in this array
-        m_axis = numpy.zeros(length)
-        
-        # this is the (counter-) clockwise lock
-        c_lock = False
-        cc_lock = False
-        
-        # where did the counter start
-        m_axis[0] = counter
-        
-        if flag_plot:
-            change_array = numpy.zeros(length)
-        
-        # do the loop
-        for i in range(1, length - 1):
-            # count can only change when y > 0
-            if y[i] > med_y:
-                if c_lock == False:
-                    if x[i-1] < med_x and x[i+1] > med_x and x[i-1] < x[i] and x[i+1] > x[i]: 
-                        counter += 1               
-                        c_lock = True
-                        cc_lock = False
-                        if flag_plot:
-                            change_array[i] = 0.05
-
-                if cc_lock == False:
-                    if x[i-1] > med_x and x[i+1] < med_x and x[i-1] > x[i] and x[i+1] < x[i]:
-                        counter -= 1
-                        c_lock = False
-                        cc_lock = True  
-                        if flag_plot:
-                            change_array[i] = -0.05
-
-            else:
-                c_lock = False
-                cc_lock = False
-            
-            m_axis[i] = counter
-        
-        m_axis[-1] = counter
-        
-        if flag_plot:        
-            plt.figure()
-            plt.plot(x, ".-")
-            plt.plot(y, ".-")
-            plt.plot(change_array, ".")
-            plt.xlabel("Shots")
-            plt.ylabel("Volts")
-            plt.title("x (blue), y (green) and counts up or down (red)")
-            plt.show()
-
-        return m_axis, counter     
-
-
-
-
-
-
-
-
-
-
-
-
-
+     
 
 
 

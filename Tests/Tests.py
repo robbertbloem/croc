@@ -361,8 +361,8 @@ def FS1a():
     # import all data
     # it ranges from 1 to last_scan + 1
     # mess[0].r will not be constructed after every import
-    for i in range(1,21):
-        mess[0].add_data(scan = i, flag_construct_r = False, flag_calculate_noise = True)
+    for i in range(1,2):
+        mess[0].add_data(scan = i, flag_construct_r = False, flag_calculate_noise = False)
 
     # there was an issue with the measure phase for this measurement
     mess[0].phase_degrees = -132 + 180 - 90
@@ -400,7 +400,7 @@ def FS1b():
     # plot the spectrum
     pick[0].plot(plot_type = "S")#, x_range = [1930, 2150])
 
-    pick[0].bin_info()
+    #pick[0].bin_info()
 
     print(pick[0])    
 
@@ -423,8 +423,8 @@ def FS2a():
     # import all data
     # it ranges from 1 to last_scan + 1
     # mess[0].r will not be constructed after every import
-    for i in range(1, 11):
-        mess[0].add_data(scan = i, flag_construct_r = False, flag_calculate_noise = False)
+    for i in range(1, 2):
+        mess[0].add_data(scan = i, flag_construct_r = False)
 
     # there was an issue with the measure phase for this measurement
     mess[0].phase_degrees = mess[0].phase_degrees + 120
@@ -451,7 +451,7 @@ def FS2b():
     # construct r 
     pick[0].construct_r()
     
-    pick[0].calculate_noise()
+    #pick[0].calculate_noise()
     
     # calculate the spectrum
     pick[0].absorptive()
@@ -490,11 +490,27 @@ def FS3():
     # mess[0].r will not be constructed after every import
     plt.figure()
     for i in range(2, 3):
-        mess[0].add_data(scan = i, flag_construct_r = False, flag_calculate_noise = False, flag_find_angle = True)
+        mess[0].add_data(scan = i, flag_construct_r = False, flag_calculate_noise = False)
     plt.show()
     
     
     print(mess[0].incorrect_count)
+
+    plt.figure()
+    plt.plot(mess[0].b[0][:,12], ".-")
+    plt.plot(mess[0].b[1][:,12], ".-")
+    plt.show()
+    
+    mess[0].construct_r()
+    
+    plt.figure()
+    plt.plot(mess[0].r[0][:,12], ".-")
+    plt.plot(mess[0].r[1][:,12], ".-")
+    plt.show()    
+    
+    mess[0].absorptive()
+    
+    mess[0].plot(plot_type = "S")#, x_range = [1930, 2150])
 
 
 
