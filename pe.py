@@ -602,8 +602,6 @@ class pefs(pe_exp):
         flag_import_override = False, 
         flag_construct_r = True, 
         flag_calculate_noise = False):
-#         flag_find_correlation = False, 
-#         flag_find_angle = False
         """
         Adds data for a single scan.
         The data is imported as data.
@@ -616,8 +614,6 @@ class pefs(pe_exp):
         - flag_import_override (BOOL, False): If set to False, it will prevent a scan from being re-imported. If set to True, it will give a warning, but will continue anyway.
         - flag_construct_r (BOOL, True): will construct self.r at the end.  
         - flag_calculate_noise (BOOL, False): (experimental) will calculate the noise
-        - flag_find_correlation (BOOL, False): (experimental) will calculate the correlation function
-        - flag_find_angle (BOOL, False): (experimental) will show the distribution of the measured points
         
         """
         
@@ -633,13 +629,7 @@ class pefs(pe_exp):
             else:
                 print("WARNING (croc.Pe.pefs.add_data): Scan is already imported, but will be imported anyway because flag_import_override is set to True.")
             
-        # construct filenames
-        filename = [0] * 4  # the filenames
-
-        filename[0] = self.path + self.base_filename + "_" + str(self.time_stamp) + "_T" + str(self.r_axis[1]) + "_R1" + "_" + str(scan) + ".bin"
-        filename[1] = self.path + self.base_filename + "_" + str(self.time_stamp) + "_T" + str(self.r_axis[1]) + "_R2" + "_" + str(scan) + ".bin"
-        filename[2] = self.path + self.base_filename + "_" + str(self.time_stamp) + "_T" + str(self.r_axis[1]) + "_NR1" + "_" + str(scan) + ".bin"
-        filename[3] = self.path + self.base_filename + "_" + str(self.time_stamp) + "_T" + str(self.r_axis[1]) + "_NR2" + "_" + str(scan) + ".bin"
+        filename = self.make_filenames(scan)
 
         # for the 4 files
         for k in range(4):
@@ -671,27 +661,14 @@ class pefs(pe_exp):
             
                 # make b the correct size, if it isn't already
                 if numpy.shape(self.b_axis)[-1] == 2:
-                    self.b = [numpy.zeros((n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((n_fringes + 2 * self.extra_fringes, self.n_channels))] 
-                    self.b_axis[0] = numpy.arange(- self.extra_fringes, n_fringes + self.extra_fringes)
-                    self.b_axis[1] = numpy.arange(- self.extra_fringes, n_fringes + self.extra_fringes)
-                    self.b_count = numpy.zeros((4, n_fringes + 2 * self.extra_fringes))
-                    self.r = [numpy.zeros((n_fringes + self.extra_fringes, 32)),numpy.zeros((n_fringes + self.extra_fringes, 32))] 
+                    self.make_arrays(n_fringes)
         
                 # bin the data
                 self.bin_data(m, m_axis, diagram)
                 
-                #print(self.b)
-                
                 # calculate the noise
                 if flag_calculate_noise:
                     self.bin_for_noise(m, m_axis, diagram)
-                    
-#                 if flag_find_correlation:
-#                     self.find_correlation(m)
-#                     
-#                 if flag_find_angle:
-#                     self.find_angle(m, m_axis, k)
-
 
                 # all the data is now written into self.b* 
 
@@ -703,6 +680,30 @@ class pefs(pe_exp):
         self.imported_scans.append(scan)
         
         self.n_scans = len(self.imported_scans)
+
+
+
+
+
+    def make_filenames(self, scan):
+        # construct filenames
+        filename = [0] * 4  # the filenames
+
+        filename[0] = self.path + self.base_filename + "_" + str(self.time_stamp) + "_T" + str(self.r_axis[1]) + "_R1" + "_" + str(scan) + ".bin"
+        filename[1] = self.path + self.base_filename + "_" + str(self.time_stamp) + "_T" + str(self.r_axis[1]) + "_R2" + "_" + str(scan) + ".bin"
+        filename[2] = self.path + self.base_filename + "_" + str(self.time_stamp) + "_T" + str(self.r_axis[1]) + "_NR1" + "_" + str(scan) + ".bin"
+        filename[3] = self.path + self.base_filename + "_" + str(self.time_stamp) + "_T" + str(self.r_axis[1]) + "_NR2" + "_" + str(scan) + ".bin"
+        return filename
+
+
+
+    def make_arrays(self, n_fringes):
+        self.b = [numpy.zeros((n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((n_fringes + 2 * self.extra_fringes, self.n_channels))] 
+        self.b_axis[0] = numpy.arange(- self.extra_fringes, n_fringes + self.extra_fringes)
+        self.b_axis[1] = numpy.arange(- self.extra_fringes, n_fringes + self.extra_fringes)
+        self.b_count = numpy.zeros((4, n_fringes + 2 * self.extra_fringes))
+        self.r = [numpy.zeros((n_fringes + self.extra_fringes, 32)),numpy.zeros((n_fringes + self.extra_fringes, 32))] 
+
 
 
 
@@ -756,7 +757,7 @@ class pefs(pe_exp):
         croc.Pe.pefs.bin_data()
         
         After determining the fringe for all shots, this will bin the data in the correct bin. There are 4 bins: 2 (for rephasinga and non-rephasing) x 2 (for the two PEM-states). 
-        The PEM trigger should vary between ~0V and ~5V. It will check if the first state of the PEM is higher or lower than 2.5V. 
+        The PEM trigger should vary between ~0V and ~5V. It will check if the state of the PEM is higher or lower than 2.5V. 
         
         INPUT:
         - m (2d-ndarray, channels x samples): the data
@@ -782,12 +783,15 @@ class pefs(pe_exp):
                 self.b[2 * diagram + 1][j, :] += m[:,i] 
                 self.b_count[2 * diagram + 1, j] += 1
 
-        print(self.b[0][100:110,16])
-        print(self.b[1][100:110,16])
-        print(self.b[2][100:110,16])
-        print(self.b[3][100:110,16])
+#         print(self.b[0][100:110,16])
+#         print(self.b[1][100:110,16])
+#         print(self.b[2][100:110,16])
+#         print(self.b[3][100:110,16])
 #         plt.figure()
-#         plt.plot(self.b[1][16,:])
+#         plt.plot(self.b[0][:,16])
+#         plt.plot(self.b[1][:,16])
+#         plt.plot(self.b[2][:,16])
+#         plt.plot(self.b[3][:,16])
 #         plt.show()
         
 
@@ -823,7 +827,7 @@ class pefs(pe_exp):
 
 
 
-    def construct_r(self):
+    def construct_r(self, flag_no_log = False):
         """
         croc.Pe.pefs.construct_r()
         
@@ -842,7 +846,7 @@ class pefs(pe_exp):
         for j in range(4):
             for i in range(n_fringes):
                 if self.b_count[j][i] != 0:
-                    temp[j,i,:] = self.b[j][i,:] / self.b_count[j][i]    
+                    temp[j,i,:] = self.b[j][i,:] / self.b_count[j,i]    
                 else:    
                     temp[j,i,:] = 0                
         
@@ -852,9 +856,15 @@ class pefs(pe_exp):
         # make the r_axis
         self.r_axis[0] = self.b_axis[0][self.extra_fringes:] * croc.Constants.hene_fringe_fs
 
-        # now convert it to mOD
-        for j in range(2):
-            self.r[j][:,:self.n_pixels] = -numpy.log10(1+ 2*(temp[2*j,:,:self.n_pixels] - temp[2*j+1,:,:self.n_pixels])/self.reference[:self.n_pixels])
+        if flag_no_log:
+            # for testing purposes
+            for j in range(2):
+                self.r[j][:,:self.n_pixels] = temp[2*j,:,:self.n_pixels] - temp[2*j+1,:,:self.n_pixels]
+        
+        else:
+            # convert it to mOD
+            for j in range(2):
+                self.r[j][:,:self.n_pixels] = -numpy.log10(1+ 2*(temp[2*j,:,:self.n_pixels] - temp[2*j+1,:,:self.n_pixels])/self.reference[:self.n_pixels])                
         
         self.r = numpy.nan_to_num(self.r)
         

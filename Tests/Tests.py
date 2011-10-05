@@ -386,7 +386,7 @@ def FS1b():
     pick = croc.DataClasses.import_db(path_and_filename)
     
     # construct r 
-    pick[0].construct_r()
+    pick[0].construct_r(flag_no_log = True)
     
     # calculate the spectrum
     pick[0].absorptive()
@@ -496,10 +496,10 @@ def FS3():
     
     print(mess[0].incorrect_count)
 
-    plt.figure()
-    plt.plot(mess[0].b[0][:,12], ".-")
-    plt.plot(mess[0].b[1][:,12], ".-")
-    plt.show()
+#     plt.figure()
+#     plt.plot(mess[0].b[0][:,12], ".-")
+#     plt.plot(mess[0].b[2][:,12], ".-")
+#     plt.show()
     
     mess[0].construct_r()
     
