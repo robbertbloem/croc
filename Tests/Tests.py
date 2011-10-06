@@ -361,8 +361,10 @@ def FS1a():
     # import all data
     # it ranges from 1 to last_scan + 1
     # mess[0].r will not be constructed after every import
+    #plt.figure()
     for i in range(1,2):
         mess[0].add_data(scan = i, flag_construct_r = False, flag_calculate_noise = True)
+    #plt.show()
 
     # there was an issue with the measure phase for this measurement
     mess[0].phase_degrees = -132 + 180 - 90
@@ -386,25 +388,33 @@ def FS1b():
     pick = croc.DataClasses.import_db(path_and_filename)
     
     # construct r 
-    pick[0].construct_r(flag_no_log = True)
+    pick[0].construct_r(flag_no_log = False)
     
+    
+    #pick[0].zeropad_by = 2
     # calculate the spectrum
-    pick[0].absorptive()
+    pick[0].absorptive()#window_function = "ones", window_length = 600)
     
     pick[0].calculate_noise(pixel=12)
     
     
+#     plt.figure()
+#     plt.plot(pick[0].r[0][:,14], ".-")
+#     plt.plot(pick[0].r[1][:,14], ".-")
+#     plt.show()
+    
     plt.figure()
-    plt.plot(pick[0].r[0][:,12], ".-")
-    plt.plot(pick[0].r[1][:,12], ".-")
+    plt.plot(pick[0].s[:,14])
     plt.show()
+    
+    pick[0].plot_T(pixel = 14)
     
     # plot the spectrum
     pick[0].plot(plot_type = "S")#, x_range = [1930, 2150])
 
     #pick[0].bin_info()
 
-    print(pick[0])    
+    #print(pick[0])    
 
 
 
@@ -425,8 +435,8 @@ def FS2a():
     # import all data
     # it ranges from 1 to last_scan + 1
     # mess[0].r will not be constructed after every import
-    for i in range(1, 2):
-        mess[0].add_data(scan = i, flag_construct_r = False)
+    for i in range(1, 11):
+        mess[0].add_data(scan = i, flag_construct_r = False, flag_calculate_noise = True)
 
     # there was an issue with the measure phase for this measurement
     mess[0].phase_degrees = mess[0].phase_degrees + 120
@@ -449,23 +459,25 @@ def FS2b():
     path_and_filename = "azide_1522_T300"
     pick = croc.DataClasses.import_db(path_and_filename)
     
-    pick[0].zeropad_by = 2
+    #pick[0].zeropad_by = 2
     # construct r 
     pick[0].construct_r()
-    
-    #pick[0].calculate_noise()
-    
+
     # calculate the spectrum
     pick[0].absorptive()
     
-    # plot the spectrum
-    pick[0].plot(plot_type = "S", x_range = [1930, 2150])#, zlimit = 1)
+    pick[0].calculate_noise(pixel = 14)
+    
 
-    pick[0].plot_T(pixel = 12, flag_no_units = True)
+    
+    # plot the spectrum
+    #pick[0].plot(plot_type = "S", flag_no_units = True)#, x_range = [1930, 2150])#, zlimit = 1)
+
+    #pick[0].plot_T(pixel = 14, flag_no_units = False)
 
 
     
-    pick[0].bin_info()
+    #pick[0].bin_info()
 
     print(pick[0])    
 
@@ -647,20 +659,24 @@ def PE6():
     print("=== TEST ===\nSimple test of PE routines\n")
     
     mess = [0]
-    mess[0] = croc.Pe.pe_exp("PE6", "azide", 300, undersampling = 5, time_stamp = 1516)
-    mess[0].path = ("/Volumes/public_hamm/PML3/data/20110928/azide_1516_T300/")
+    mess[0] = croc.Pe.pe_exp("PE6", "azide", 300, undersampling = 5, time_stamp = 1251)
+    mess[0].path = ("/Volumes/public_hamm/PML3/data/20110921/azide_1251_T300/")
 #    mess[0].path = os.path.join(os.path.dirname(__file__), "TestData/azide_1251_T300/")
     mess[0].import_data()
     mess[0].zeropad_by = 2
-    mess[0].phase_degrees = mess[0].phase_degrees + 120
+    mess[0].phase_degrees = -132 + 180 - 90
+    #mess[0].phase_degrees + 120
       
-    mess[0].absorptive(window_function = "gaussian", window_length = 40, flag_plot = True)
+    mess[0].absorptive()
+    #window_function = "gaussian", window_length = 40, flag_plot = True)
     
     print(mess[0].s_axis[2])
     
     plt.figure()
-    plt.plot(mess[0].r[0][:,14])
+    plt.plot(mess[0].s[:,14])
     plt.show()
+    
+    mess[0].plot_T(pixel=14)
     
     mess[0].plot(x_range = [1930, 2150])
     print(mess[0])

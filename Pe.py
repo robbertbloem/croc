@@ -86,7 +86,7 @@ class pe(croc.DataClasses.mess_data):
 
 
     # plot the spectrum
-    def plot(self, plot_type = "S", x_range = [0, 0], y_range = [0, -1], zlimit = -1, contours = 12, filled = True, black_contour = True, title = "", x_label = "", y_label = "", diagonal_line = True, new_figure = True):
+    def plot(self, plot_type = "S", x_range = [0, 0], y_range = [0, -1], zlimit = -1, contours = 12, filled = True, black_contour = True, title = "", x_label = "", y_label = "", diagonal_line = True, new_figure = True, flag_no_units = False):
         """
         croc.pe.plot
         
@@ -107,8 +107,13 @@ class pe(croc.DataClasses.mess_data):
             print("ERROR (croc.pe.plot): invalid plot type. ")
             return 0
         
-        x_axis = self.s_axis[2]
-        y_axis = self.s_axis[0]
+        if flag_no_units:
+            x_axis = numpy.arange(len(self.s_axis[2]))
+            y_axis = numpy.arange(len(self.s_axis[0]))
+            y_range = [0,0]
+        else:
+            x_axis = self.s_axis[2]
+            y_axis = self.s_axis[0]
         
         if x_label == "":
             x_label = "w3 (" + str(self.s_units[2]) + ")"
@@ -1218,12 +1223,28 @@ class pefs(pe_exp):
             elif k == 3:
                 plt.plot(axis, -h, "g")    
 
+    def MSE(self, array):
+        
+        array = numpy.abs(array)
+        
+        l = len(array)
+        #m = numpy.mean(array)
+        
+        return numpy.sqrt(((numpy.sum(array)**2)/l - (numpy.sum(array) / l)**2) / l)
+        
+        
+        #return(numpy.mean(array)**2 - numpy.mean(array**2))
+
+
+    def RMS(self, array):
+        return numpy.sqrt(numpy.sum(array**2)/len(array))
+
 
     def bin_for_noise(self, m, m_axis, diagram):
         """
         croc.Pe.pefs.bin_for_noise()
         
-        Allows the calculation of the noise. It will bin the data and fourier transform it. Using croc.Pe.pefs.calculate_noise() the mean square noise is calculated.
+        Allows the calculation of the noise. It will bin the data and fourier transform it per run. Using croc.Pe.pefs.calculate_noise() the mean square noise is calculated.
         Note: this will use a large amount of memory and slows the data importing down quite a bit.
 
         IMPLICIT REQUIREMENTS:
@@ -1282,15 +1303,22 @@ class pefs(pe_exp):
         
         r = numpy.nan_to_num(r)
         
+#         plt.figure()
+#         plt.plot(r[:,14])
+#         plt.show()
+        
         f = self.fourier_helper(numpy.copy(r))
         
         f = f[:len(f)/2]
         
+        
+        
         self.n[diagram].append(f)  
         
         # plot a subset of the FT. 
-        if diagram == 1:
-            plt.plot(numpy.abs(f[:,14]))
+        #if diagram == 1:
+        #    plt.plot(numpy.abs(f[:,14]))
+        #    plt.title("FT")
     
         
 
@@ -1309,29 +1337,62 @@ class pefs(pe_exp):
         shape0 = numpy.shape(self.n[0])
         shape1 = numpy.shape(self.n[1])
         
-        std0 = numpy.zeros((shape0[1]))
-        std1 = numpy.zeros((shape1[1]))     
-        
-        a0 = numpy.zeros(shape0[1])
-        a1 = numpy.zeros(shape1[1])
+        std0 = numpy.zeros((shape0[1], shape0[2]))
+        std1 = numpy.zeros((shape1[1], shape1[2]))     
 
+        f0 = numpy.zeros((shape0[1], shape0[2]))
+        f1 = numpy.zeros((shape1[1], shape1[2]))
+        
+        a0 = numpy.zeros((shape0[0], shape0[2]), dtype = "cfloat")
+        a1 = numpy.zeros((shape1[0], shape1[2]), dtype = "cfloat")
+        
         for i in range(shape0[1]): # frequency
             for j in range(shape0[0]): # scans
-                a0[j] = self.n[0][j][i][pixel]
-            std0[i] = numpy.std(a0)
+                a0[j] = self.n[0][j][i][:]
+            std0[i] = numpy.std(numpy.abs(a0), axis = 0) #self.RMS(a0)#
+            f0[i] = numpy.mean(numpy.abs(a0), axis = 0)
+            #self.MSE(a0)
+            
 
         for i in range(shape1[1]): # frequency
             for j in range(shape1[0]): # scans
-                a1[j] = self.n[1][j][i][pixel]                
-            std1[i] = numpy.std(a1)
+                a1[j] = self.n[1][j][i][:]                
+            std1[i] = numpy.std(numpy.abs(a1), axis = 0) #self.RMS(a0)#
+            f1[i] = numpy.mean(numpy.abs(a1), axis = 0)
 
-        print(numpy.shape(self.s_axis[0]))
-        print(numpy.shape(std0[:]))
+        #croc.Plotting.contourplot(data = std0, x_axis = numpy.arange(shape0[2]), y_axis = numpy.arange(shape0[1]), x_range = [0,0], y_range = [0,0], diagonal_line = False)
+        
 
+        s_axis = numpy.arange(shape0[1]) * croc.Constants.hene_fringe_fs
+
+        print(f0[4][4])
 
         plt.figure()
-        plt.plot(std0[:])
-        plt.plot(std1[:])
+        
+        plt.subplot(211)
+        for j in range(shape0[0]):
+            plt.plot(self.s_axis[0][1:], numpy.abs(self.n[0][j][1:,pixel]))
+        plt.title("Rephasing, individual abs(FT), " + str(shape0[0]) + "x")
+        
+        plt.subplot(212)
+        plt.plot(self.s_axis[0][1:], 10*std0[1:, pixel], "b")
+        plt.plot(self.s_axis[0][1:], 10*f0[1:, pixel], "g")
+        plt.plot(self.s_axis[0][1:], f0[1:, pixel]/std0[1:, pixel], "r")
+        plt.plot
+        plt.title("STD (blue), abs(<FT>) (green) and SNR (red)")
+        plt.show()
+            
+        plt.figure()
+        plt.subplot(211)
+        for j in range(shape1[0]):
+            plt.plot(self.s_axis[0][1:], numpy.abs(self.n[1][j][1:,pixel]))
+        plt.title("Non-rephasing, individual abs(FT), " + str(shape1[0]) + "x")
+        
+        plt.subplot(212)   
+        plt.plot(self.s_axis[0][1:], 10*std1[1:, pixel],"b")
+        plt.plot(self.s_axis[0][1:], 10*f1[1:, pixel], "g")
+        plt.plot(self.s_axis[0][1:], f1[1:, pixel]/std1[1:, pixel], "r")
+        plt.title("STD (blue), abs(<FT>) (green) and SNR (red)")
         plt.show()
         
 #         else:
