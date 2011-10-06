@@ -663,13 +663,13 @@ class pefs(pe_exp):
                 self.n_fringes = int(numpy.abs(fringes[1] - fringes[0]))
             
             # reconstruct the counter
-            m_axis, counter = self.reconstruct_counter(m, fringes[0], flag_plot = False)
+            m_axis, counter, correct_count = self.reconstruct_counter(m, fringes[0], fringes[1], flag_plot = False)
             
             #if k == 0:
             #    n_fringes = counter - 4000
             
             # check for consistency
-            if counter != fringes[1]:
+            if correct_count == False:
                 print("\nWARNING (croc.Pe.pefs.add_data): There is a miscount with the fringes!")
                 print("Scan: ", scan, ", File:", k, "\n")
                 self.incorrect_count[k] += 1
@@ -901,7 +901,7 @@ class pefs(pe_exp):
 
 
 
-    def construct_r(self, flag_no_log = False):
+    def construct_r(self, flag_no_logarithm = False):
         """
         croc.Pe.pefs.construct_r()
         
@@ -945,7 +945,7 @@ class pefs(pe_exp):
         # make the r_axis
         self.r_axis[0] = self.b_axis[0][self.extra_fringes:(self.n_fringes+self.extra_fringes)] * croc.Constants.hene_fringe_fs
 
-        if flag_no_log:
+        if flag_no_logarithm:
             # for testing purposes
             for j in range(2):
                 self.r[j][:,:self.n_pixels] = temp[2*j,:,:self.n_pixels] - temp[2*j+1,:,:self.n_pixels]
@@ -969,7 +969,7 @@ class pefs(pe_exp):
     
     
     
-    def reconstruct_counter(self, data, start_counter = 0, flag_plot = False):
+    def reconstruct_counter(self, data, start_counter = 0, end_counter = 0, flag_plot = False):
         """
         croc.Pe.pefs.reconstruct_counter()
         
@@ -1057,6 +1057,17 @@ class pefs(pe_exp):
         
         m_axis[-1] = counter
         
+        if counter == end_counter:
+            correct_count = True
+        else:
+            correct_count = False
+        
+        
+            
+            
+            
+        
+        
         if flag_plot:        
             plt.figure()
             plt.plot(x, ".-")
@@ -1067,7 +1078,7 @@ class pefs(pe_exp):
             plt.title("x (blue), y (green) and counts up or down (red)")
             plt.show()
 
-        return m_axis, counter     
+        return m_axis, counter, correct_count   
 
 
 
@@ -1119,7 +1130,7 @@ class pefs(pe_exp):
         r = r[len(r)/2:]
 
         # plot it
-        plt.plot(r)
+        plt.plot(m_x)
 
 
 

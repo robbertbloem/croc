@@ -344,11 +344,11 @@ def FTIR2():
 
 
 
-def FS1a():
+def FS1a(flag_import_noise = False):
     """
     croc.Tests.Tests.FS1a
     
-    Test to import data. It will save the data as a pickle (python data structure), which will be read in and processed in part B.
+    Test to import data. It will save the data as a pickle (python data structure), which will be read in and processed in part B. This prevents you from reimporting data all the time.
     
     This test will only work if the data is present, which needs a separate download.
     
@@ -359,62 +359,85 @@ def FS1a():
     mess[0].path = os.path.join(os.path.dirname(__file__), "TestData/azide_1343_T300/")
 
     # import all data
-    # it ranges from 1 to last_scan + 1
-    # mess[0].r will not be constructed after every import
-    #plt.figure()
-    for i in range(1,2):
-        mess[0].add_data(scan = i, flag_construct_r = False, flag_calculate_noise = True)
-    #plt.show()
+    if flag_import_noise:
+        end = 11
+    else:
+        end = 21
+
+    for i in range(1, end):
+        mess[0].add_data(scan = i, flag_construct_r = False, flag_calculate_noise = flag_import_noise)
 
     # there was an issue with the measure phase for this measurement
     mess[0].phase_degrees = -132 + 180 - 90
     
     # make the pickle
-    path_and_filename = os.path.join(os.path.dirname(__file__), "TestData/azide_1343_T300_pickle/azide_1343_T300")
+    if flag_import_noise:
+        path_and_filename = os.path.join(os.path.dirname(__file__), "TestData/azide_1343_T300_pickle/azide_1343_T300_noise")
+    else:
+        path_and_filename = os.path.join(os.path.dirname(__file__), "TestData/azide_1343_T300_pickle/azide_1343_T300")
+    
     croc.DataClasses.make_db(mess, path_and_filename)
+
+
 
 
 def FS1b():
     """
     croc.Tests.Tests.FS1b
     
-    This will import the pickle and do things with the data. This prevents you from having to reimport all the data all the time. 
+    This will import the pickle and do things with the data. This is the most straightforward way to test the Fast Scanning routine.
     
-
     """
-    
     # import the pickle
     path_and_filename = os.path.join(os.path.dirname(__file__), "TestData/azide_1343_T300_pickle/azide_1343_T300")
     pick = croc.DataClasses.import_db(path_and_filename)
     
     # construct r 
-    pick[0].construct_r(flag_no_log = False)
+    pick[0].construct_r()
     
-    
-    #pick[0].zeropad_by = 2
     # calculate the spectrum
-    pick[0].absorptive()#window_function = "ones", window_length = 600)
-    
-    pick[0].calculate_noise(pixel=12)
-    
-    
-#     plt.figure()
-#     plt.plot(pick[0].r[0][:,14], ".-")
-#     plt.plot(pick[0].r[1][:,14], ".-")
-#     plt.show()
-    
-    plt.figure()
-    plt.plot(pick[0].s[:,14])
-    plt.show()
-    
-    pick[0].plot_T(pixel = 14)
+    pick[0].absorptive()
     
     # plot the spectrum
     pick[0].plot(plot_type = "S")#, x_range = [1930, 2150])
 
-    #pick[0].bin_info()
+    # print the data structure
+    print(pick[0])    
 
-    #print(pick[0])    
+
+
+
+
+def FS1c():
+    """
+    croc.Tests.Tests.FS1c
+    
+    This will import the pickle and calculate the noise.
+    
+    """
+    
+    # import the pickle
+    path_and_filename = os.path.join(os.path.dirname(__file__), "TestData/azide_1343_T300_pickle/azide_1343_T300_noise")
+    pick = croc.DataClasses.import_db(path_and_filename)
+    
+    # construct r 
+    pick[0].construct_r()
+    
+    # calculate the spectrum
+    pick[0].absorptive()
+    
+    # calculate noise
+    pick[0].calculate_noise(pixel = 16)
+    
+    # plot the spectrum
+    pick[0].plot(plot_type = "S")#, x_range = [1930, 2150])
+
+    # print the data structure
+    print(pick[0])     
+
+
+
+
 
 
 
@@ -436,7 +459,7 @@ def FS2a():
     # it ranges from 1 to last_scan + 1
     # mess[0].r will not be constructed after every import
     for i in range(1, 11):
-        mess[0].add_data(scan = i, flag_construct_r = False, flag_calculate_noise = True)
+        mess[0].add_data(scan = i, flag_construct_r = False, flag_calculate_noise = False)
 
     # there was an issue with the measure phase for this measurement
     mess[0].phase_degrees = mess[0].phase_degrees + 120
@@ -486,11 +509,9 @@ def FS2b():
 
 def FS3():
     """
-    croc.Tests.Tests.FS1a
+    croc.Tests.Tests.FS3
     
-    Test to import data. It will save the data as a pickle (python data structure), which will be read in and processed in part B.
-    
-    This test will only work if the data is present, which needs a separate download.
+    Calculates spectrum without saving it as a pickle.
     
     """
 
@@ -609,7 +630,7 @@ def FS5(flag_test = False):
         
         start_counter = 4000
         
-        [m_axis, counter] = mess[0].reconstruct_counter(data = m, start_counter = 0, flag_plot = False)    
+        [m_axis, counter, correct_count] = mess[0].reconstruct_counter(data = m, start_counter = 0, flag_plot = False)    
         # plot the circle
         plt.figure()
         plt.plot(m[mess[0].x_channel,:],m[mess[0].y_channel,:])
@@ -629,7 +650,7 @@ def FS5(flag_test = False):
         [m, fringes] = mess[0].import_raw_data(path_and_filename)
         
         # reconstruct the counter
-        [m_axis, counter] = mess[0].reconstruct_counter(data = m, start_counter = 0, flag_plot = True)
+        [m_axis, counter, correct_count] = mess[0].reconstruct_counter(data = m, start_counter = 0, flag_plot = True)
 
     
     # plot the angle
