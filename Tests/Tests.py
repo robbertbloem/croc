@@ -113,6 +113,10 @@ def PE2():
 
     print(mess[0])
 
+
+
+
+
 def PE3():
     """
     croc.Tests.tests.PE3
@@ -406,11 +410,36 @@ def FS1b():
 
 
 
-
-
 def FS1c():
     """
     croc.Tests.Tests.FS1c
+    
+    This will import the pickle and do things with the data. This is the most straightforward way to test the Fast Scanning routine.
+    
+    """
+    # import the pickle
+    path_and_filename = os.path.join(os.path.dirname(__file__), "TestData/azide_1343_T300_pickle/azide_1343_T300")
+    pick = croc.DataClasses.import_db(path_and_filename)
+    
+    # you can also use pick[0].zeropad_to
+    pick[0].zeropad_by = 2
+    
+    # construct r 
+    pick[0].construct_r()
+    
+    # calculate the spectrum
+    pick[0].absorptive(window_function = "gaussian", window_length = 0)
+    
+    # plot the spectrum
+    pick[0].plot(plot_type = "S")#, x_range = [1930, 2150])
+
+    # print the data structure
+    print(pick[0])   
+
+
+def FS1d():
+    """
+    croc.Tests.Tests.FS1d
     
     This will import the pickle and calculate the noise.
     
@@ -614,7 +643,9 @@ def FS5(flag_test = False):
     if flag_test:
         # number of samples
         n_samples = 10000
-    
+        
+        k = [0]
+        
         mess = [0]
         mess[0] = croc.Pe.pefs("FS5", "test", 0, 0)
         
@@ -636,30 +667,54 @@ def FS5(flag_test = False):
         plt.plot(m[mess[0].x_channel,:],m[mess[0].y_channel,:])
         plt.show()
         
+        # plot the angle
+        plt.figure()
+        mess[0].find_angle(m, m_axis, k = 0, skip_first = 1000, skip_last = 1000, flag_normalize_circle = True, flag_scatter_plot = False)
+        plt.show()
+        
     else:
     
         mess = [0]
-        mess[0] = croc.Pe.pefs("FS2", "azide", 300, 1522)
-        mess[0].path = ("/Volumes/public_hamm/PML3/data/20110928/azide_1522_T300/")
-        scan = 2
-        
-        # construct the path and filename
-        path_and_filename = mess[0].path + mess[0].base_filename + "_" + str(mess[0].time_stamp) + "_T" + str(mess[0].r_axis[1]) + "_R1" + "_" + str(scan) + ".bin"
-    
-        # import the raw data
-        [m, fringes] = mess[0].import_raw_data(path_and_filename)
-        
-        # reconstruct the counter
-        [m_axis, counter, correct_count] = mess[0].reconstruct_counter(data = m, start_counter = 0, flag_plot = True)
+        mess[0] = croc.Pe.pefs("FS3", "azide", 300, 1343)
+        mess[0].path = os.path.join(os.path.dirname(__file__), "TestData/azide_1343_T300/") 
 
+        k = [0, 1, 2, 3]
+
+        # construct the path and filename        
+        path_and_filename = mess[0].make_filenames(scan = 2)
+
+        # plot the angle as a histogram
+        plt.figure()
+        
+        for i in range(len(k)):
+        
+            # import the raw data
+            [m, fringes] = mess[0].import_raw_data(path_and_filename[k[i]])
+            
+            # reconstruct the counter
+            [m_axis, counter, correct_count] = mess[0].reconstruct_counter(data = m, start_counter = 0, flag_plot = False)
+            
+            if correct_count:
+                mess[0].find_angle(m, m_axis, k = i, skip_first = 1000, skip_last = 1000, flag_normalize_circle = True, flag_scatter_plot = False, new_figure = False)
+       
+        plt.show()
     
-    # plot the angle
-    plt.figure()
-    mess[0].find_angle(m, m_axis, k = 0, skip_first = 1000, skip_last = 1000, flag_normalize_circle = True, flag_scatter_plot = False)
-    plt.show()
     
-    
-    
+        # plot the angle
+        plt.figure()
+        
+        for i in range(len(k)):
+        
+            # import the raw data
+            [m, fringes] = mess[0].import_raw_data(path_and_filename[k[i]])
+            
+            # reconstruct the counter
+            [m_axis, counter, correct_count] = mess[0].reconstruct_counter(data = m, start_counter = 0, flag_plot = False)
+            
+            if correct_count:
+                mess[0].find_angle(m, m_axis, k = i, skip_first = 0, skip_last = 0, flag_normalize_circle = True, flag_scatter_plot = True, new_figure = False)
+       
+        plt.show()    
     
     
     
@@ -702,29 +757,21 @@ def PE6():
     mess[0].plot(x_range = [1930, 2150])
     print(mess[0])
 
+
+
+
+
     
 def F1():
     length = 50
     
-    wa = croc.Absorptive.window_functions(numpy.ones(length), window_function = "experimental", window_length = 0, flag_plot = False)  
+    wa = croc.Absorptive.window_functions(numpy.ones(length), window_function = "gaussian", window_length = 25, flag_plot = False)  
     
     print(wa[-1])
     
     plt.figure()
     plt.plot(wa)
     plt.show() 
-
-
-
-def corr():
-
-    mess = [0]
-
-        
-    plt.figure()
-    for i in range(1, 2):
-        mess[0].add_data(scan = i, flag_construct_r = False, flag_calculate_noise = False, flag_find_correlation = True)    
-    plt.show()
 
 
 

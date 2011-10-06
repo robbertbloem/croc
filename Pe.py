@@ -857,17 +857,7 @@ class pefs(pe_exp):
                 self.b[2 * diagram + 1][j, :] += m[:,i] 
                 self.b_count[2 * diagram + 1, j] += 1
 
-#         print(self.b[0][100:110,16])
-#         print(self.b[1][100:110,16])
-#         print(self.b[2][100:110,16])
-#         print(self.b[3][100:110,16])
-#         plt.figure()
-#         plt.plot(self.b[0][:,16])
-#         plt.plot(self.b[1][:,16])
-#         plt.plot(self.b[2][:,16])
-#         plt.plot(self.b[3][:,16])
-#         plt.show()
-        
+
 
     def bin_info(self):
         """
@@ -1092,7 +1082,7 @@ class pefs(pe_exp):
 
 
 
-    def find_correlation(self, m, channel = 16):
+    def find_correlation(self, m, channel = 16, new_figure = False):
         """
         croc.Pe.pefs.find_correlation
         
@@ -1130,12 +1120,18 @@ class pefs(pe_exp):
         r = r[len(r)/2:]
 
         # plot it
+        if new_figure:
+            plt.figure()
+        
         plt.plot(m_x)
+        
+        if new_figure:
+            plt.show()
 
 
 
 
-    def find_angle(self, m, m_axis, k = 0, skip_first = 0, skip_last = 0, flag_normalize_circle = True, flag_scatter_plot = True):   
+    def find_angle(self, m, m_axis, k = 0, skip_first = 0, skip_last = 0, flag_normalize_circle = True, flag_scatter_plot = True, new_figure = True):   
         """
         croc.pe.pefs.find_angle()
         
@@ -1196,6 +1192,10 @@ class pefs(pe_exp):
                 print("Divide by zero")
         
         if flag_scatter_plot:
+        
+            if new_figure:
+                plt.figure()
+            
             # make an - in effect - scatter plot
             plt.plot(m_axis, m_angle, "b.")
             plt.xlabel("Fringes")
@@ -1223,7 +1223,10 @@ class pefs(pe_exp):
             
             # make the axis
             axis = b_e[:-1]
-
+            
+            if new_figure:
+                plt.figure()
+            
             # plot it
             if k == 0:
                 plt.plot(axis, h, "b")
@@ -1233,22 +1236,13 @@ class pefs(pe_exp):
                 plt.plot(axis, -h, "b")
             elif k == 3:
                 plt.plot(axis, -h, "g")    
+            
+            plt.xlabel("Angle")
+            plt.ylabel("Occurances")
+            plt.title("Histogram of angles (negative for non-rephasing)")
+            
+        plt.show()
 
-    def MSE(self, array):
-        
-        array = numpy.abs(array)
-        
-        l = len(array)
-        #m = numpy.mean(array)
-        
-        return numpy.sqrt(((numpy.sum(array)**2)/l - (numpy.sum(array) / l)**2) / l)
-        
-        
-        #return(numpy.mean(array)**2 - numpy.mean(array**2))
-
-
-    def RMS(self, array):
-        return numpy.sqrt(numpy.sum(array**2)/len(array))
 
 
     def bin_for_noise(self, m, m_axis, diagram):
@@ -1306,7 +1300,6 @@ class pefs(pe_exp):
                     temp[j,i,:] = 0                
         
         # now only select the part where fringes are not negative
-        #temp = temp[:,self.extra_fringes:,:self.n_pixels]
         temp = temp[:,self.extra_fringes:(self.n_fringes+self.extra_fringes),:self.n_pixels]
         
         # now convert it to mOD
@@ -1314,22 +1307,12 @@ class pefs(pe_exp):
         
         r = numpy.nan_to_num(r)
         
-#         plt.figure()
-#         plt.plot(r[:,14])
-#         plt.show()
-        
         f = self.fourier_helper(numpy.copy(r))
         
         f = f[:len(f)/2]
         
-        
-        
         self.n[diagram].append(f)  
-        
-        # plot a subset of the FT. 
-        #if diagram == 1:
-        #    plt.plot(numpy.abs(f[:,14]))
-        #    plt.title("FT")
+
     
         
 
