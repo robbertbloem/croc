@@ -59,6 +59,10 @@ def check_pickle_exists(path_and_filename):
     return os.path.exists(path_and_filename)
 
 
+
+
+
+
 def import_data(mess_date, import_mess, import_from, import_to, mess_array):
     """
     croc.Croc.import_data()
@@ -68,9 +72,6 @@ def import_data(mess_date, import_mess, import_from, import_to, mess_array):
     
     
     """
-    
-    
-    
     # first check if mess_i actually exists
     try:
         mess_array[import_mess]
@@ -129,9 +130,29 @@ def import_data(mess_date, import_mess, import_from, import_to, mess_array):
         # mess_i does not exist
         print("ERROR (script_import.py): mess_i is outside of the range of mess_array")
         
+      
+      
+      
+      
+      
+      
         
+def print_summary(object_array):
+    print("")
+    
+    for i in range(len(object_array)):
+        print("OBJECT: " + object_array[i].objectname + ", t2: " + str(object_array[i].r_axis[1]) + ", time stamp: " + str(object_array[i].time_stamp)) 
+        print("Imported scans: " + str(object_array[i].imported_scans))
+        print("")
         
-        
+
+
+
+
+
+
+
+
 
 class pe(croc.DataClasses.mess_data):
     """
@@ -759,8 +780,8 @@ class pefs(pe_exp):
             
             # check for consistency
             if correct_count == False:
-                print("\nWARNING (croc.Pe.pefs.add_data): There is a miscount with the fringes!")
-                print("Scan: ", scan, ", File:", k, "\n")
+                print("WARNING (croc.Pe.pefs.add_data): There is a miscount with the fringes!")
+                print("\tScan: ", scan, ", File:", k)
                 self.incorrect_count[k] += 1
 
             # if it is consistent, continue

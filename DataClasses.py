@@ -40,6 +40,8 @@ class ClassTools(object):
     def __str__(self):
         return "[%s:\n %s]" % (self.__class__.__name__, self.gatherAttrs())
         
+    
+        
 
 
 ##############
