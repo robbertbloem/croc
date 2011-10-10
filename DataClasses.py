@@ -207,7 +207,7 @@ class mess_data(ClassTools):
 # SHELVE FUNCTIONS #
 ####################
 
-def make_db(array_of_class_instances, base_filename):
+def make_db(array_of_class_instances, path_and_filename):
     """
     Makes a database and writes all values.
     The inumpyut should be an array with class instances, not a class 
@@ -215,7 +215,10 @@ def make_db(array_of_class_instances, base_filename):
     If the database already exists, it will update the values. Make
         sure that everything stored in the database has the same class.
     """
-    db = shelve.open(base_filename + ".pickle")
+    if path_and_filename[-7:] != ".pickle":
+        path_and_filename += ".pickle"
+    
+    db = shelve.open(path_and_filename)
     
     for object in array_of_class_instances:
         db[object.objectname] = object
@@ -224,7 +227,7 @@ def make_db(array_of_class_instances, base_filename):
 
 
 
-def import_db(base_filename):
+def import_db(path_and_filename):
     """
     Imports a database. 
     The function checks for the existence of the database. It returns "False" 
@@ -232,9 +235,12 @@ def import_db(base_filename):
         class instances.
     """
 
-    if os.path.isfile(base_filename + ".pickle") == True:
+    if path_and_filename[-7:] != ".pickle":
+        path_and_filename += ".pickle"
+
+    if os.path.isfile(path_and_filename) == True:
         
-        db=shelve.open(base_filename + ".pickle")
+        db=shelve.open(path_and_filename)
         
         array_of_class_instances = []
         

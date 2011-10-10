@@ -21,6 +21,7 @@ from __future__ import absolute_import
 
 import fileinput
 import re
+import os.path
 
 import numpy
 import matplotlib 
@@ -46,6 +47,19 @@ if croc.Debug.reload_flag:
 
 
 debug_flag = croc.Debug.debug_flag
+
+
+def make_pickle_name(base_filename, pop_time, time_stamp, path = ""):
+    return path + base_filename + "_" + str(time_stamp) + "_T" + str(pop_time) + ".pickle"
+
+def make_path(base_filename, pop_time, time_stamp, path = ""):
+    return path + base_filename + "_" + str(time_stamp) + "_T" + str(pop_time) + "/"
+
+def check_pickle_exists(path_and_filename):
+    return os.path.exists(path_and_filename)
+
+
+
 
 class pe(croc.DataClasses.mess_data):
     """
@@ -561,7 +575,7 @@ class pefs(pe_exp):
         self.base_filename = base_filename
         self.r_axis[1] = population_time   
         self.time_stamp = time_stamp   
-        #self.path = self.base_filename + "_" + str(self.time_stamp) + "_T" + str(self.r_axis[1]) + "/"  
+        self.path = self.base_filename + "_" + str(self.time_stamp) + "_T" + str(self.r_axis[1]) + "/"  
         
         self.mess_type = "FastScan"
         
@@ -656,7 +670,10 @@ class pefs(pe_exp):
                 diagram = 1
             
             # import the data
-            [m, fringes] = self.import_raw_data(filename[k])
+            try:
+                [m, fringes] = self.import_raw_data(filename[k])
+            except IOError:
+                return False
             
             # if the number of fringes can not be set using the meta file, find it here 
             if self.n_fringes == 0:
@@ -699,6 +716,8 @@ class pefs(pe_exp):
         self.imported_scans.append(scan)
         
         self.n_scans = len(self.imported_scans)
+        
+        return True
 
 
 
@@ -795,25 +814,30 @@ class pefs(pe_exp):
         """
         
         # import the data
-        data = numpy.fromfile(path_and_filename) 
-       
-        # read the fringes and remove them from the measurement data
-        fringes = [data[-2], data[-1]]
-        data = data[:-2]
-        
-        # determine the length
-        if self.n_shots == 0:
-            self.n_shots = int(numpy.shape(data)[0] / self.n_channels)            
-        
-        # construct m
-        m = numpy.zeros((self.n_channels, self.n_shots))
-        
-        # order the data in a 2d array
-        for i in range(self.n_shots):
-            for j in range(self.n_channels):
-                m[j, i] = data[j + i * self.n_channels] 
-        
-        return m, fringes
+        try:
+            data = numpy.fromfile(path_and_filename) 
+           
+            # read the fringes and remove them from the measurement data
+            fringes = [data[-2], data[-1]]
+            data = data[:-2]
+            
+            # determine the length
+            if self.n_shots == 0:
+                self.n_shots = int(numpy.shape(data)[0] / self.n_channels)            
+            
+            # construct m
+            m = numpy.zeros((self.n_channels, self.n_shots))
+            
+            # order the data in a 2d array
+            for i in range(self.n_shots):
+                for j in range(self.n_channels):
+                    m[j, i] = data[j + i * self.n_channels] 
+            
+            return m, fringes
+        except IOError:
+            print("ERROR (croc.Pe.pefs.add_data): Unable to import data from file " + path_and_filename)
+            raise
+            return 0, 0
 
 
    
