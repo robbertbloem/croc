@@ -831,9 +831,6 @@ class pefs(pe_exp):
             # reconstruct the counter
             m_axis, counter, correct_count = self.reconstruct_counter(m, fringes[0], fringes[1], flag_plot = False)
             
-            #if k == 0:
-            #    n_fringes = counter - 4000
-            
             # check for consistency
             if correct_count == False:
                 print("WARNING (croc.Pe.pefs.add_data): There is a miscount with the fringes!")
@@ -1227,13 +1224,7 @@ class pefs(pe_exp):
             correct_count = True
         else:
             correct_count = False
-        
-        
-            
-            
-            
-        
-        
+
         if flag_plot:        
             plt.figure()
             plt.plot(x, ".-")
@@ -1442,7 +1433,6 @@ class pefs(pe_exp):
         """
         
         b_fringes = self.n_fringes + 2 * self.extra_fringes
-        #len(self.b_axis[0]) 
         
         n_shots = len(m_axis)
         
@@ -1611,7 +1601,7 @@ class pefs(pe_exp):
         
 
 
-    def calculate_noise(self, pixel = 16, max_scans = 0, flag_plot_2dir = False, flag_plot_real = False):
+    def calculate_noise(self, pixel = 16, max_scans = 0, flag_plot_2dir = False):
         """
         croc.Pe.pefs.calculate_noise()
         
@@ -1619,8 +1609,6 @@ class pefs(pe_exp):
         The data is stored in self.n. The data has first to be unpacked. Then it will take the standard deviation of the different FT's. 
         
         """
-        
-#         if numpy.shape(self.n)[1] != 0:
         
         shape0 = numpy.shape(self.n[0])
         shape1 = numpy.shape(self.n[1])
@@ -1634,9 +1622,6 @@ class pefs(pe_exp):
             max_scans1 = shape1[0]
         else:
             max_scans1 = max_scans
-       
-
-        
         
         std0 = numpy.zeros((shape0[1], shape0[2]))
         std1 = numpy.zeros((shape1[1], shape1[2]))     
@@ -1653,21 +1638,16 @@ class pefs(pe_exp):
         for i in range(shape0[1]): # frequency
             for j in range(max_scans0): # scans
                 a0[j] = self.n[0][j][i][:]
-            std0[i] = numpy.std(numpy.abs(a0), axis = 0) #self.RMS(a0)#
+            std0[i] = numpy.std(numpy.abs(a0), axis = 0) 
             f0[i] = numpy.mean(numpy.abs(a0), axis = 0)
             f0Im[i] = numpy.mean(a0, axis = 0)
-            #self.MSE(a0)
-            
 
         for i in range(shape1[1]): # frequency
             for j in range(max_scans1): # scans
                 a1[j] = self.n[1][j][i][:]                
-            std1[i] = numpy.std(numpy.abs(a1), axis = 0) #self.RMS(a0)#
+            std1[i] = numpy.std(numpy.abs(a1), axis = 0) 
             f1[i] = numpy.mean(numpy.abs(a1), axis = 0)
-            f1Im[i] = numpy.mean(a1, axis = 0)
-
-        #croc.Plotting.contourplot(data = std0, x_axis = numpy.arange(shape0[2]), y_axis = numpy.arange(shape0[1]), x_range = [0,0], y_range = [0,0], diagonal_line = False)
-        
+            f1Im[i] = numpy.mean(a1, axis = 0)        
 
         s_axis = numpy.arange(shape0[1]) * croc.Constants.hene_fringe_fs
 
@@ -1700,45 +1680,6 @@ class pefs(pe_exp):
             x_axis = self.s_axis[0]
             
             croc.Plotting.linear(data[7,:], x_axis, x_range = [0, 0], y_range = [0, 0], x_label = x_label, y_label = y_label, title = title, new_figure = new_figure)
-
-
-        elif flag_plot_real:
-        
-            plt.figure()
-            
-            plt.subplot(211)
-            for j in range(max_scans0):
-                plt.plot(self.s_axis[0][1:], numpy.real(self.n[0][j][1:,pixel]))
-            plt.title("Rephasing, individual real(FT), " + str(max_scans0) + "x")
-            
-            plt.subplot(212)
-            
-            ratio = 1
-            
-            plt.plot(self.s_axis[0][1:], ratio * numpy.real(f0Im[1:, pixel]), "b")
-            plt.plot(self.s_axis[0][1:], ratio * numpy.imag(f0Im[1:, pixel]), "g")
-            plt.plot
-            plt.title("real(<FT>) (blue), imag(<FT>) (green)")
-            plt.xlabel("cm-1")
-            plt.ylabel("Ratio")
-            plt.show()
-                
-            plt.figure()
-            plt.subplot(211)
-            for j in range(max_scans1):
-                plt.plot(self.s_axis[0][1:], numpy.real(self.n[1][j][1:,pixel]))
-            plt.title("Non-rephasing, individual real(FT), " + str(max_scans1) + "x")
-            
-            plt.subplot(212)   
-            ratio = 1
-            plt.plot(self.s_axis[0][1:], ratio * numpy.real(f1Im[1:, pixel]), "b")
-            plt.plot(self.s_axis[0][1:], ratio * numpy.imag(f1Im[1:, pixel]), "g")
-
-            plt.title("real(<FT>) (blue), imag(<FT>) (green)")
-            plt.xlabel("cm-1")
-            plt.ylabel("Ratio")
-            plt.show()
-            
         
         else:
     
@@ -1779,11 +1720,7 @@ class pefs(pe_exp):
             plt.ylabel("Ratio")
             plt.show()
         
-#         else:
-#             print("ERROR (croc.pe.pefs.calculate_noise): There is no data to work with. Make sure that during the import you select 'flag_calculate_noise'. ")
-        
-        
-        
+ 
         
        
         
