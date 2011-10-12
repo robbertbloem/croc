@@ -63,7 +63,10 @@ def check_pickle_exists(path_and_filename):
 
 
 
-def import_data(mess_date, import_mess, import_from, import_to, mess_array):
+def import_data(mess_date, import_mess, import_from, import_to, mess_array,
+        flag_calculate_noise = False,
+        flag_no_pickle = False
+    ):
     """
     croc.Croc.import_data()
     
@@ -72,65 +75,72 @@ def import_data(mess_date, import_mess, import_from, import_to, mess_array):
     
     
     """
-    # first check if mess_i actually exists
-    try:
-        mess_array[import_mess]
-        
-        # default name of the pickle
-        # use the _fs postfix to differentiate it from other pickles
-        pickle_name = str(mess_date) + "_fs.pickle"
-        
-        # first, check if there is a pickle
-        if croc.Pe.check_pickle_exists(pickle_name):
-            # found a pickle, now import it
-            print("Found pickle")
-            mess = croc.DataClasses.import_db(pickle_name)
-        else:
-            # there is no pickle, so make a new a new data structure
-            print("No pickle found")
-            mess = [0]
-            mess[0] = croc.Pe.pefs(mess_array[0][0], mess_array[0][1], mess_array[0][2], mess_array[0][3])
-        
-        # see if we have to extend mess to fit with mess_array
-        if len(mess) < len(mess_array):
-            for i in range(len(mess_array)):
-                try:
-                    # this works if mess[i] exists
-                    mess[i].objectname
-                except IndexError:
-                    # it does not work if it does not exists
-                    mess.append(croc.Pe.pefs(mess_array[i][0], mess_array[i][1], mess_array[i][2], mess_array[i][3]))
-                    
-        # pickle can confuse the order of measurements
-        # use the unique object names to find the correct one
-        for i in range(len(mess)):
-            if mess[i].objectname == mess_array[import_mess][0]:
-                mess_i = i
-            
-        # construct the import range
-        import_range = range(import_from, import_to + 1)
-        
-        flag_change = False
-        
-        # import the data
-        for i in import_range:
-            print("Importing object: " + mess[mess_i].objectname + ", scan:", str(i))
-            result = mess[mess_i].add_data(scan = i, flag_construct_r = False, flag_calculate_noise = False)
-            
-            if result == True:  
-                flag_change = True
-        
-        if flag_change:
-            print("Updating pickle...")
-            croc.DataClasses.make_db(mess, pickle_name)
-        else:
-            print("No need to update pickle...")
+    if import_from == 0 or import_to == 0:
+        return 0
+    else:
     
-    except IndexError:
-        # mess_i does not exist
-        print("ERROR (script_import.py): mess_i is outside of the range of mess_array")
+        # first check if mess_i actually exists
+        try:
+            mess_array[import_mess]
+            
+            # default name of the pickle
+            # use the _fs postfix to differentiate it from other pickles
+            pickle_name = str(mess_date) + "_fs.pickle"
+            
+            # first, check if there is a pickle
+            if croc.Pe.check_pickle_exists(pickle_name):
+                # found a pickle, now import it
+                print("Found pickle")
+                mess = croc.DataClasses.import_db(pickle_name)
+            else:
+                # there is no pickle, so make a new a new data structure
+                print("No pickle found")
+                mess = [0]
+                mess[0] = croc.Pe.pefs(mess_array[0][0], mess_array[0][1], mess_array[0][2], mess_array[0][3])
+            
+            # see if we have to extend mess to fit with mess_array
+            if len(mess) < len(mess_array):
+                for i in range(len(mess_array)):
+                    try:
+                        # this works if mess[i] exists
+                        mess[i].objectname
+                    except IndexError:
+                        # it does not work if it does not exists
+                        mess.append(croc.Pe.pefs(mess_array[i][0], mess_array[i][1], mess_array[i][2], mess_array[i][3]))
+                        
+            # pickle can confuse the order of measurements
+            # use the unique object names to find the correct one
+            for i in range(len(mess)):
+                if mess[i].objectname == mess_array[import_mess][0]:
+                    mess_i = i
+                
+            # construct the import range
+            import_range = range(import_from, import_to + 1)
+            
+            flag_change = False
+            
+            # import the data
+            for i in import_range:
+                print("Importing object: " + mess[mess_i].objectname + ", scan:", str(i))
+                result = mess[mess_i].add_data(scan = i, flag_construct_r = False, flag_calculate_noise = flag_calculate_noise)
+                
+                if result == True:  
+                    flag_change = True
+            
+            if flag_no_pickle == False:
+                if flag_change:
+                    print("Updating pickle...")
+                    croc.DataClasses.make_db(mess, pickle_name)
+                else:
+                    print("No need to update pickle...")
+            else:
+                print("flag_no_pickle == True")
         
-      
+        except IndexError:
+            # mess_i does not exist
+            print("ERROR (script_import.py): mess_i is outside of the range of mess_array")
+            
+          
       
       
       
@@ -143,6 +153,19 @@ def print_summary(object_array):
     for i in range(len(object_array)):
         print("OBJECT: " + object_array[i].objectname + ", t2: " + str(object_array[i].r_axis[1]) + ", time stamp: " + str(object_array[i].time_stamp)) 
         print("Imported scans: " + str(object_array[i].imported_scans))
+        
+        if numpy.all(object_array[i].r):
+            print("r constructed")
+        else:
+            print("r not constructed")
+
+        if numpy.all(object_array[i].s):
+            print("s calculated")
+        else:
+            print("s not calculated")   
+            
+             
+        
         print("")
         
 
@@ -193,7 +216,7 @@ class pe(croc.DataClasses.mess_data):
 
 
     # plot the spectrum
-    def plot(self, plot_type = "S", x_range = [0, 0], y_range = [0, -1], zlimit = -1, contours = 12, filled = True, black_contour = True, title = "", x_label = "", y_label = "", diagonal_line = True, new_figure = True, flag_no_units = False):
+    def plot(self, plot_type = "S", x_range = [0, 0], y_range = [0, -1], zlimit = -1, contours = 12, filled = True, black_contour = True, title = "", x_label = "", y_label = "", diagonal_line = True, new_figure = True, flag_no_units = False, pixel = -1):
         """
         croc.pe.plot
         
@@ -214,24 +237,55 @@ class pe(croc.DataClasses.mess_data):
             print("ERROR (croc.pe.plot): invalid plot type. ")
             return 0
         
-        if flag_no_units:
-            x_axis = numpy.arange(len(self.s_axis[2]))
-            y_axis = numpy.arange(len(self.s_axis[0]))
-            y_range = [0,0]
+        if pixel < 0:
+        
+            if flag_no_units:
+                x_axis = numpy.arange(len(self.s_axis[2]))
+                y_axis = numpy.arange(len(self.s_axis[0]))
+                y_range = [0,0]
+                if x_label == "":
+                    x_label = "FT (steps)"
+                if y_label == "":
+                    y_label = "spectrometer (pixels)"
+                diagonal_line = False
+
+            else:
+                x_axis = self.s_axis[2]
+                y_axis = self.s_axis[0]    
+                if x_label == "":
+                    x_label = "w3 (" + str(self.s_units[2]) + ")"
+                if y_label == "":
+                    y_label = "w1 (" +  str(self.s_units[0]) + ")"
+            
+            if title == "":
+                title = self.objectname + ", t2: " + str(self.r_axis[1]) + "\n scans x shots: " + str(self.n_scans) + "x" + str(self.n_shots)
+            
+                   
+            croc.Plotting.contourplot(data, x_axis, y_axis, x_range = x_range, y_range = y_range, zlimit = zlimit, contours = contours, filled = filled, black_contour = black_contour, title = title, x_label = x_label, y_label = y_label, diagonal_line = diagonal_line, new_figure = new_figure) 
+        
         else:
-            x_axis = self.s_axis[2]
-            y_axis = self.s_axis[0]
+            data = data.T
+            
+            if flag_no_units:
+                x_axis = numpy.arange(len(self.s_axis[0]))
+                y_range = [0,0]
+                if x_label == "":
+                    x_label = "FT (steps"
+                if y_label == "":
+                    y_label = "Intensity"
+
+            else:
+                x_axis = self.s_axis[0]  
+                if x_label == "":
+                    x_label = "w1 (" + str(self.s_units[0]) + ")"
+                if y_label == "":
+                    y_label = "Intensity"
+            
+            if title == "":
+                title = "Spectrum for pixel " + str(pixel) + " - " + self.objectname + ", t2: " + str(self.r_axis[1]) + "\n scans x shots: " + str(self.n_scans) + "x" + str(self.n_shots)            
         
-        if x_label == "":
-            x_label = "w3 (" + str(self.s_units[2]) + ")"
-        if y_label == "":
-            y_label = "w1 (" +  str(self.s_units[0]) + ")"
-        
-        if title == "":
-            title = self.objectname + ", t2: " + str(self.r_axis[1]) + "\n scans x shots: " + str(self.n_scans) + "x" + str(self.n_shots)
-        
-               
-        croc.Plotting.contourplot(data, x_axis, y_axis, x_range = x_range, y_range = y_range, zlimit = zlimit, contours = contours, filled = filled, black_contour = black_contour, title = title, x_label = x_label, y_label = y_label, diagonal_line = diagonal_line, new_figure = new_figure)  
+            croc.Plotting.linear(data[pixel,:], x_axis, x_range = [0, 0], y_range = [0, 0], x_label = x_label, y_label = y_label, title = title, new_figure = new_figure)
+            
 
 
 
@@ -550,11 +604,13 @@ class pe_exp(pe):
         ft_array = numpy.reshape( numpy.zeros(x*y, dtype=numpy.cfloat), (x, y))
 
         # iterate over all the pixels
-        
         for i in range(y):
             ft_array[:,i] = croc.Absorptive.fourier(array[:,i], zero_in_middle = False, first_correction = True, zeropad_to = self.zeropad_to, window_function = window_function, window_length = window_length, flag_plot = flag_plot)  
             flag_plot = False
+        
         return ft_array  
+        
+
         
       
         
@@ -976,6 +1032,7 @@ class pefs(pe_exp):
 
 
 
+
     def bin_info(self):
         """
         croc.Pe.pefs.bin_info()
@@ -998,6 +1055,8 @@ class pefs(pe_exp):
         plt.figure()
         plt.plot(numpy.bincount(numpy.array(self.b_count[0], dtype=numpy.int)))
         plt.plot(numpy.bincount(numpy.array(self.b_count[1], dtype=numpy.int)))
+        plt.plot(numpy.bincount(numpy.array(self.b_count[2], dtype=numpy.int)))
+        plt.plot(numpy.bincount(numpy.array(self.b_count[3], dtype=numpy.int)))
         plt.title("Bins with certain number of shots")
         plt.xlabel("Number of shots")
         plt.ylabel("Number of bins")
@@ -1044,7 +1103,7 @@ class pefs(pe_exp):
                 if self.b_count[j][i] != 0:
                     temp[j,i,:] = self.b[j][i,:] / self.b_count[j,i]    
                 else:    
-                    temp[j,i,:] = 0                
+                    temp[j,i,:] = numpy.zeros(self.n_channels)                
         
         # select n_fringes, ie. discard the extra fringes
         temp = temp[:,self.extra_fringes:(self.n_fringes+self.extra_fringes),:self.n_pixels]
@@ -1404,7 +1463,7 @@ class pefs(pe_exp):
                 b_count[0, j] += 1
             else:
                 b[1, j, :] += m[:,i] 
-                b_count[1, j] += 1        
+                b_count[1, j] += 1     
         
         temp = numpy.zeros((2, b_fringes, self.n_channels))
         
@@ -1414,13 +1473,13 @@ class pefs(pe_exp):
                 if b_count[j][i] != 0:
                     temp[j,i,:] = b[j,i,:] / b_count[j][i]    
                 else:    
-                    temp[j,i,:] = 0                
+                    temp[j,i,:] = numpy.zeros(self.n_channels)               
         
         # now only select the part where fringes are not negative
         temp = temp[:,self.extra_fringes:(self.n_fringes+self.extra_fringes),:self.n_pixels]
         
         # now convert it to mOD
-        r[:,:self.n_pixels] = -numpy.log10(1+ 2*(temp[0,:,:self.n_pixels] - temp[1,:,:self.n_pixels])/self.reference[:self.n_pixels])
+        r[:,:self.n_pixels] = -numpy.log10(1 + 2 * (temp[0,:,:self.n_pixels] - temp[1,:,:self.n_pixels]) / self.reference[:self.n_pixels])
         
         r = numpy.nan_to_num(r)
         
@@ -1430,11 +1489,129 @@ class pefs(pe_exp):
         
         self.n[diagram].append(f)  
 
+
+
+
+    def bin_for_noise_time(self, m, m_axis, diagram):
+
+        self.n_fringes = 1200
+    
+        try:
+            self.q
+        except:
+            self.q = [numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels))]
+            self.t = [numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels))]
+            self.t_count = [numpy.zeros(self.n_fringes + 2 * self.extra_fringes), numpy.zeros(self.n_fringes + 2 * self.extra_fringes)]
+        
+        axis = range(self.n_fringes + 2 * self.extra_fringes)
+        
+#         if diagram == 0 or diagram == 1:
+#             d_axis = numpy.arange(4000 - self.extra_fringes, 4000 + self.n_fringes + self.extra_fringes)
+#         else:
+#             d_axis = numpy.arange(4000 - self.n_fringes - self.extra_fringes, 4000 + self.extra_fringes)
+
+        r = numpy.zeros(self.n_channels)
+
+        for i in axis:
+            #print(self.b_axis[diagram][i])
+            # find the indices where the fringe has a certain value
+            w = numpy.where(m_axis == self.b_axis[diagram][i]+4000)
+            
+            print(w)
+            
+            # select the stuf in m where the fringes have that value
+            n = m[:,w[0]]
+
+            # from this selection, find the state of the chopper
+            a = numpy.where(n[self.chopper_channel] < 2.5)
+            b = numpy.where(n[self.chopper_channel] > 2.5)
+            
+            # now take the mean of one state of the chopper and subtract the mean of the other state of the chopper
+            r = numpy.mean(m[:,((w[0])[a[0]])], axis = 1) - numpy.mean(m[:,((w[0])[b[0]])], axis = 1)
+            
+            # transform NaN to zeros            
+            r = numpy.nan_to_num(r)
+            
+            # add it to the arrays
+            self.t[diagram][i,:] = r
+            self.q[diagram][i,:] = r**2
+            self.t_count[diagram][i] += 1
+
+
+
+
+
+            
+    def calculate_noise_time(self, pixel = 16, max_scans = 0):
+         
+        b_fringes = self.n_fringes + 2 * self.extra_fringes
+        
+        # rephasing, non-rephasing
+        temp = numpy.zeros((2, b_fringes, self.n_channels))     
+        
+        for i in range(2):
+            for j in range(b_fringes):
+                temp[i,j,:] = numpy.sqrt((numpy.mean(self.q[i][j,:]) - (self.t[i][j,:])**2 / self.t_count[i][j]) / (self.t_count[i][j]-1))
+        
+        temp = temp[:,self.extra_fringes:(self.n_fringes+self.extra_fringes),:self.n_pixels]
+        
+        plt.figure()
+        plt.plot(temp[0, 1:-1, pixel])
+        plt.plot(temp[1, 1:-1, pixel])
+        plt.show()
+        
+        
+        
+             
+ 
+
+
+
+
+
+    def calculate_noise_time_old(self, pixel = 16, max_scans = 0):
+                
+        b_fringes = self.n_fringes + 2 * self.extra_fringes
+        
+        temp = numpy.zeros((4, b_fringes, self.n_channels))
+        tempq = numpy.zeros((4, b_fringes, self.n_channels))
+        
+        noise = numpy.zeros((4, b_fringes, self.n_channels))
+        
+        # average the data for the two diagrams
+        for j in range(4):
+            for i in range(b_fringes):
+                if self.b_count[j][i] != 0:
+                    temp[j,i,:] = self.b[j][i,:] / self.b_count[j,i] 
+                    tempq[j,i,:] = self.q[j][i,:] 
+                    noise[j,i,:] = numpy.sqrt((tempq[j,i,:] - temp[j,i,:]**2) / (self.b_count[j,i] - 1))
+                else:    
+                    temp[j,i,:] = 0  
+                    tempq[j,i,:] = 0
+                    noise[j,i,:] = 0
+        
+        # select n_fringes, ie. discard the extra fringes
+        noise = noise[:,self.extra_fringes:(self.n_fringes+self.extra_fringes),:self.n_pixels]
+        
+        
+        #noise = tempq -  temp / 
+        
+        print(numpy.shape(noise))
+        
+        plt.figure()
+        plt.plot(noise[0][:, pixel])
+        plt.plot(noise[1][:, pixel])
+        plt.plot(noise[2][:, pixel])
+        plt.plot(noise[3][:, pixel])
+        plt.show()
+   
+    
+    
     
         
 
 
-    def calculate_noise(self, pixel = 16):
+    def calculate_noise(self, pixel = 16, max_scans = 0, flag_plot_2dir = False, flag_plot_real = False):
         """
         croc.Pe.pefs.calculate_noise()
         
@@ -1448,63 +1625,159 @@ class pefs(pe_exp):
         shape0 = numpy.shape(self.n[0])
         shape1 = numpy.shape(self.n[1])
         
+        if max_scans == 0 or max_scans > shape0[0]:
+            max_scans0 = shape0[0]
+        else:
+            max_scans0 = max_scans
+
+        if max_scans == 0 or max_scans > shape1[0]:
+            max_scans1 = shape1[0]
+        else:
+            max_scans1 = max_scans
+       
+
+        
+        
         std0 = numpy.zeros((shape0[1], shape0[2]))
         std1 = numpy.zeros((shape1[1], shape1[2]))     
 
         f0 = numpy.zeros((shape0[1], shape0[2]))
         f1 = numpy.zeros((shape1[1], shape1[2]))
         
-        a0 = numpy.zeros((shape0[0], shape0[2]), dtype = "cfloat")
-        a1 = numpy.zeros((shape1[0], shape1[2]), dtype = "cfloat")
+        f0Im = numpy.zeros((shape0[1], shape0[2]), dtype = "cfloat")
+        f1Im = numpy.zeros((shape1[1], shape1[2]), dtype = "cfloat")
+        
+        a0 = numpy.zeros((max_scans0, shape0[2]), dtype = "cfloat")
+        a1 = numpy.zeros((max_scans1, shape1[2]), dtype = "cfloat")
         
         for i in range(shape0[1]): # frequency
-            for j in range(shape0[0]): # scans
+            for j in range(max_scans0): # scans
                 a0[j] = self.n[0][j][i][:]
             std0[i] = numpy.std(numpy.abs(a0), axis = 0) #self.RMS(a0)#
             f0[i] = numpy.mean(numpy.abs(a0), axis = 0)
+            f0Im[i] = numpy.mean(a0, axis = 0)
             #self.MSE(a0)
             
 
         for i in range(shape1[1]): # frequency
-            for j in range(shape1[0]): # scans
+            for j in range(max_scans1): # scans
                 a1[j] = self.n[1][j][i][:]                
             std1[i] = numpy.std(numpy.abs(a1), axis = 0) #self.RMS(a0)#
             f1[i] = numpy.mean(numpy.abs(a1), axis = 0)
+            f1Im[i] = numpy.mean(a1, axis = 0)
 
         #croc.Plotting.contourplot(data = std0, x_axis = numpy.arange(shape0[2]), y_axis = numpy.arange(shape0[1]), x_range = [0,0], y_range = [0,0], diagonal_line = False)
         
 
         s_axis = numpy.arange(shape0[1]) * croc.Constants.hene_fringe_fs
 
-        print(f0[4][4])
-
-        plt.figure()
-        
-        plt.subplot(211)
-        for j in range(shape0[0]):
-            plt.plot(self.s_axis[0][1:], numpy.abs(self.n[0][j][1:,pixel]))
-        plt.title("Rephasing, individual abs(FT), " + str(shape0[0]) + "x")
-        
-        plt.subplot(212)
-        plt.plot(self.s_axis[0][1:], 10*std0[1:, pixel], "b")
-        plt.plot(self.s_axis[0][1:], 10*f0[1:, pixel], "g")
-        plt.plot(self.s_axis[0][1:], f0[1:, pixel]/std0[1:, pixel], "r")
-        plt.plot
-        plt.title("STD (blue), abs(<FT>) (green) and SNR (red)")
-        plt.show()
+        if flag_plot_2dir:
             
-        plt.figure()
-        plt.subplot(211)
-        for j in range(shape1[0]):
-            plt.plot(self.s_axis[0][1:], numpy.abs(self.n[1][j][1:,pixel]))
-        plt.title("Non-rephasing, individual abs(FT), " + str(shape1[0]) + "x")
+            data = numpy.real(numpy.exp(-1j * self.phase_rad) * f0Im + numpy.exp(1j * self.phase_rad) * f1Im)
+            
+            x_axis = self.s_axis[2]
+            y_axis = self.s_axis[0]
+            x_range = [0,0]
+            y_range = [0,-1]
+            zlimit = -1
+            contours = 12
+            filled = True
+            black_contour = True
+            title = ""
+            x_label = ""
+            y_label = ""
+            diagonal_line = True
+            new_figure = True
+            flag_no_units = False
+            pixel = -1
+
+
+            
+            croc.Plotting.contourplot(data, x_axis, y_axis, x_range = x_range, y_range = y_range, zlimit = zlimit, contours = contours, filled = filled, black_contour = black_contour, title = title, x_label = x_label, y_label = y_label, diagonal_line = diagonal_line, new_figure = new_figure)
+            
+            data = data.T
+            
+            x_axis = self.s_axis[0]
+            
+            croc.Plotting.linear(data[7,:], x_axis, x_range = [0, 0], y_range = [0, 0], x_label = x_label, y_label = y_label, title = title, new_figure = new_figure)
+
+
+        elif flag_plot_real:
         
-        plt.subplot(212)   
-        plt.plot(self.s_axis[0][1:], 10*std1[1:, pixel],"b")
-        plt.plot(self.s_axis[0][1:], 10*f1[1:, pixel], "g")
-        plt.plot(self.s_axis[0][1:], f1[1:, pixel]/std1[1:, pixel], "r")
-        plt.title("STD (blue), abs(<FT>) (green) and SNR (red)")
-        plt.show()
+            plt.figure()
+            
+            plt.subplot(211)
+            for j in range(max_scans0):
+                plt.plot(self.s_axis[0][1:], numpy.real(self.n[0][j][1:,pixel]))
+            plt.title("Rephasing, individual real(FT), " + str(max_scans0) + "x")
+            
+            plt.subplot(212)
+            
+            ratio = 1
+            
+            plt.plot(self.s_axis[0][1:], ratio * numpy.real(f0Im[1:, pixel]), "b")
+            plt.plot(self.s_axis[0][1:], ratio * numpy.imag(f0Im[1:, pixel]), "g")
+            plt.plot
+            plt.title("real(<FT>) (blue), imag(<FT>) (green)")
+            plt.xlabel("cm-1")
+            plt.ylabel("Ratio")
+            plt.show()
+                
+            plt.figure()
+            plt.subplot(211)
+            for j in range(max_scans1):
+                plt.plot(self.s_axis[0][1:], numpy.real(self.n[1][j][1:,pixel]))
+            plt.title("Non-rephasing, individual real(FT), " + str(max_scans1) + "x")
+            
+            plt.subplot(212)   
+            ratio = 1
+            plt.plot(self.s_axis[0][1:], ratio * numpy.real(f1Im[1:, pixel]), "b")
+            plt.plot(self.s_axis[0][1:], ratio * numpy.imag(f1Im[1:, pixel]), "g")
+
+            plt.title("real(<FT>) (blue), imag(<FT>) (green)")
+            plt.xlabel("cm-1")
+            plt.ylabel("Ratio")
+            plt.show()
+            
+        
+        else:
+    
+            plt.figure()
+            
+            plt.subplot(211)
+            for j in range(max_scans0):
+                plt.plot(self.s_axis[0][1:], numpy.abs(self.n[0][j][1:,pixel]))
+            plt.title("Rephasing, individual abs(FT), " + str(max_scans0) + "x")
+            
+            plt.subplot(212)
+            
+            ratio = numpy.nanmax(f0[1:, pixel]/std0[1:, pixel]) / numpy.nanmax(f0[1:, pixel])
+            
+            
+            plt.plot(self.s_axis[0][1:], ratio * std0[1:, pixel], "b")
+            plt.plot(self.s_axis[0][1:], ratio * f0[1:, pixel], "g")
+            plt.plot(self.s_axis[0][1:], f0[1:, pixel]/std0[1:, pixel], "r")
+            plt.plot
+            plt.title("STD (blue), abs(<FT>) (green) (both normalized) and SNR (red)")
+            plt.xlabel("cm-1")
+            plt.ylabel("Ratio")
+            plt.show()
+                
+            plt.figure()
+            plt.subplot(211)
+            for j in range(max_scans1):
+                plt.plot(self.s_axis[0][1:], numpy.abs(self.n[1][j][1:,pixel]))
+            plt.title("Non-rephasing, individual abs(FT), " + str(max_scans1) + "x")
+            
+            plt.subplot(212)   
+            ratio = numpy.nanmax(f1[1:, pixel]/std1[1:, pixel]) / numpy.nanmax(f1[1:, pixel])
+            plt.plot(self.s_axis[0][1:], ratio * std1[1:, pixel],"b")
+            plt.plot(self.s_axis[0][1:], ratio * f1[1:, pixel], "g")
+            plt.plot(self.s_axis[0][1:], f1[1:, pixel]/std1[1:, pixel], "r")
+            plt.title("STD (blue), abs(<FT>) (green) (both normalized) and SNR (red)")
+            plt.xlabel("cm-1")
+            plt.ylabel("Ratio")
+            plt.show()
         
 #         else:
 #             print("ERROR (croc.pe.pefs.calculate_noise): There is no data to work with. Make sure that during the import you select 'flag_calculate_noise'. ")
@@ -1512,7 +1785,7 @@ class pefs(pe_exp):
         
         
         
-        
+       
         
 
         
