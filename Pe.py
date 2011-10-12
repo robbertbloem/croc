@@ -833,13 +833,12 @@ class pefs(pe_exp):
             
             # check for consistency
             if correct_count == False:
-                print("WARNING (croc.Pe.pefs.add_data): There is a miscount with the fringes!")
-                print("\tScan: ", scan, ", File:", k)
+                print("Scan: " + str(scan) + ", File: " + str(k) + ": Miscount!")
                 self.incorrect_count[k] += 1
 
             # if it is consistent, continue
             else:
-                print("Scan: ", scan, ", File:", k, "Count is correct!")
+                print("Scan: " + str(scan) + ", File: " + str(k) + ": Count is correct!")
             
                 # make b the correct size, if it isn't already
                 if numpy.shape(self.b_axis)[-1] == 2:
@@ -1582,9 +1581,7 @@ class pefs(pe_exp):
         
         # select n_fringes, ie. discard the extra fringes
         noise = noise[:,self.extra_fringes:(self.n_fringes+self.extra_fringes),:self.n_pixels]
-        
-        
-        #noise = tempq -  temp / 
+
         
         print(numpy.shape(noise))
         
