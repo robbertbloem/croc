@@ -777,7 +777,8 @@ class pefs(pe_exp):
         scan, 
         flag_import_override = False, 
         flag_construct_r = True, 
-        flag_calculate_noise = False):
+        flag_calculate_noise = False,
+        flag_noise_time_domain = False):
         """
         Adds data for a single scan.
         The data is imported as data.
@@ -849,7 +850,7 @@ class pefs(pe_exp):
                 
                 # calculate the noise
                 if flag_calculate_noise:
-                    self.bin_for_noise(m, m_axis, diagram)
+                    self.bin_for_noise(m, m_axis, diagram, flag_noise_time_domain)
 
                 # all the data is now written into self.b* 
 
@@ -1411,7 +1412,7 @@ class pefs(pe_exp):
 
 
 
-    def bin_for_noise(self, m, m_axis, diagram):
+    def bin_for_noise(self, m, m_axis, diagram, flag_noise_time_domain = False):
         """
         croc.Pe.pefs.bin_for_noise()
         
@@ -1472,11 +1473,14 @@ class pefs(pe_exp):
         
         r = numpy.nan_to_num(r)
         
-        f = self.fourier_helper(numpy.copy(r))
-        
-        f = f[:len(f)/2]
-        
-        self.n[diagram].append(f)  
+        if flag_noise_time_domain:
+            self.n[diagram].append(r)
+        else:        
+            f = self.fourier_helper(numpy.copy(r))
+            
+            f = f[:len(f)/2]
+            
+            self.n[diagram].append(f)  
 
 
 
@@ -1598,7 +1602,7 @@ class pefs(pe_exp):
         
 
 
-    def calculate_noise(self, pixel = 16, max_scans = 0, flag_plot_2dir = False):
+    def calculate_noise(self, pixel = 16, max_scans = 0, flag_noise_time_domain = False):
         """
         croc.Pe.pefs.calculate_noise()
         
@@ -1623,11 +1627,8 @@ class pefs(pe_exp):
         std0 = numpy.zeros((shape0[1], shape0[2]))
         std1 = numpy.zeros((shape1[1], shape1[2]))     
 
-        f0 = numpy.zeros((shape0[1], shape0[2]))
-        f1 = numpy.zeros((shape1[1], shape1[2]))
-        
-        f0Im = numpy.zeros((shape0[1], shape0[2]), dtype = "cfloat")
-        f1Im = numpy.zeros((shape1[1], shape1[2]), dtype = "cfloat")
+        f0 = numpy.zeros((shape0[1], shape0[2]), dtype = "cfloat")
+        f1 = numpy.zeros((shape1[1], shape1[2]), dtype = "cfloat")
         
         a0 = numpy.zeros((max_scans0, shape0[2]), dtype = "cfloat")
         a1 = numpy.zeros((max_scans1, shape1[2]), dtype = "cfloat")
@@ -1635,48 +1636,57 @@ class pefs(pe_exp):
         for i in range(shape0[1]): # frequency
             for j in range(max_scans0): # scans
                 a0[j] = self.n[0][j][i][:]
-            std0[i] = numpy.std(numpy.abs(a0), axis = 0) 
-            f0[i] = numpy.mean(numpy.abs(a0), axis = 0)
-            f0Im[i] = numpy.mean(a0, axis = 0)
+            std0[i] = numpy.std(a0, axis = 0) 
+            f0[i] = numpy.mean(a0, axis = 0)
 
         for i in range(shape1[1]): # frequency
             for j in range(max_scans1): # scans
                 a1[j] = self.n[1][j][i][:]                
-            std1[i] = numpy.std(numpy.abs(a1), axis = 0) 
-            f1[i] = numpy.mean(numpy.abs(a1), axis = 0)
-            f1Im[i] = numpy.mean(a1, axis = 0)        
+            std1[i] = numpy.std(a1, axis = 0) 
+            f1[i] = numpy.mean(a1, axis = 0)     
 
         s_axis = numpy.arange(shape0[1]) * croc.Constants.hene_fringe_fs
 
-        if flag_plot_2dir:
-            
-            data = numpy.real(numpy.exp(-1j * self.phase_rad) * f0Im + numpy.exp(1j * self.phase_rad) * f1Im)
-            
-            x_axis = self.s_axis[2]
-            y_axis = self.s_axis[0]
-            x_range = [0,0]
-            y_range = [0,-1]
-            zlimit = -1
-            contours = 12
-            filled = True
-            black_contour = True
-            title = ""
-            x_label = ""
-            y_label = ""
-            diagonal_line = True
-            new_figure = True
-            flag_no_units = False
-            pixel = -1
 
+        if flag_noise_time_domain:
 
+    
+            plt.figure()
             
-            croc.Plotting.contourplot(data, x_axis, y_axis, x_range = x_range, y_range = y_range, zlimit = zlimit, contours = contours, filled = filled, black_contour = black_contour, title = title, x_label = x_label, y_label = y_label, diagonal_line = diagonal_line, new_figure = new_figure)
+            plt.subplot(211)
+            for j in range(max_scans0):
+                plt.plot(self.r_axis[0][:], self.n[0][j][:,pixel])
+            plt.title("Rephasing, individual time domain, " + str(max_scans0) + "x")
             
-            data = data.T
+            plt.subplot(212)
             
-            x_axis = self.s_axis[0]
+            ratio = numpy.nanmax(f0[:, pixel]/std0[:, pixel]) / numpy.nanmax(f0[:, pixel])
             
-            croc.Plotting.linear(data[7,:], x_axis, x_range = [0, 0], y_range = [0, 0], x_label = x_label, y_label = y_label, title = title, new_figure = new_figure)
+            
+            plt.plot(self.r_axis[0][:], ratio * std0[:, pixel], "b")
+            plt.plot(self.r_axis[0][:], ratio *f0[:, pixel], "g")
+            plt.plot(self.r_axis[0][:], numpy.abs(f0[:, pixel])/std0[:, pixel], "r")
+            plt.plot
+            plt.title("STD (blue), <time> (green) (both normalized) and SNR (abs(time)/STD) (red)")
+            plt.xlabel("fs")
+            plt.ylabel("Ratio")
+            plt.show()
+                
+            plt.figure()
+            plt.subplot(211)
+            for j in range(max_scans1):
+                plt.plot(self.r_axis[0][:], self.n[1][j][:,pixel])
+            plt.title("Non-rephasing, individual time domain, " + str(max_scans1) + "x")
+            
+            plt.subplot(212)   
+            ratio = numpy.nanmax(f1[:, pixel]/std1[:, pixel]) / numpy.nanmax(f1[1:, pixel])
+            plt.plot(self.r_axis[0][:], ratio * std1[:, pixel],"b")
+            plt.plot(self.r_axis[0][:], ratio * f1[:, pixel], "g")
+            plt.plot(self.r_axis[0][:], numpy.abs(f1[:, pixel])/std1[:, pixel], "r")
+            plt.title("STD (blue), <time> (green) (both normalized) and SNR (abs(time)/STD)(red)")
+            plt.xlabel("fs")
+            plt.ylabel("Ratio")
+            plt.show()
         
         else:
     
@@ -1689,12 +1699,12 @@ class pefs(pe_exp):
             
             plt.subplot(212)
             
-            ratio = numpy.nanmax(f0[1:, pixel]/std0[1:, pixel]) / numpy.nanmax(f0[1:, pixel])
+            ratio = numpy.nanmax(numpy.abs(f0[1:, pixel])/std0[1:, pixel]) / numpy.nanmax(numpy.abs(f0[1:, pixel]))
             
             
             plt.plot(self.s_axis[0][1:], ratio * std0[1:, pixel], "b")
-            plt.plot(self.s_axis[0][1:], ratio * f0[1:, pixel], "g")
-            plt.plot(self.s_axis[0][1:], f0[1:, pixel]/std0[1:, pixel], "r")
+            plt.plot(self.s_axis[0][1:], ratio * numpy.abs(f0[1:, pixel]), "g")
+            plt.plot(self.s_axis[0][1:], numpy.abs(f0[1:, pixel])/std0[1:, pixel], "r")
             plt.plot
             plt.title("STD (blue), abs(<FT>) (green) (both normalized) and SNR (red)")
             plt.xlabel("cm-1")
@@ -1708,10 +1718,10 @@ class pefs(pe_exp):
             plt.title("Non-rephasing, individual abs(FT), " + str(max_scans1) + "x")
             
             plt.subplot(212)   
-            ratio = numpy.nanmax(f1[1:, pixel]/std1[1:, pixel]) / numpy.nanmax(f1[1:, pixel])
+            ratio = numpy.nanmax(numpy.abs(f1[1:, pixel])/std1[1:, pixel]) / numpy.nanmax(numpy.abs(f1[1:, pixel]))
             plt.plot(self.s_axis[0][1:], ratio * std1[1:, pixel],"b")
-            plt.plot(self.s_axis[0][1:], ratio * f1[1:, pixel], "g")
-            plt.plot(self.s_axis[0][1:], f1[1:, pixel]/std1[1:, pixel], "r")
+            plt.plot(self.s_axis[0][1:], ratio * numpy.abs(f1[1:, pixel]), "g")
+            plt.plot(self.s_axis[0][1:], numpy.abs(f1[1:, pixel])/std1[1:, pixel], "r")
             plt.title("STD (blue), abs(<FT>) (green) (both normalized) and SNR (red)")
             plt.xlabel("cm-1")
             plt.ylabel("Ratio")
