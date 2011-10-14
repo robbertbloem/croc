@@ -1013,7 +1013,13 @@ class pefs(pe_exp):
         - self.b_count        
         
         """
+        self.bin_data_helper(m, m_axis, diagram, b = self.b, b_count = self.b_count)
         
+
+
+
+    def bin_data_helper(self, m, m_axis, diagram, b, b_count):
+
         for i in range(self.n_shots):            
             # find the fringe
             j = (-1)**diagram * int(m_axis[i]) + self.extra_fringes - (-1)**diagram * 4000
@@ -1021,13 +1027,13 @@ class pefs(pe_exp):
             # add it to the bin, depending on pem-state and diagram
             # and add 1 to counter 
             if m[self.chopper_channel, i] < 2.5:         
-                self.b[2 * diagram][j, :] += m[:,i] 
-                self.b_count[2 * diagram, j] += 1
+                b[2 * diagram][j, :] += m[:,i] 
+                b_count[2 * diagram, j] += 1
             else:
-                self.b[2 * diagram + 1][j, :] += m[:,i] 
-                self.b_count[2 * diagram + 1, j] += 1
-
-
+                b[2 * diagram + 1][j, :] += m[:,i] 
+                b_count[2 * diagram + 1, j] += 1
+        
+        return b, b_count
 
 
     def bin_info(self):
@@ -1435,25 +1441,40 @@ class pefs(pe_exp):
         b_fringes = self.n_fringes + 2 * self.extra_fringes
         
         n_shots = len(m_axis)
+
+
+        b = [numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels))] 
+        b_count = numpy.zeros((4, self.n_fringes + 2 * self.extra_fringes))
+
         
-        b = numpy.zeros((2, b_fringes, self.n_channels))
-        b_count = numpy.zeros((2, b_fringes))
+#         b = numpy.zeros((4, b_fringes, self.n_channels))
+#         b_count = numpy.zeros((4, b_fringes))
         
         r = numpy.zeros((self.n_fringes, 32)) 
         
+        diagramx = 0
         
-        for i in range(n_shots):            
-            # find the fringe
-            j = (-1)**diagram * int(m_axis[i]) + self.extra_fringes - (-1)**diagram * 4000
-
-            # add it to the bin, depending on pem-state and diagram
-            # and add 1 to counter 
-            if m[self.chopper_channel, i] < 2.5:         
-                b[0, j, :] += m[:,i] 
-                b_count[0, j] += 1
-            else:
-                b[1, j, :] += m[:,i] 
-                b_count[1, j] += 1     
+        b, b_count = self.bin_data_helper(m, m_axis, diagramx, b, b_count)
+        
+        
+#         for i in range(n_shots):            
+#             # find the fringe
+#             j = (-1)**diagram * int(m_axis[i]) + self.extra_fringes - (-1)**diagram * 4000
+# 
+#             # add it to the bin, depending on pem-state and diagram
+#             # and add 1 to counter 
+#             if m[self.chopper_channel, i] < 2.5:         
+#                 b[0, j, :] += m[:,i] 
+#                 b_count[0, j] += 1
+#             else:
+#                 b[1, j, :] += m[:,i] 
+#                 b_count[1, j] += 1     
+        
+        #print(numpy.shape(b_count))
+        b = [b[0], b[1]]
+        b_count = [b_count[0], b_count[1]]
+        
+        #print(numpy.shape(b_count))
         
         temp = numpy.zeros((2, b_fringes, self.n_channels))
         
@@ -1461,7 +1482,7 @@ class pefs(pe_exp):
         for j in range(2):
             for i in range(b_fringes):
                 if b_count[j][i] != 0:
-                    temp[j,i,:] = b[j,i,:] / b_count[j][i]    
+                    temp[j,i,:] = b[j][i,:] / b_count[j][i]    
                 else:    
                     temp[j,i,:] = numpy.zeros(self.n_channels)               
         

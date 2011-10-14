@@ -480,15 +480,23 @@ def FS2a():
     
     """
 
-    mess = [0]
-    mess[0] = croc.Pe.pefs("FS3", "azide", 300, 1522)
+    mess = [0, 0]
+    mess[0] = croc.Pe.pefs("FS2_freq", "azide", 300, 1522)
     mess[0].path = ("/Volumes/public_hamm/PML3/data/20110928/azide_1522_T300/")
+
+    mess[1] = croc.Pe.pefs("FS2_time", "azide", 300, 1522)
+    mess[1].path = ("/Volumes/public_hamm/PML3/data/20110928/azide_1522_T300/")
 
     # import all data
     # it ranges from 1 to last_scan + 1
     # mess[0].r will not be constructed after every import
-    for i in range(1, 20):
-        mess[0].add_data(scan = i, flag_construct_r = False, flag_calculate_noise = True, flag_noise_time_domain = True)
+    begin = 1
+    end = 3
+    for i in range(1, 3):
+        mess[0].add_data(scan = i, flag_construct_r = False, flag_calculate_noise = True, flag_noise_time_domain = False)
+    
+    for i in range(1, 3):
+        mess[1].add_data(scan = i, flag_construct_r = False, flag_calculate_noise = True, flag_noise_time_domain = True)
 
     # there was an issue with the measure phase for this measurement
     mess[0].phase_degrees = mess[0].phase_degrees + 120
@@ -506,32 +514,41 @@ def FS2b():
     
 
     """
-    
+
     # import the pickle
-    path_and_filename = "azide_1522_T300"
+    path_and_filename = "azide_1522_T300"    
     pick = croc.DataClasses.import_db(path_and_filename)
+    
+    i = [0,0]
+    if pick[0].objectname == "FS2_freq":
+        i[0] = 0
+        i[1] = 1
+    else:
+        i[0] = 1
+        i[1] = 0
     
     #pick[0].zeropad_by = 2
     # construct r 
-    pick[0].construct_r()
-
+    pick[i[0]].construct_r()
+    pick[i[1]].construct_r()
+    
     # calculate the spectrum
-    pick[0].absorptive()
+    pick[i[0]].absorptive()
+    pick[i[1]].absorptive()
     
-    pick[0].calculate_noise(pixel = 14, flag_noise_time_domain = True)
-    
+    # calculate the noise
+    pick[i[0]].calculate_noise(pixel = 14, flag_noise_time_domain = False)
+    pick[i[1]].calculate_noise(pixel = 14, flag_noise_time_domain = True)
 
     
-    # plot the spectrum
-    pick[0].plot(plot_type = "S", flag_no_units = False, pixel = 14)
-
-    pick[0].plot_T(pixel = 14, flag_no_units = False)
+    pick[i[0]].plot(pixel = 14, flag_no_units = False)
+    pick[i[1]].plot_T(pixel = 14, flag_no_units = False)
 
 
     
     #pick[0].bin_info()
 
-    print(pick[0])    
+    #print(pick[0])    
 
 
 
