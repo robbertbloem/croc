@@ -492,11 +492,15 @@ def FS2a():
     # mess[0].r will not be constructed after every import
     begin = 1
     end = 3
-    for i in range(1, 3):
+    for i in range(1, 21):
         mess[0].add_data(scan = i, flag_construct_r = False, flag_calculate_noise = True, flag_noise_time_domain = False)
     
-    for i in range(1, 3):
+    print(mess[0].incorrect_count)
+    
+    for i in range(1, 21):
         mess[1].add_data(scan = i, flag_construct_r = False, flag_calculate_noise = True, flag_noise_time_domain = True)
+        
+    
 
     # there was an issue with the measure phase for this measurement
     mess[0].phase_degrees = mess[0].phase_degrees + 120
@@ -582,16 +586,16 @@ def FS3():
 #     plt.plot(mess[0].b[2][:,12], ".-")
 #     plt.show()
     
-    mess[0].construct_r()
-    
-    plt.figure()
-    plt.plot(mess[0].r[0][:,12], ".-")
-    plt.plot(mess[0].r[1][:,12], ".-")
-    plt.show()    
-    
-    mess[0].absorptive()
-    
-    mess[0].plot(plot_type = "S")#, x_range = [1930, 2150])
+#     mess[0].construct_r()
+#     
+#     plt.figure()
+#     plt.plot(mess[0].r[0][:,12], ".-")
+#     plt.plot(mess[0].r[1][:,12], ".-")
+#     plt.show()    
+#     
+#     mess[0].absorptive()
+#     
+#     mess[0].plot(plot_type = "S")#, x_range = [1930, 2150])
 
 
 

@@ -1243,6 +1243,111 @@ class pefs(pe_exp):
 
         return m_axis, counter, correct_count   
 
+    def reconstruct_counter_NEW(self, data, start_counter = 0, end_counter = 0, flag_plot = False):
+        """
+        croc.Pe.pefs.reconstruct_counter()
+        
+        
+        
+        This function will use the feedback from the HeNe's and reconstruct the fringes. It will check whether y > 0 and whether x changes from x[i-1] < 0 to x[i+1] > 0 and whether x[i-1] < x[i] < x[i+1] (or the other way around for a count back). 
+        After a count in a clockwise direction, it can only count again in the clockwise direction after y < 0. 
+        
+        INPUT:
+        - data (2darray, channels x samples): data. It will use self.x_channel and self.y_channel to find the data.
+        - start_counter (int, 0): where the count starts. 
+        - flag_plot (BOOL, False): plot the x and y axis and the counts. Should be used for debugging purposes.
+
+
+        IMPLICIT REQUIREMENTS:
+        In the data structure, the following variables should be set:
+        - self.x_channel, self.y_channel
+        
+        
+        
+        
+        OUTPUT:
+        - m_axis (1d-ndarray, length of samples): the exact fringe for that sample
+        - counter (int): the last value of the fringes. It is the same as m_axis[-1]. For legacy's sake.
+        
+        
+        CHANGELOG:
+        20110920 RB: started the function
+        20111003 RB: change the way it counts. It will now not only check if the x goes through zero, it will also make sure that the point in between is actually in between. This reduced the miscounts from 80/400 t0 30/400.
+        
+        
+        """
+        
+        
+        # put the required data in some better readable arrays
+        x = data[self.x_channel,:]
+        y = data[self.y_channel,:]
+        
+        # determine the median values
+        med_x = numpy.min(x) + (numpy.max(x) - numpy.min(x))/2
+        med_y = numpy.min(y) + (numpy.max(y) - numpy.min(y))/2
+        
+        # some stuff
+        length = len(x)
+        counter = start_counter
+        
+        # the fringe count will be written in this array
+        m_axis = numpy.zeros(length)
+        
+        # this is the (counter-) clockwise lock
+        c_lock = False
+        cc_lock = False
+        
+        # where did the counter start
+        m_axis[0] = counter
+        
+        if flag_plot:
+            change_array = numpy.zeros(length)
+        
+        # do the loop
+        for i in range(1, length - 1):
+            # count can only change when y > 0
+            if y[i] > med_y:
+                if c_lock == False:
+                    if x[i-1] < med_x and x[i] > med_x and x[i-1] < x[i]: 
+                        counter += 1               
+                        c_lock = True
+                        cc_lock = False
+                        if flag_plot:
+                            change_array[i] = 0.05
+
+                if cc_lock == False:
+                    if x[i-1] > med_x and x[i] < med_x and x[i-1] > x[i]:
+                        counter -= 1
+                        c_lock = False
+                        cc_lock = True  
+                        if flag_plot:
+                            change_array[i] = -0.05
+
+            else:
+                c_lock = False
+                cc_lock = False
+            
+            m_axis[i] = counter
+        
+        m_axis[-1] = counter
+        
+        if counter == end_counter:
+            correct_count = True
+        else:
+            correct_count = False
+
+        if flag_plot:        
+            plt.figure()
+            plt.plot(x, ".-")
+            plt.plot(y, ".-")
+            plt.plot(change_array, ".")
+            plt.xlabel("Shots")
+            plt.ylabel("Volts")
+            plt.title("x (blue), y (green) and counts up or down (red)")
+            plt.show()
+
+        return m_axis, counter, correct_count   
+
 
 
 
@@ -1445,41 +1550,23 @@ class pefs(pe_exp):
 
         b = [numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels))] 
         b_count = numpy.zeros((4, self.n_fringes + 2 * self.extra_fringes))
-
-        
-#         b = numpy.zeros((4, b_fringes, self.n_channels))
-#         b_count = numpy.zeros((4, b_fringes))
         
         r = numpy.zeros((self.n_fringes, 32)) 
         
-        diagramx = 0
+        #diagram = 0
         
-        b, b_count = self.bin_data_helper(m, m_axis, diagramx, b, b_count)
-        
-        
-#         for i in range(n_shots):            
-#             # find the fringe
-#             j = (-1)**diagram * int(m_axis[i]) + self.extra_fringes - (-1)**diagram * 4000
-# 
-#             # add it to the bin, depending on pem-state and diagram
-#             # and add 1 to counter 
-#             if m[self.chopper_channel, i] < 2.5:         
-#                 b[0, j, :] += m[:,i] 
-#                 b_count[0, j] += 1
-#             else:
-#                 b[1, j, :] += m[:,i] 
-#                 b_count[1, j] += 1     
+        b, b_count = self.bin_data_helper(m, m_axis, diagram, b, b_count)  
         
         #print(numpy.shape(b_count))
-        b = [b[0], b[1]]
-        b_count = [b_count[0], b_count[1]]
+#         b = [b[0], b[1]]
+#         b_count = [b_count[0], b_count[1]]
         
         #print(numpy.shape(b_count))
         
-        temp = numpy.zeros((2, b_fringes, self.n_channels))
+        temp = numpy.zeros((4, b_fringes, self.n_channels))
         
         # average the data for the two diagrams
-        for j in range(2):
+        for j in range(4):
             for i in range(b_fringes):
                 if b_count[j][i] != 0:
                     temp[j,i,:] = b[j][i,:] / b_count[j][i]    
@@ -1490,136 +1577,44 @@ class pefs(pe_exp):
         temp = temp[:,self.extra_fringes:(self.n_fringes+self.extra_fringes),:self.n_pixels]
         
         # now convert it to mOD
-        r[:,:self.n_pixels] = -numpy.log10(1 + 2 * (temp[0,:,:self.n_pixels] - temp[1,:,:self.n_pixels]) / self.reference[:self.n_pixels])
+        r[:,:self.n_pixels] = -numpy.log10(1 + 2 * (temp[diagram*2,:,:self.n_pixels] - temp[diagram*2 +1,:,:self.n_pixels]) / self.reference[:self.n_pixels])
         
         r = numpy.nan_to_num(r)
         
-        if flag_noise_time_domain:
-            self.n[diagram].append(r)
-        else:        
-            f = self.fourier_helper(numpy.copy(r))
-            
-            f = f[:len(f)/2]
-            
-            self.n[diagram].append(f)  
+#         if diagram == 1:
+#             r = numpy.fliplr(r)
+        
+        self.n[diagram].append(r)
+        return r
+        
+#         else:        
+#             f = self.fourier_helper(numpy.copy(r))
+#             
+#             f = f[:len(f)/2]
+#             
+#             self.n[diagram].append(f)  
+#             return f
 
 
 
-
-    def bin_for_noise_time(self, m, m_axis, diagram):
-
-        self.n_fringes = 1200
+    def calculate_noise_helper(self, array):
     
-        try:
-            self.q
-        except:
-            self.q = [numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels))]
-            self.t = [numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels))]
-            self.t_count = [numpy.zeros(self.n_fringes + 2 * self.extra_fringes), numpy.zeros(self.n_fringes + 2 * self.extra_fringes)]
+        # scans x time steps (or FT) x pixels
+        s = numpy.shape(array)
+        std = numpy.zeros((s[1], s[2]))
+        m = numpy.zeros((s[1], s[2]), dtype = "cfloat")
+        a = numpy.zeros((s[0], s[2]), dtype = "cfloat")
         
-        axis = range(self.n_fringes + 2 * self.extra_fringes)
+        print(s)
         
-#         if diagram == 0 or diagram == 1:
-#             d_axis = numpy.arange(4000 - self.extra_fringes, 4000 + self.n_fringes + self.extra_fringes)
-#         else:
-#             d_axis = numpy.arange(4000 - self.n_fringes - self.extra_fringes, 4000 + self.extra_fringes)
+        for i in range(s[1]): 
+            for j in range(s[0]): 
+                a[j] = array[j][i][:]
+            std[i] = numpy.std(a, axis = 0) 
+            m[i] = numpy.mean(a, axis = 0)   
+        
+        return std, m     
 
-        r = numpy.zeros(self.n_channels)
-
-        for i in axis:
-            #print(self.b_axis[diagram][i])
-            # find the indices where the fringe has a certain value
-            w = numpy.where(m_axis == self.b_axis[diagram][i]+4000)
-            
-            print(w)
-            
-            # select the stuf in m where the fringes have that value
-            n = m[:,w[0]]
-
-            # from this selection, find the state of the chopper
-            a = numpy.where(n[self.chopper_channel] < 2.5)
-            b = numpy.where(n[self.chopper_channel] > 2.5)
-            
-            # now take the mean of one state of the chopper and subtract the mean of the other state of the chopper
-            r = numpy.mean(m[:,((w[0])[a[0]])], axis = 1) - numpy.mean(m[:,((w[0])[b[0]])], axis = 1)
-            
-            # transform NaN to zeros            
-            r = numpy.nan_to_num(r)
-            
-            # add it to the arrays
-            self.t[diagram][i,:] = r
-            self.q[diagram][i,:] = r**2
-            self.t_count[diagram][i] += 1
-
-
-
-
-
-            
-    def calculate_noise_time(self, pixel = 16, max_scans = 0):
-         
-        b_fringes = self.n_fringes + 2 * self.extra_fringes
-        
-        # rephasing, non-rephasing
-        temp = numpy.zeros((2, b_fringes, self.n_channels))     
-        
-        for i in range(2):
-            for j in range(b_fringes):
-                temp[i,j,:] = numpy.sqrt((numpy.mean(self.q[i][j,:]) - (self.t[i][j,:])**2 / self.t_count[i][j]) / (self.t_count[i][j]-1))
-        
-        temp = temp[:,self.extra_fringes:(self.n_fringes+self.extra_fringes),:self.n_pixels]
-        
-        plt.figure()
-        plt.plot(temp[0, 1:-1, pixel])
-        plt.plot(temp[1, 1:-1, pixel])
-        plt.show()
-        
-        
-        
-             
- 
-
-
-
-
-
-    def calculate_noise_time_old(self, pixel = 16, max_scans = 0):
-                
-        b_fringes = self.n_fringes + 2 * self.extra_fringes
-        
-        temp = numpy.zeros((4, b_fringes, self.n_channels))
-        tempq = numpy.zeros((4, b_fringes, self.n_channels))
-        
-        noise = numpy.zeros((4, b_fringes, self.n_channels))
-        
-        # average the data for the two diagrams
-        for j in range(4):
-            for i in range(b_fringes):
-                if self.b_count[j][i] != 0:
-                    temp[j,i,:] = self.b[j][i,:] / self.b_count[j,i] 
-                    tempq[j,i,:] = self.q[j][i,:] 
-                    noise[j,i,:] = numpy.sqrt((tempq[j,i,:] - temp[j,i,:]**2) / (self.b_count[j,i] - 1))
-                else:    
-                    temp[j,i,:] = 0  
-                    tempq[j,i,:] = 0
-                    noise[j,i,:] = 0
-        
-        # select n_fringes, ie. discard the extra fringes
-        noise = noise[:,self.extra_fringes:(self.n_fringes+self.extra_fringes),:self.n_pixels]
-
-        
-        print(numpy.shape(noise))
-        
-        plt.figure()
-        plt.plot(noise[0][:, pixel])
-        plt.plot(noise[1][:, pixel])
-        plt.plot(noise[2][:, pixel])
-        plt.plot(noise[3][:, pixel])
-        plt.show()
-   
-    
-    
-    
         
 
 
@@ -1631,10 +1626,13 @@ class pefs(pe_exp):
         The data is stored in self.n. The data has first to be unpacked. Then it will take the standard deviation of the different FT's. 
         
         """
-        
+         # should result in: scans x time steps x pixels
         shape0 = numpy.shape(self.n[0])
         shape1 = numpy.shape(self.n[1])
         
+        #print(shape0)
+        
+        # set the maximum number of scans
         if max_scans == 0 or max_scans > shape0[0]:
             max_scans0 = shape0[0]
         else:
@@ -1645,119 +1643,104 @@ class pefs(pe_exp):
         else:
             max_scans1 = max_scans
         
-        std0 = numpy.zeros((shape0[1], shape0[2]))
-        std1 = numpy.zeros((shape1[1], shape1[2]))     
 
-        f0 = numpy.zeros((shape0[1], shape0[2]), dtype = "cfloat")
-        f1 = numpy.zeros((shape1[1], shape1[2]), dtype = "cfloat")
         
-        a0 = numpy.zeros((max_scans0, shape0[2]), dtype = "cfloat")
-        a1 = numpy.zeros((max_scans1, shape1[2]), dtype = "cfloat")
-        
-        for i in range(shape0[1]): # frequency
-            for j in range(max_scans0): # scans
-                a0[j] = self.n[0][j][i][:]
-            std0[i] = numpy.std(a0, axis = 0) 
-            f0[i] = numpy.mean(a0, axis = 0)
-
-        for i in range(shape1[1]): # frequency
-            for j in range(max_scans1): # scans
-                a1[j] = self.n[1][j][i][:]                
-            std1[i] = numpy.std(a1, axis = 0) 
-            f1[i] = numpy.mean(a1, axis = 0)     
-
-        s_axis = numpy.arange(shape0[1]) * croc.Constants.hene_fringe_fs
-
-
         if flag_noise_time_domain:
-
-    
-            plt.figure()
-            
-            plt.subplot(211)
-            for j in range(max_scans0):
-                plt.plot(self.r_axis[0][:], self.n[0][j][:,pixel])
-            plt.title("Rephasing, individual time domain, " + str(max_scans0) + "x")
-            
-            plt.subplot(212)
-            
-            ratio = numpy.nanmax(f0[:, pixel]/std0[:, pixel]) / numpy.nanmax(f0[:, pixel])
-            
-            
-            plt.plot(self.r_axis[0][:], ratio * std0[:, pixel], "b")
-            plt.plot(self.r_axis[0][:], ratio *f0[:, pixel], "g")
-            plt.plot(self.r_axis[0][:], numpy.abs(f0[:, pixel])/std0[:, pixel], "r")
-            plt.plot
-            plt.title("STD (blue), <time> (green) (both normalized) and SNR (abs(time)/STD) (red)")
-            plt.xlabel("fs")
-            plt.ylabel("Ratio")
-            plt.show()
-                
-            plt.figure()
-            plt.subplot(211)
-            for j in range(max_scans1):
-                plt.plot(self.r_axis[0][:], self.n[1][j][:,pixel])
-            plt.title("Non-rephasing, individual time domain, " + str(max_scans1) + "x")
-            
-            plt.subplot(212)   
-            ratio = numpy.nanmax(f1[:, pixel]/std1[:, pixel]) / numpy.nanmax(f1[1:, pixel])
-            plt.plot(self.r_axis[0][:], ratio * std1[:, pixel],"b")
-            plt.plot(self.r_axis[0][:], ratio * f1[:, pixel], "g")
-            plt.plot(self.r_axis[0][:], numpy.abs(f1[:, pixel])/std1[:, pixel], "r")
-            plt.title("STD (blue), <time> (green) (both normalized) and SNR (abs(time)/STD)(red)")
-            plt.xlabel("fs")
-            plt.ylabel("Ratio")
-            plt.show()
+            std0, m0 = self.calculate_noise_helper(self.n[0])
+            std1, m1 = self.calculate_noise_helper(self.n[1])
         
         else:
-    
-            plt.figure()
-            
-            plt.subplot(211)
-            for j in range(max_scans0):
-                plt.plot(self.s_axis[0][1:], numpy.abs(self.n[0][j][1:,pixel]))
-            plt.title("Rephasing, individual abs(FT), " + str(max_scans0) + "x")
-            
-            plt.subplot(212)
-            
-            ratio = numpy.nanmax(numpy.abs(f0[1:, pixel])/std0[1:, pixel]) / numpy.nanmax(numpy.abs(f0[1:, pixel]))
-            
-            
-            plt.plot(self.s_axis[0][1:], ratio * std0[1:, pixel], "b")
-            plt.plot(self.s_axis[0][1:], ratio * numpy.abs(f0[1:, pixel]), "g")
-            plt.plot(self.s_axis[0][1:], numpy.abs(f0[1:, pixel])/std0[1:, pixel], "r")
-            plt.plot
-            plt.title("STD (blue), abs(<FT>) (green) (both normalized) and SNR (red)")
-            plt.xlabel("cm-1")
-            plt.ylabel("Ratio")
-            plt.show()
+            f0 = [0] * max_scans0
+            f1 = [0] * max_scans1
+
+            for i in range(max_scans0):
+                temp = self.fourier_helper(numpy.copy(self.n[0][i]))
+                f0[i] = temp[:len(temp)/2]
                 
-            plt.figure()
-            plt.subplot(211)
-            for j in range(max_scans1):
-                plt.plot(self.s_axis[0][1:], numpy.abs(self.n[1][j][1:,pixel]))
-            plt.title("Non-rephasing, individual abs(FT), " + str(max_scans1) + "x")
+            for i in range(max_scans1):
+                temp = self.fourier_helper(numpy.copy(self.n[1][i]))
+                f1[i] = temp[:len(temp)/2]  
             
-            plt.subplot(212)   
-            ratio = numpy.nanmax(numpy.abs(f1[1:, pixel])/std1[1:, pixel]) / numpy.nanmax(numpy.abs(f1[1:, pixel]))
-            plt.plot(self.s_axis[0][1:], ratio * std1[1:, pixel],"b")
-            plt.plot(self.s_axis[0][1:], ratio * numpy.abs(f1[1:, pixel]), "g")
-            plt.plot(self.s_axis[0][1:], numpy.abs(f1[1:, pixel])/std1[1:, pixel], "r")
-            plt.title("STD (blue), abs(<FT>) (green) (both normalized) and SNR (red)")
-            plt.xlabel("cm-1")
-            plt.ylabel("Ratio")
-            plt.show()
+            std0, m0 = self.calculate_noise_helper(f0)
+            std1, m1 = self.calculate_noise_helper(f1)
         
+        if flag_noise_time_domain:        
+            axis = numpy.arange(shape0[1]) * croc.Constants.hene_fringe_fs
+        else:
+            axis = croc.Absorptive.make_ft_axis(length = shape0[1], dt = croc.Constants.hene_fringe_fs, undersampling = self.undersampling)
+            axis = axis[:len(axis)/2]
  
-        
        
+        plt.figure()
         
+        plt.subplot(211)
+        if flag_noise_time_domain:
+            for i in range(max_scans0):
+                plt.plot(axis, self.n[0][i][:, pixel])
+                plt.title("Rephasing, individual scans, time domain, n= " + str(shape0[0]))
+        else:
+            for i in range(max_scans0):
+                plt.plot(axis, numpy.abs(f0[i][:, pixel]))
+                plt.title("Rephasing, individual scans, frequency domain, n= " + str(shape0[0]))        
+        
+        plt.subplot(212)  
+        
+        SNR = numpy.abs(m0[:, pixel]) / std0[:, pixel]
+        
+        ratio = numpy.nanmax(SNR) / numpy.nanmax(numpy.abs(m0[:, pixel]))
+        
+        if flag_noise_time_domain:
+            plt.plot(axis, ratio * m0[:, pixel], "g")   
+            plt.title("<time> (green), STD (blue) (both normalized) and SNR (red)")
+            plt.xlabel("Time (fs)")            
+        else:
+            plt.plot(axis, ratio * numpy.abs(m0[:, pixel]), "g")
+            plt.title("abs(<FT>) (green), STD (blue) (both normalized) and SNR (red)")
+            plt.xlabel("Frequency (cm-1)")
+        
+        plt.plot(axis, ratio * std0[:, pixel], "b")
+        plt.plot(axis, SNR, "r")
+
+
+        plt.figure()
+        
+        plt.subplot(211)
+        if flag_noise_time_domain:
+            for i in range(max_scans0):
+                plt.plot(axis, self.n[1][i][:, pixel])
+                plt.title("Non-rephasing, individual scans, time domain, n= " + str(shape1[0]))
+        else:
+            for i in range(max_scans0):
+                plt.plot(axis, numpy.abs(f1[i][:, pixel]))
+                plt.title("Non-rephasing, individual scans, frequency domain, n= " + str(shape1[0]))        
+        
+        plt.subplot(212)  
+        
+        SNR = numpy.abs(m1[:, pixel]) / std1[:, pixel]
+        
+        ratio = numpy.nanmax(SNR) / numpy.nanmax(numpy.abs(m1[:, pixel]))
+        
+        if flag_noise_time_domain:
+            plt.plot(axis, ratio * m1[:, pixel], "g")   
+            plt.title("<time> (green), STD (blue) (both normalized) and SNR (red)")
+            plt.xlabel("Time (fs)")            
+        else:
+            plt.plot(axis, ratio * numpy.abs(m1[:, pixel]), "g")
+            plt.title("abs(<FT>) (green), STD (blue) (both normalized) and SNR (red)")
+            plt.xlabel("Frequency (cm-1)")
+        
+        plt.plot(axis, ratio * std1[:, pixel], "b")
+        plt.plot(axis, SNR, "r")
 
         
+        plt.show()
         
         
         
-     
+        
+            
+
+        
 
 
 
