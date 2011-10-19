@@ -400,7 +400,8 @@ class pe_exp(pe):
         self.r_axis[1] = population_time
         self.undersampling = undersampling
         self.time_stamp = time_stamp   
-        self.path = self.base_filename + "_" + str(self.time_stamp) + "_T" + str(self.r_axis[1]) + "/"     
+        self.path = self.base_filename + "_" + str(self.time_stamp) + "_T" + str(self.r_axis[1]) + "/"   
+        self.n_pixels = 32  
     
     
         
@@ -464,8 +465,8 @@ class pe_exp(pe):
                     raise
                     return 0   
                 self.r_axis[0] = temp[1:,0]
-                self.r_axis[2] = temp[0,1:]
-                self.r[0] = temp[1:,1:]
+                self.r_axis[2] = temp[0,1:32]
+                self.r[0] = temp[1:,1:32]
                 
                 try:
                     temp = numpy.loadtxt(file_NR)
@@ -473,7 +474,7 @@ class pe_exp(pe):
                     print("ERROR (croc.pe.import_data): unable to load file:", file_NR)
                     raise
                     return 0
-                self.r[1] = temp[1:,1:]               
+                self.r[1] = temp[1:,1:self.n_pixels]               
                 
                 if noise:
                     try:
@@ -482,7 +483,7 @@ class pe_exp(pe):
                         print("ERROR (croc.pe.import_data): unable to load file:", file_R_noise)
                         raise
                         return 0
-                    self.r_noise[0] = temp[1:,1:]                   
+                    self.r_noise[0] = temp[1:,1:self.n_pixels]                   
                         
                     try:
                         temp = numpy.loadtxt(file_NR_noise)
@@ -490,7 +491,7 @@ class pe_exp(pe):
                         print("ERROR (croc.pe.import_data): unable to load file:", file_NR_noise)
                         raise
                         return 0
-                    self.r_noise[1] = temp[1:,1:]     
+                    self.r_noise[1] = temp[1:,1:self.n_pixels]     
             
                 # fill in some details 
                 self.r_units = ["fs", "fs", "cm-1"]
@@ -1695,7 +1696,10 @@ class pefs(pe_exp):
         plt.plot(axis, ratio * std0[:, pixel], "b")
         plt.plot(axis, SNR, "r")
         
-        plt.ylim(-1.1*numpy.nanmax(SNR[1:]), 1.1*numpy.nanmax(SNR[1:]))
+        if flag_noise_time_domain:
+            plt.ylim(-1.1*numpy.nanmax(SNR[1:]), 1.1*numpy.nanmax(SNR[1:]))
+        else:
+            plt.ylim(0, 1.1*numpy.nanmax(SNR[1:]))
 
 
         plt.figure()
@@ -1728,7 +1732,10 @@ class pefs(pe_exp):
         plt.plot(axis, ratio * std1[:, pixel], "b")
         plt.plot(axis, SNR, "r")
         
-        plt.ylim(-1.1*numpy.nanmax(SNR[1:]), 1.1*numpy.nanmax(SNR[1:]))
+        if flag_noise_time_domain:
+            plt.ylim(-1.1*numpy.nanmax(SNR[1:]), 1.1*numpy.nanmax(SNR[1:]))
+        else:
+            plt.ylim(0, 1.1*numpy.nanmax(SNR[1:]))
         
         plt.show()
         
