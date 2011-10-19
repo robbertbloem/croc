@@ -99,7 +99,7 @@ def SIM1():
     
     for i in range(n_iter):
         t[i], t_count[i] = make_zeros(sim[0].n_fringes, noise_factor, count_dev)
-        #make_gauss_cos(sim[0].n_fringes, flag_add_noise = True)
+        
         
     # situation A: add all, then divide by all counts
     A = numpy.sum(t, axis = 0, dtype = "float64")
@@ -149,11 +149,83 @@ def SIM2():
     B = numpy.mean(s)
     
     print(A,B)
-    
-    
-    
-    
+ 
+ 
+   
+def correlation(array):
 
+
+    l = len(array)
+    
+    print(l)
+    
+    c_array = numpy.zeros(l/4)
+    
+    a = array
+    
+    for k in range(1,int(l/4)): # step size
+        
+        if k == 0:
+            n_steps = 1000
+        else:
+            n_steps = l // k
+        
+        s = 0
+        
+        for i in range(0, n_steps-1):
+            #print(i*k, i*k+k)
+            s += a[i*k] * a[i*k + k]
+        
+        c_array[k] = s / (4*n_steps)
+    
+    
+    
+    return c_array #/ c_array[0]
+            
+        
+#(m_x - numpy.mean(m_x)) / (numpy.std(m_x) * len(m_x))        
+    
+    
+def SIM3():
+    
+    n_samples = 1000
+    
+    I = numpy.zeros(n_samples)
+    k = 1/50
+    
+    I[0] = 0
+    
+    sigma = 2 / numpy.sqrt(2 * k)
+    
+    for i in range(1, n_samples):
+        first = I[i-1] * (1-k)
+        second = sigma**2 * numpy.random.randn(1) * k
+        
+        #print(first, second)
+        
+        I[i] = first + second[0]
+    
+    
+    c = correlation(I)
+    
+    
+    #print(I)
+    
+    plt.figure()
+    plt.plot(I)
+    plt.show()
+    
+    plt.figure()
+    plt.plot(c)
+    #plt.ylim(-1.1, 1.1)
+    plt.axhline(0)
+    plt.axvline(k)
+    plt.show()
+    
+    
+    #sigma * np.random.randn(...) + mu
+
+    
     
     
     

@@ -76,6 +76,7 @@ def import_data(mess_date, import_mess, import_from, import_to, mess_array,
     
     """
     if import_from == 0 or import_to == 0:
+        print("No import required...")
         return 0
     else:
     
@@ -825,6 +826,8 @@ class pefs(pe_exp):
             except IOError:
                 return False
             
+            #m = self.phase_correction(m, k, phases = [+8*numpy.pi/180, -8*numpy.pi/180, 1*numpy.pi/180, -1*numpy.pi/180])
+                        
             # if the number of fringes can not be set using the meta file, find it here 
             if self.n_fringes == 0:
                 self.n_fringes = int(numpy.abs(fringes[1] - fringes[0]))
@@ -866,6 +869,11 @@ class pefs(pe_exp):
         return True
 
 
+    def phase_correction(self, array, run, phases = [0,0,0,0]):
+    
+        array[:self.n_pixels,:] = array[:self.n_pixels,:] * numpy.exp(1j * phases[run])
+    
+        return array
 
 
 
@@ -921,11 +929,11 @@ class pefs(pe_exp):
         
         """
     
-        self.b = [numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels))] 
+        self.b = [numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels), dtype = "cfloat"),numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels), dtype = "cfloat"),numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels), dtype = "cfloat"),numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels), dtype = "cfloat")] 
         self.b_axis[0] = numpy.arange(- self.extra_fringes, self.n_fringes + self.extra_fringes)
         self.b_axis[1] = numpy.arange(- self.extra_fringes, self.n_fringes + self.extra_fringes)
         self.b_count = numpy.zeros((4, self.n_fringes + 2 * self.extra_fringes))
-        self.r = [numpy.zeros((self.n_fringes, 32)),numpy.zeros((self.n_fringes, 32))] 
+        self.r = [numpy.zeros((self.n_fringes, 32), dtype = "cfloat"),numpy.zeros((self.n_fringes, 32), dtype = "cfloat")] 
 
 
 
@@ -972,7 +980,7 @@ class pefs(pe_exp):
                 self.n_shots = int(numpy.shape(data)[0] / self.n_channels)            
             
             # construct m
-            m = numpy.zeros((self.n_channels, self.n_shots))
+            m = numpy.zeros((self.n_channels, self.n_shots), dtype = "cfloat")
             
             # order the data in a 2d array
             for i in range(self.n_shots):
@@ -1096,9 +1104,10 @@ class pefs(pe_exp):
         - self.r_units
         
         """
+        
         b_fringes = self.n_fringes + 2 * self.extra_fringes
         
-        temp = numpy.zeros((4, b_fringes, self.n_channels))
+        temp = numpy.zeros((4, b_fringes, self.n_channels), dtype = "cfloat")
         
         # average the data for the two diagrams
         for j in range(4):
@@ -1124,7 +1133,7 @@ class pefs(pe_exp):
             for j in range(2):
                 self.r[j][:,:self.n_pixels] = -numpy.log10(1+ 2*(temp[2*j,:,:self.n_pixels] - temp[2*j+1,:,:self.n_pixels])/self.reference[:self.n_pixels])                
         
-        self.r = numpy.nan_to_num(self.r)
+        #self.r = numpy.nan_to_num(self.r)
         
         self.r_units = ["fs", "fs", "cm-1"]
 
@@ -1138,7 +1147,7 @@ class pefs(pe_exp):
     
     
     
-    def reconstruct_counter(self, data, start_counter = 0, end_counter = 0, flag_plot = False):
+    def reconstruct_counter_OLD(self, data, start_counter = 0, end_counter = 0, flag_plot = False):
         """
         croc.Pe.pefs.reconstruct_counter()
         
@@ -1243,7 +1252,7 @@ class pefs(pe_exp):
 
         return m_axis, counter, correct_count   
 
-    def reconstruct_counter_NEW(self, data, start_counter = 0, end_counter = 0, flag_plot = False):
+    def reconstruct_counter(self, data, start_counter = 0, end_counter = 0, flag_plot = False):
         """
         croc.Pe.pefs.reconstruct_counter()
         
@@ -1283,7 +1292,7 @@ class pefs(pe_exp):
         y = data[self.y_channel,:]
         
         # determine the median values
-        med_x = numpy.min(x) + (numpy.max(x) - numpy.min(x))/2
+        med_x = 0 #numpy.min(x) + (numpy.max(x) - numpy.min(x))/2
         med_y = numpy.min(y) + (numpy.max(y) - numpy.min(y))/2
         
         # some stuff
@@ -1308,7 +1317,7 @@ class pefs(pe_exp):
             # count can only change when y > 0
             if y[i] > med_y:
                 if c_lock == False:
-                    if x[i-1] < med_x and x[i] > med_x and x[i-1] < x[i]: 
+                    if x[i-1] < med_x and x[i] > med_x: 
                         counter += 1               
                         c_lock = True
                         cc_lock = False
@@ -1316,7 +1325,7 @@ class pefs(pe_exp):
                             change_array[i] = 0.05
 
                 if cc_lock == False:
-                    if x[i-1] > med_x and x[i] < med_x and x[i-1] > x[i]:
+                    if x[i-1] > med_x and x[i] < med_x:
                         counter -= 1
                         c_lock = False
                         cc_lock = True  
@@ -1340,6 +1349,8 @@ class pefs(pe_exp):
             plt.figure()
             plt.plot(x, ".-")
             plt.plot(y, ".-")
+            plt.axhline(med_y)
+            plt.axhline(med_x)
             plt.plot(change_array, ".")
             plt.xlabel("Shots")
             plt.ylabel("Volts")
@@ -1548,22 +1559,14 @@ class pefs(pe_exp):
         n_shots = len(m_axis)
 
 
-        b = [numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels)),numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels))] 
+        b = [numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels), dtype = "cfloat"),numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels), dtype = "cfloat"),numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels), dtype = "cfloat"),numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels), dtype = "cfloat")] 
         b_count = numpy.zeros((4, self.n_fringes + 2 * self.extra_fringes))
         
-        r = numpy.zeros((self.n_fringes, 32)) 
-        
-        #diagram = 0
+        r = numpy.zeros((self.n_fringes, 32), dtype = "cfloat") 
         
         b, b_count = self.bin_data_helper(m, m_axis, diagram, b, b_count)  
         
-        #print(numpy.shape(b_count))
-#         b = [b[0], b[1]]
-#         b_count = [b_count[0], b_count[1]]
-        
-        #print(numpy.shape(b_count))
-        
-        temp = numpy.zeros((4, b_fringes, self.n_channels))
+        temp = numpy.zeros((4, b_fringes, self.n_channels), dtype = "cfloat")
         
         # average the data for the two diagrams
         for j in range(4):
@@ -1581,19 +1584,10 @@ class pefs(pe_exp):
         
         r = numpy.nan_to_num(r)
         
-#         if diagram == 1:
-#             r = numpy.fliplr(r)
-        
         self.n[diagram].append(r)
-        return r
         
-#         else:        
-#             f = self.fourier_helper(numpy.copy(r))
-#             
-#             f = f[:len(f)/2]
-#             
-#             self.n[diagram].append(f)  
-#             return f
+        return r
+    
 
 
 
@@ -1605,7 +1599,7 @@ class pefs(pe_exp):
         m = numpy.zeros((s[1], s[2]), dtype = "cfloat")
         a = numpy.zeros((s[0], s[2]), dtype = "cfloat")
         
-        print(s)
+        #print(s)
         
         for i in range(s[1]): 
             for j in range(s[0]): 
@@ -1676,7 +1670,7 @@ class pefs(pe_exp):
         plt.subplot(211)
         if flag_noise_time_domain:
             for i in range(max_scans0):
-                plt.plot(axis, self.n[0][i][:, pixel])
+                plt.plot(axis, numpy.real(self.n[0][i][:, pixel]))
                 plt.title("Rephasing, individual scans, time domain, n= " + str(shape0[0]))
         else:
             for i in range(max_scans0):
@@ -1690,7 +1684,7 @@ class pefs(pe_exp):
         ratio = numpy.nanmax(SNR) / numpy.nanmax(numpy.abs(m0[:, pixel]))
         
         if flag_noise_time_domain:
-            plt.plot(axis, ratio * m0[:, pixel], "g")   
+            plt.plot(axis, ratio * numpy.real(m0[:, pixel]), "g")   
             plt.title("<time> (green), STD (blue) (both normalized) and SNR (red)")
             plt.xlabel("Time (fs)")            
         else:
@@ -1700,17 +1694,19 @@ class pefs(pe_exp):
         
         plt.plot(axis, ratio * std0[:, pixel], "b")
         plt.plot(axis, SNR, "r")
+        
+        plt.ylim(-1.1*numpy.nanmax(SNR[1:]), 1.1*numpy.nanmax(SNR[1:]))
 
 
         plt.figure()
         
         plt.subplot(211)
         if flag_noise_time_domain:
-            for i in range(max_scans0):
-                plt.plot(axis, self.n[1][i][:, pixel])
+            for i in range(max_scans1):
+                plt.plot(axis, numpy.real(self.n[1][i][:, pixel]))
                 plt.title("Non-rephasing, individual scans, time domain, n= " + str(shape1[0]))
         else:
-            for i in range(max_scans0):
+            for i in range(max_scans1):
                 plt.plot(axis, numpy.abs(f1[i][:, pixel]))
                 plt.title("Non-rephasing, individual scans, frequency domain, n= " + str(shape1[0]))        
         
@@ -1718,10 +1714,10 @@ class pefs(pe_exp):
         
         SNR = numpy.abs(m1[:, pixel]) / std1[:, pixel]
         
-        ratio = numpy.nanmax(SNR) / numpy.nanmax(numpy.abs(m1[:, pixel]))
+        ratio = numpy.nanmax(SNR[1:]) / numpy.nanmax(numpy.abs(m1[1:, pixel]))
         
         if flag_noise_time_domain:
-            plt.plot(axis, ratio * m1[:, pixel], "g")   
+            plt.plot(axis, ratio * numpy.real(m1[:, pixel]), "g")   
             plt.title("<time> (green), STD (blue) (both normalized) and SNR (red)")
             plt.xlabel("Time (fs)")            
         else:
@@ -1731,7 +1727,8 @@ class pefs(pe_exp):
         
         plt.plot(axis, ratio * std1[:, pixel], "b")
         plt.plot(axis, SNR, "r")
-
+        
+        plt.ylim(-1.1*numpy.nanmax(SNR[1:]), 1.1*numpy.nanmax(SNR[1:]))
         
         plt.show()
         

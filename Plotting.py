@@ -29,8 +29,11 @@ my_cmap = matplotlib.colors.LinearSegmentedColormap('my_colormap', cdict, 256)
 
 
 
-def linear(data, axis, x_range = [0, 0], y_range = [0, 0], x_label = "", y_label = "", title = "", new_figure = True):
-
+def linear(data, axis, x_range = [0, 0], y_range = [0, 0], x_label = "", y_label = "", title = "", new_figure = True, plot_real = True):
+    
+    if plot_real:
+        data = numpy.real(data)
+    
     # make the x-axis
     if x_range == [0, 0]:
         x_min = axis[0]
