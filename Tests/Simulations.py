@@ -4,6 +4,7 @@ from __future__ import division
 
 import os
 import time
+import itertools
 import numpy
 import pylab 
 import matplotlib 
@@ -154,72 +155,96 @@ def SIM2():
    
 def correlation(array):
 
+    maxtau = 200
 
-    l = len(array)
+    array = array - numpy.mean(array)
     
-    print(l)
+    array2 = numpy.copy(array)
     
-    c_array = numpy.zeros(l/4)
-    
-    a = array
-    
-    for k in range(1,int(l/4)): # step size
+    c = numpy.zeros(maxtau)
+
+    for i in range(0, maxtau):
         
-        if k == 0:
-            n_steps = 1000
-        else:
-            n_steps = l // k
+        array2 = numpy.roll(array2, -1)
         
-        s = 0
+        step = numpy.ceil((i+1)/4)
+
+        a = list(itertools.islice(array * array2, None, len(array), step))
         
-        for i in range(0, n_steps-1):
-            #print(i*k, i*k+k)
-            s += a[i*k] * a[i*k + k]
+        c[i] = numpy.sum(a) / len(a)
+    
+    return c/c[0]
+
+
+def correlation2(array):
+
+    maxtau = 200
+
+    array = array - numpy.mean(array)
+    
+    array2 = numpy.copy(array)
+    
+    c = numpy.zeros(maxtau)
+
+    for i in range(0, maxtau):
         
-        c_array[k] = s / (4*n_steps)
-    
-    
-    
-    return c_array #/ c_array[0]
-            
+        array2 = numpy.roll(array2, -1)
         
-#(m_x - numpy.mean(m_x)) / (numpy.std(m_x) * len(m_x))        
+        step = 1 #numpy.ceil((i+1)/2)
+
+        a = list(itertools.islice(array * array2, None, len(array), step))
+        
+        c[i] = numpy.sum(a) / len(a)
     
+    return c/c[0]
+
+
+
+
     
 def SIM3():
     
     n_samples = 1000
     
     I = numpy.zeros(n_samples)
+    
     k = 1/50
     
-    I[0] = 0
+    I[0] = 10
     
     sigma = 2 / numpy.sqrt(2 * k)
     
-    for i in range(1, n_samples):
-        first = I[i-1] * (1-k)
-        second = sigma**2 * numpy.random.randn(1) * k
-        
-        #print(first, second)
-        
-        I[i] = first + second[0]
-    
-    
-    c = correlation(I)
-    
-    
-    #print(I)
-    
     plt.figure()
-    plt.plot(I)
-    plt.show()
     
-    plt.figure()
-    plt.plot(c)
+    for j in range(10):
+    
+        for i in range(1, n_samples):
+            first = I[i-1] * (1-k)
+            second = sigma * numpy.random.randn(1) * k
+            
+            #print(first, second)
+            
+            I[i] = first + second[0]
+    
+        c = correlation(I)
+        d = correlation2(I)
+    
+
+        plt.subplot(211)
+        plt.plot(c)
+
+        
+        plt.subplot(212)
+        plt.plot(d)
     #plt.ylim(-1.1, 1.1)
+    
+    plt.subplot(211)
     plt.axhline(0)
-    plt.axvline(k)
+    plt.axvline(1/k)
+    plt.subplot(212)
+    
+    plt.axhline(0)
+    plt.axvline(1/k)
     plt.show()
     
     

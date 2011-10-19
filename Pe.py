@@ -32,6 +32,7 @@ import scipy
 import croc
 # to prevent a conflict with other classes (like ftir)
 from croc.DataClasses import mess_data
+import croc.Functions
 import croc.Absorptive
 import croc.Plotting
 import croc.Constants
@@ -41,9 +42,11 @@ reload(croc.Debug)
 
 if croc.Debug.reload_flag:
     reload(croc)
+    reload(croc.Functions)
     reload(croc.Absorptive)
     reload(croc.Plotting)
     reload(croc.Constants)
+    
 
 
 debug_flag = croc.Debug.debug_flag
@@ -465,8 +468,8 @@ class pe_exp(pe):
                     raise
                     return 0   
                 self.r_axis[0] = temp[1:,0]
-                self.r_axis[2] = temp[0,1:32]
-                self.r[0] = temp[1:,1:32]
+                self.r_axis[2] = temp[0,1:self.n_pixels+1]
+                self.r[0] = temp[1:,1:self.n_pixels+1]
                 
                 try:
                     temp = numpy.loadtxt(file_NR)
@@ -474,7 +477,7 @@ class pe_exp(pe):
                     print("ERROR (croc.pe.import_data): unable to load file:", file_NR)
                     raise
                     return 0
-                self.r[1] = temp[1:,1:self.n_pixels]               
+                self.r[1] = temp[1:,1:self.n_pixels+1]               
                 
                 if noise:
                     try:
@@ -483,7 +486,7 @@ class pe_exp(pe):
                         print("ERROR (croc.pe.import_data): unable to load file:", file_R_noise)
                         raise
                         return 0
-                    self.r_noise[0] = temp[1:,1:self.n_pixels]                   
+                    self.r_noise[0] = temp[1:,1:self.n_pixels+1]                   
                         
                     try:
                         temp = numpy.loadtxt(file_NR_noise)
@@ -491,7 +494,7 @@ class pe_exp(pe):
                         print("ERROR (croc.pe.import_data): unable to load file:", file_NR_noise)
                         raise
                         return 0
-                    self.r_noise[1] = temp[1:,1:self.n_pixels]     
+                    self.r_noise[1] = temp[1:,1:self.n_pixels+1]     
             
                 # fill in some details 
                 self.r_units = ["fs", "fs", "cm-1"]
@@ -837,7 +840,7 @@ class pefs(pe_exp):
             m_axis, counter, correct_count = self.reconstruct_counter(m, fringes[0], fringes[1], flag_plot = False)
             
             # check for consistency
-            if correct_count == False:
+            if correct_count == False or k == 0 or k == 3:
                 print("Scan: " + str(scan) + ", File: " + str(k) + ": Miscount!")
                 self.incorrect_count[k] += 1
 
@@ -1372,7 +1375,7 @@ class pefs(pe_exp):
 
 
 
-    def find_correlation(self, m, channel = 16, new_figure = False):
+    def find_correlation(self, m, channel = 16, new_figure = False, maxtau = 200, flag_fft_method = True):
         """
         croc.Pe.pefs.find_correlation
         
@@ -1397,23 +1400,17 @@ class pefs(pe_exp):
         n_channels, n_shots = numpy.shape(m)
         
         # select the data we want to use
-        m_x = m[channel,:] 
+        m = m[channel,:] 
         
-        # fix that is proposed for numpy, but not implemented yet
-        a = (m_x - numpy.mean(m_x)) / (numpy.std(m_x) * len(m_x))
-        v = (m_x - numpy.mean(m_x)) /  numpy.std(m_x)
-        
-        # calculate the autocorrelation
-        r = numpy.correlate(a,v, mode="full")
-        
-        # select the part we want
-        r = r[len(r)/2:]
-
+        if flag_fft_method:
+            c = croc.Functions.correlation_fft(m)
+        else:
+            c = croc.Functions.correlation(m, maxtau = maxtau)
         # plot it
         if new_figure:
             plt.figure()
         
-        plt.plot(m_x)
+        plt.plot(c)
         
         if new_figure:
             plt.show()

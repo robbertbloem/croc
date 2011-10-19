@@ -627,14 +627,8 @@ def FS4(scans = 1, data_large = False):
         mess[0].path = ("/Volumes/public_hamm/PML3/data/20110930/corT1_1419_T0/")
 
     scan = 1
-        
-    filename = [0] * 4  # the filenames
-
-    # construct the filenames
-    filename[0] = mess[0].path + mess[0].base_filename + "_" + str(mess[0].time_stamp) + "_T" + str(mess[0].r_axis[1]) + "_R1" + "_" + str(scan) + ".bin"
-    filename[1] = mess[0].path + mess[0].base_filename + "_" + str(mess[0].time_stamp) + "_T" + str(mess[0].r_axis[1]) + "_R2" + "_" + str(scan) + ".bin"
-    filename[2] = mess[0].path + mess[0].base_filename + "_" + str(mess[0].time_stamp) + "_T" + str(mess[0].r_axis[1]) + "_NR1" + "_" + str(scan) + ".bin"
-    filename[3] = mess[0].path + mess[0].base_filename + "_" + str(mess[0].time_stamp) + "_T" + str(mess[0].r_axis[1]) + "_NR2" + "_" + str(scan) + ".bin"
+      
+    filename = mess[0].make_filenames(scan)
 
     plt.figure()
     for i in range(scans):
@@ -642,7 +636,7 @@ def FS4(scans = 1, data_large = False):
         [m, fringes] = mess[0].import_raw_data(filename[i])
     
         # plot the correlation
-        mess[0].find_correlation(m)
+        mess[0].find_correlation(m, maxtau = 5000, flag_fft_method = True)
     
     plt.show()
 
