@@ -1292,7 +1292,7 @@ class pefs(pe_exp):
         y = data[self.y_channel,:]
         
         # determine the median values
-        med_x = 0 #numpy.min(x) + (numpy.max(x) - numpy.min(x))/2
+        med_x = numpy.min(x) + (numpy.max(x) - numpy.min(x))/2
         med_y = numpy.min(y) + (numpy.max(y) - numpy.min(y))/2
         
         # some stuff
