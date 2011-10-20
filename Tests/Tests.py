@@ -428,10 +428,14 @@ def FS1c():
     pick[0].construct_r()
     
     # calculate the spectrum
-    pick[0].absorptive(window_function = "gaussian", window_length = 0)
+    pick[0].absorptive(window_function = "none", window_length = 0)
+    
+    zlimit = numpy.nanmax(numpy.abs(pick[0].s))
+    
+    print(type(zlimit))
     
     # plot the spectrum
-    pick[0].plot(plot_type = "S")#, x_range = [1930, 2150])
+    pick[0].plot(plot_type = "S", zlimit = zlimit/10)#, x_range = [1930, 2150])
 
     # print the data structure
     print(pick[0])   
@@ -761,10 +765,10 @@ def PE6():
     mess[0].absorptive()
     #window_function = "gaussian", window_length = 40, flag_plot = True)
     
-    print(mess[0].s_axis[2])
+    zlimit = numpy.nanmax(numpy.abs(pick[0].s))
     
     plt.figure()
-    plt.plot(mess[0].s[:,14])
+    plt.plot(mess[0].s[:,14], zlimit = zlimit/10)
     plt.show()
     
     mess[0].plot_T(pixel=14)

@@ -68,7 +68,8 @@ def check_pickle_exists(path_and_filename):
 
 def import_data(mess_date, import_mess, import_from, import_to, mess_array,
         flag_calculate_noise = False,
-        flag_no_pickle = False
+        flag_no_pickle = False,
+        flag_overwrite_pickle = False
     ):
     """
     croc.Croc.import_data()
@@ -91,8 +92,8 @@ def import_data(mess_date, import_mess, import_from, import_to, mess_array,
             # use the _fs postfix to differentiate it from other pickles
             pickle_name = str(mess_date) + "_fs.pickle"
             
-            # first, check if there is a pickle
-            if croc.Pe.check_pickle_exists(pickle_name):
+            if flag_overwrite_pickle == False and croc.Pe.check_pickle_exists(pickle_name):
+                # first, check if there is a pickle
                 # found a pickle, now import it
                 print("Found pickle")
                 mess = croc.DataClasses.import_db(pickle_name)
@@ -840,13 +841,15 @@ class pefs(pe_exp):
             m_axis, counter, correct_count = self.reconstruct_counter(m, fringes[0], fringes[1], flag_plot = False)
             
             # check for consistency
-            if correct_count == False or k == 0 or k == 3:
+            if correct_count == False:
                 print("Scan: " + str(scan) + ", File: " + str(k) + ": Miscount!")
+                #print("start:", fringes[0], m_axis[0], "end:", fringes[1], m_axis[-1])
                 self.incorrect_count[k] += 1
 
             # if it is consistent, continue
             else:
                 print("Scan: " + str(scan) + ", File: " + str(k) + ": Count is correct!")
+                #print("start:", fringes[0], m_axis[0], "end:", fringes[1], m_axis[-1])
             
                 # make b the correct size, if it isn't already
                 if numpy.shape(self.b_axis)[-1] == 2:
@@ -1310,6 +1313,12 @@ class pefs(pe_exp):
         c_lock = False
         cc_lock = False
         
+        count_c = 0
+        count_cc = 0
+        
+        count_limit = 20
+        length_limit = 1500
+        
         # where did the counter start
         m_axis[0] = counter
         
@@ -1322,24 +1331,51 @@ class pefs(pe_exp):
             if y[i] > med_y:
                 if c_lock == False:
                     if x[i-1] < med_x and x[i] > med_x: 
-                        counter += 1               
+                        # add 1 to the counter
+                        counter += 1        
+                        
+                        # lock clockwise count       
                         c_lock = True
-                        cc_lock = False
+                        
+                        count_c += 1
+                        
+                        # if we are the beginning or end, unlock  counterclockwise 
+                        if count_c < count_limit or i > length - length_limit:
+                            cc_lock = False
+                        else:
+                            cc_lock = True
+                        
                         if flag_plot:
                             change_array[i] = 0.05
 
                 if cc_lock == False:
                     if x[i-1] > med_x and x[i] < med_x:
                         counter -= 1
-                        c_lock = False
+                        
                         cc_lock = True  
+                        
+                        count_cc += 1
+                        
+                        if count_cc < count_limit or i > length - length_limit:
+                            c_lock = False
+                        else:
+                            c_lock = True
+                        
                         if flag_plot:
                             change_array[i] = -0.05
 
             else:
-                c_lock = False
-                cc_lock = False
-            
+                # we are at y<0
+                # only unlock clockwise if we have more than 100 counts up
+                if count_c > count_limit:              
+                    c_lock = False
+                if count_cc > count_limit:
+                    cc_lock = False
+                # or if we are the beginning or end
+                if i < length_limit or i > length - length_limit:
+                    c_lock = False
+                    cc_lock = False
+                
             m_axis[i] = counter
         
         m_axis[-1] = counter
@@ -1348,13 +1384,14 @@ class pefs(pe_exp):
             correct_count = True
         else:
             correct_count = False
+            #print(counter, end_counter)
 
         if flag_plot:        
             plt.figure()
-            plt.plot(x, ".-")
-            plt.plot(y, ".-")
-            plt.axhline(med_y)
-            plt.axhline(med_x)
+            plt.plot(x-0.1, ".-")
+            plt.plot(y+0.1, ".-")
+            plt.axhline(med_y+0.1, color = "k")
+            plt.axhline(med_x - 0.1, color = "k")
             plt.plot(change_array, ".")
             plt.xlabel("Shots")
             plt.ylabel("Volts")
@@ -1669,11 +1706,13 @@ class pefs(pe_exp):
         if flag_noise_time_domain:
             for i in range(max_scans0):
                 plt.plot(axis, numpy.real(self.n[0][i][:, pixel]))
-                plt.title("Rephasing, individual scans, time domain, n= " + str(shape0[0]))
+                plt.title("Rephasing, individual scans, time domain, n= " + str(max_scans0))
         else:
             for i in range(max_scans0):
                 plt.plot(axis, numpy.abs(f0[i][:, pixel]))
-                plt.title("Rephasing, individual scans, frequency domain, n= " + str(shape0[0]))        
+                plt.title("Rephasing, individual scans, frequency domain, n= " + str(max_scans0))        
+        
+        plt.xlim(1850, 2300)
         
         plt.subplot(212)  
         
@@ -1698,19 +1737,19 @@ class pefs(pe_exp):
         else:
             plt.ylim(0, 1.1*numpy.nanmax(SNR[1:]))
 
-
+        plt.xlim(1850, 2300)
         plt.figure()
         
         plt.subplot(211)
         if flag_noise_time_domain:
             for i in range(max_scans1):
                 plt.plot(axis, numpy.real(self.n[1][i][:, pixel]))
-                plt.title("Non-rephasing, individual scans, time domain, n= " + str(shape1[0]))
+                plt.title("Non-rephasing, individual scans, time domain, n= " + str(max_scans1))
         else:
             for i in range(max_scans1):
                 plt.plot(axis, numpy.abs(f1[i][:, pixel]))
-                plt.title("Non-rephasing, individual scans, frequency domain, n= " + str(shape1[0]))        
-        
+                plt.title("Non-rephasing, individual scans, frequency domain, n= " + str(max_scans1))        
+        plt.xlim(1850, 2300)
         plt.subplot(212)  
         
         SNR = numpy.abs(m1[:, pixel]) / std1[:, pixel]
@@ -1733,7 +1772,7 @@ class pefs(pe_exp):
             plt.ylim(-1.1*numpy.nanmax(SNR[1:]), 1.1*numpy.nanmax(SNR[1:]))
         else:
             plt.ylim(0, 1.1*numpy.nanmax(SNR[1:]))
-        
+        plt.xlim(1850, 2300)
         plt.show()
         
         

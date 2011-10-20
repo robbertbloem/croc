@@ -168,7 +168,7 @@ def make_contours_2d(data, zlimit = 0, contours = 21):
             print(mi, ma)
         return numpy.linspace(mi, ma, num=contours)
         
-    if zlimit == -1:
+    elif zlimit == -1:
         ma = numpy.amax(data)
         mi = numpy.amin(data)
         if debug_flag:
@@ -180,10 +180,11 @@ def make_contours_2d(data, zlimit = 0, contours = 21):
             ma = abs(ma)
         return numpy.linspace(-ma, ma, num=contours) 
         
-    if type(zlimit) == int:
-        return numpy.linspace(-abs(zlimit), abs(zlimit), num=contours) 
-    if type(zlimit) == list:
+    elif type(zlimit) == list:
         return numpy.linspace(zlimit[0], zlimit[1], num=contours)   
+    
+    else:
+        return numpy.linspace(-abs(zlimit), abs(zlimit), num=contours) 
 
 
 
