@@ -555,7 +555,7 @@ class pe_exp(pe):
                     self.n_fringes = int((re.search(regex, line)).group())            
                 
                 if re.match("Phase", line):
-                    self.phase_degrees = float((re.search(regex, line)).group()) + 180.0
+                    self.phase_degrees = float((re.search(regex, line)).group())
                 
                 if re.match("Comments", line):
                     self.comment = line[9:]
@@ -656,7 +656,7 @@ class pe_exp(pe):
             return 0
         
         # phase the spectrum
-        self.s = numpy.real(numpy.exp(-1j * self.phase_rad) * self.f[0] + numpy.exp(1j * self.phase_rad) * self.f[1])
+        self.s = numpy.real(numpy.exp(1j * self.phase_rad) * self.f[0] + numpy.exp(-1j * self.phase_rad) * self.f[1])
         
         # select part of the data
         if self.undersampling % 2 == 0:
