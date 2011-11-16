@@ -71,12 +71,9 @@ def import_pickle(mess_date, mess_array, index, pickle_name = ""):
 
     for i in range(len(obj)):
         if obj[i].objectname == mess_array[index][0]:
-#             print("---")
-#             print(obj[i].objectname)
-#             print(mess_array[index][0])
-            temp = i    
+            new_index = i    
     
-    return obj, temp
+    return obj, new_index
 
 
 
