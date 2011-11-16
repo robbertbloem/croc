@@ -90,7 +90,7 @@ def import_data(mess_date, import_mess, import_from, import_to, mess_array,
             
             # default name of the pickle
             # use the _fs postfix to differentiate it from other pickles
-            pickle_name = str(mess_date) + "_fs.pickle"
+            pickle_name = str(mess_date) + "_fs_noise.pickle"
             
             if flag_overwrite_pickle == False and croc.Pe.check_pickle_exists(pickle_name):
                 # first, check if there is a pickle
@@ -1659,8 +1659,6 @@ class pefs(pe_exp):
         shape0 = numpy.shape(self.n[0])
         shape1 = numpy.shape(self.n[1])
         
-        #print(shape0)
-        
         # set the maximum number of scans
         if max_scans == 0 or max_scans > shape0[0]:
             max_scans0 = shape0[0]
@@ -1708,11 +1706,11 @@ class pefs(pe_exp):
                 plt.plot(axis, numpy.real(self.n[0][i][:, pixel]))
                 plt.title("Rephasing, individual scans, time domain, n= " + str(max_scans0))
         else:
-            for i in range(max_scans0):
+            for i in range(max_scans0):                
                 plt.plot(axis, numpy.abs(f0[i][:, pixel]))
                 plt.title("Rephasing, individual scans, frequency domain, n= " + str(max_scans0))        
         
-        plt.xlim(1850, 2300)
+        #plt.xlim(1850, 2300)
         
         plt.subplot(212)  
         
@@ -1737,7 +1735,7 @@ class pefs(pe_exp):
         else:
             plt.ylim(0, 1.1*numpy.nanmax(SNR[1:]))
 
-        plt.xlim(1850, 2300)
+        #plt.xlim(1850, 2300)
         plt.figure()
         
         plt.subplot(211)
@@ -1749,7 +1747,7 @@ class pefs(pe_exp):
             for i in range(max_scans1):
                 plt.plot(axis, numpy.abs(f1[i][:, pixel]))
                 plt.title("Non-rephasing, individual scans, frequency domain, n= " + str(max_scans1))        
-        plt.xlim(1850, 2300)
+        #plt.xlim(1850, 2300)
         plt.subplot(212)  
         
         SNR = numpy.abs(m1[:, pixel]) / std1[:, pixel]
@@ -1772,8 +1770,13 @@ class pefs(pe_exp):
             plt.ylim(-1.1*numpy.nanmax(SNR[1:]), 1.1*numpy.nanmax(SNR[1:]))
         else:
             plt.ylim(0, 1.1*numpy.nanmax(SNR[1:]))
-        plt.xlim(1850, 2300)
+        #plt.xlim(1850, 2300)
         plt.show()
+        
+        if flag_noise_time_domain:
+            pass
+        else:
+            return m0, m1
         
         
         
