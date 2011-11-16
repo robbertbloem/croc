@@ -62,11 +62,27 @@ def check_pickle_exists(path_and_filename):
     return os.path.exists(path_and_filename)
 
 
+def import_pickle(mess_date, mess_array, index, pickle_name = ""):
+
+    if pickle_name == "":
+        pickle_name = str(mess_date) + "_fs.pickle"
+    
+    obj = croc.DataClasses.import_db(pickle_name)
+
+    for i in range(len(obj)):
+        if obj[i].objectname == mess_array[index][0]:
+#             print("---")
+#             print(obj[i].objectname)
+#             print(mess_array[index][0])
+            temp = i    
+    
+    return obj, temp
 
 
 
-
-def import_data(mess_date, import_mess, import_from, import_to, mess_array,
+def import_data(mess_date, import_mess, import_from, import_to, mess_array, 
+        data_dir = "", 
+        anal_dir = "",
         flag_calculate_noise = False,
         flag_no_pickle = False,
         flag_overwrite_pickle = False
@@ -88,12 +104,19 @@ def import_data(mess_date, import_mess, import_from, import_to, mess_array,
         try:
             mess_array[import_mess]
             
+            if anal_dir == "":
+                anal_dir = os.getcwd() + "/"
+            
+            if data_dir == "":
+                # the 'root' is removes the '/analysis/20111111/'
+                data_dir = os.getcwd()[:-17] + "data/" + str(mess_date) + "/"
+                
             # default name of the pickle
             # use the _fs postfix to differentiate it from other pickles
-            pickle_name = str(mess_date) + "_fs_noise.pickle"
+            pickle_name = anal_dir + str(mess_date) + "_fs.pickle"
             
-            if flag_overwrite_pickle == False and croc.Pe.check_pickle_exists(pickle_name):
-                # first, check if there is a pickle
+            # first, check if there is a pickle
+            if flag_overwrite_pickle == False and croc.Pe.check_pickle_exists(pickle_name): 
                 # found a pickle, now import it
                 print("Found pickle")
                 mess = croc.DataClasses.import_db(pickle_name)
@@ -102,6 +125,7 @@ def import_data(mess_date, import_mess, import_from, import_to, mess_array,
                 print("No pickle found")
                 mess = [0]
                 mess[0] = croc.Pe.pefs(mess_array[0][0], mess_array[0][1], mess_array[0][2], mess_array[0][3])
+                mess[0].path = data_dir + mess[0].path
             
             # see if we have to extend mess to fit with mess_array
             if len(mess) < len(mess_array):
@@ -110,8 +134,10 @@ def import_data(mess_date, import_mess, import_from, import_to, mess_array,
                         # this works if mess[i] exists
                         mess[i].objectname
                     except IndexError:
-                        # it does not work if it does not exists
-                        mess.append(croc.Pe.pefs(mess_array[i][0], mess_array[i][1], mess_array[i][2], mess_array[i][3]))
+                        # it fails if it does not exists, so make a new one
+                        mess.append(croc.Pe.pefs(mess_array[i][0], mess_array[i][1], mess_array[i][2], mess_array[i][3]))    
+                        mess[-1].path = data_dir + mess[-1].path
+            
                         
             # pickle can confuse the order of measurements
             # use the unique object names to find the correct one
@@ -730,7 +756,11 @@ class pefs(pe_exp):
         self.base_filename = base_filename
         self.r_axis[1] = population_time   
         self.time_stamp = time_stamp   
-        self.path = self.base_filename + "_" + str(self.time_stamp) + "_T" + str(self.r_axis[1]) + "/"  
+        if self.path == "":
+            self.path = self.base_filename + "_" + str(self.time_stamp) + "_T" + str(self.r_axis[1]) + "/"  
+        else:
+            self.path = self.path + "/" + self.base_filename + "_" + str(self.time_stamp) + "_T" + str(self.r_axis[1]) + "/"
+        
         
         self.mess_type = "FastScan"
         
@@ -769,6 +799,8 @@ class pefs(pe_exp):
     def import_reference(self):
 
         filename = self.path + self.base_filename + "_" + str(self.time_stamp) + "_T" + str(self.r_axis[1]) + "_ref.dat"
+        
+        print(self.path)
                 
         data = numpy.loadtxt(filename)
         
