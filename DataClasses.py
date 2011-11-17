@@ -158,7 +158,7 @@ class mess_data(ClassTools):
         return self._zeropad_by
     @zeropad_by.setter
     def zeropad_by(self, zp_by):
-        print("ADVISE (croc.DataClasses.mess_data.zeropad_by.setter): The variable zeropad_by will actually set the variable zeropad_to, which is an integer. Then zeropad_by will be recalculated using that.\n")
+        #print("ADVISE (croc.DataClasses.mess_data.zeropad_by.setter): The variable zeropad_by will actually set the variable zeropad_to, which is an integer. Then zeropad_by will be recalculated using that.\n")
         self.zeropad_to = int(zp_by * numpy.shape(self.r[0])[0])
         #self._zeropad_by = zp_by 
        
@@ -219,6 +219,8 @@ def make_db(array_of_class_instances, path_and_filename):
     """
     if path_and_filename[-7:] != ".pickle":
         path_and_filename += ".pickle"
+    
+    print(path_and_filename)
     
     db = shelve.open(path_and_filename)
     

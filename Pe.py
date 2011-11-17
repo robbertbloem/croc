@@ -42,6 +42,7 @@ reload(croc.Debug)
 
 if croc.Debug.reload_flag:
     reload(croc)
+    reload(croc.DataClasses)
     reload(croc.Functions)
     reload(croc.Absorptive)
     reload(croc.Plotting)
@@ -62,18 +63,21 @@ def check_pickle_exists(path_and_filename):
     return os.path.exists(path_and_filename)
 
 
-def import_pickle(mess_date, mess_array, index, pickle_name = ""):
+def import_pickle(mess_date, mess_array, pickle_name = ""):
 
     if pickle_name == "":
         pickle_name = str(mess_date) + "_fs.pickle"
     
     obj = croc.DataClasses.import_db(pickle_name)
 
-    for i in range(len(obj)):
-        if obj[i].objectname == mess_array[index][0]:
-            new_index = i    
-    
-    return obj, new_index
+    new_obj = [0] * len(obj)
+
+    for i in range(len(mess_array)):
+        for j in range(len(obj)):
+            if mess_array[i][0] == obj[j].objectname:
+                new_obj[i] = obj[j]
+
+    return new_obj
 
 
 
@@ -110,8 +114,8 @@ def import_data(mess_date, import_mess, import_from, import_to, mess_array,
                 
             # default name of the pickle
             # use the _fs postfix to differentiate it from other pickles
-            pickle_name = anal_dir + str(mess_date) + "_fs.pickle"
-            
+            pickle_name = str(mess_date) + "_fs.pickle"
+
             # first, check if there is a pickle
             if flag_overwrite_pickle == False and croc.Pe.check_pickle_exists(pickle_name): 
                 # found a pickle, now import it
@@ -192,8 +196,7 @@ def print_summary(object_array):
         else:
             print("s not calculated")   
             
-             
-        
+
         print("")
         
 
@@ -405,7 +408,56 @@ class pe_sub(pe):
 
     
     
-
+class pe_add(pe):
+    
+    def __init__(self, objectname, class1, class2):
+        croc.Pe.pe.__init__(self, objectname)
+        
+        if class1.phase_degrees != class2.phase_degrees:
+            print("WARNING (croc.Pe.pe_add.__init__): The phases of the two classes differ")
+        
+        if class1.mess_type == "FastScan":
+            self.b = [0] * 4
+            for i in range(4):
+                self.b[i] = class1.b[i] + class2.b[i]
+            self.b_axis = class1.b_axis
+            self.b_count = [0] * 4
+            for i in range(4):
+                self.b_count[i] = class1.b_count[i] + class2.b_count[i]
+            self.chopper_channel = class1.chopper_channel
+            self.n_channels = class1.n_channels
+            #self.imported_scans = 
+            self.extra_fringes = class1.extra_fringes
+            self.reference = class1.reference
+            self.x_channel = class1.x_channel
+            self.y_channel = class1.y_channel
+            
+        
+        self.phase_degrees = class1.phase_degrees
+        #self.zeropad_by = class1.zeropad_by
+        self.mess_type = class1.mess_type
+        self.n_scans = class1.n_scans + class2.n_scans
+        self.n_shots = class1.n_shots
+        self.n_steps = class1.n_steps
+        self.r = [0] * 2
+        for i in range(2):
+            self.r[i] = class1.r[i] + class2.r[i]
+        self.r_axis = class1.r_axis
+        self.r_domain = class1.r_domain
+        self.r_units = class1.r_units
+        self.s = class1.s + class2.s
+        self.s_axis = class1.s_axis
+        self.s_domain = class1.s_domain
+        self.s_resolution = class1.s_resolution
+        self.s_units = class1.s_units
+        self.undersampling = class1.undersampling
+        
+        
+        
+        
+        
+        
+        
     
 
 
