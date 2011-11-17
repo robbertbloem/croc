@@ -205,9 +205,6 @@ def print_summary(object_array):
 
 
 
-
-
-
 class pe(croc.DataClasses.mess_data):
     """
     croc.pe.pe
@@ -243,6 +240,117 @@ class pe(croc.DataClasses.mess_data):
         
         # photon echo has 3 dimensions: t1/w1, t2, w3
         croc.DataClasses.mess_data.__init__(self, object_name, measurements = 2, dimensions = 3)
+
+
+
+
+    def fourier_helper(self, array, window_function = "none", window_length = 0, flag_plot = False):
+        """
+        fourier_helper
+        
+        20101204/RB: started
+        20110909 RB: continued
+        
+        This is a function to Fourier Transform experimental 2DIR spectra, ie, spectra with a time and frequency axis. It basically repeats the Fourier function for all pixels.
+        
+        INPUT:
+        - array (numpy.ndarray): a 2d array of time * pixels
+        - window_function (name, "none"): "none", "guassian" etc
+        - window_length (int, 0): length of the window. 0 means the whole range
+        - flag_plot (BOOL, False): will plot the windowed time domain
+         
+        """
+    
+        # you need a new array that also has complex numbers  
+        # the length depends on zeropadding      
+        [x, y] = numpy.shape(array)
+        if self.zeropad_to != None:
+            x = self.zeropad_to
+        ft_array = numpy.reshape( numpy.zeros(x*y, dtype=numpy.cfloat), (x, y))
+
+        # iterate over all the pixels
+        for i in range(y):
+            ft_array[:,i] = croc.Absorptive.fourier(array[:,i], zero_in_middle = False, first_correction = True, zeropad_to = self.zeropad_to, window_function = window_function, window_length = window_length, flag_plot = flag_plot)  
+            flag_plot = False
+        
+        return ft_array  
+        
+
+        
+      
+
+
+
+  
+                
+    def absorptive(self, window_function = "none", window_length = 0, flag_plot = False):
+        """
+        croc.pe.fourier
+        
+        This function does the Fourier transform.
+        It checks the undersampling.
+        It phases the spectrum.
+        It makes the axes.
+        
+        INPUT:
+        - window_function (name, "none"): "none", "guassian" etc
+        - window_length (int, 0): length of the window. 0 means the whole range
+        - flag_plot (BOOL, False): will plot the windowed time domain
+        
+        """
+        
+        # CHECKS
+        # checks the undersampling. It can be 0, but that is hardly used
+#         if self.undersampling == 0:
+#             print("\nWARNING (croc.pe.pe_exp.absorptive): undersampling is 0!\n")
+        
+        # do the fft
+        # copy the arrays to prevent changing the originals
+        try:
+            self.f[0] = self.fourier_helper(numpy.copy(self.r[0]), window_function = window_function, window_length = window_length, flag_plot = flag_plot)
+            self.f[1] = self.fourier_helper(numpy.copy(self.r[1]), window_function = window_function, window_length = window_length, flag_plot = flag_plot)
+        except ValueError:
+            print("\nERROR (croc.pe.pe_exp.absorptive): Problem with the Fourier Transforms. Are r[0] and r[1] assigned?")
+            return 0
+        
+        # phase the spectrum
+        self.s = numpy.real(numpy.exp(1j * self.phase_rad) * self.f[0] + numpy.exp(-1j * self.phase_rad) * self.f[1])
+        
+        # select part of the data
+        if self.undersampling % 2 == 0:
+            self.f[0] = self.f[0][:(len(self.f[0])/2)][:]
+            self.f[1] = self.f[1][:(len(self.f[1])/2)][:]
+            self.s = self.s[:(len(self.s)/2)][:]
+        else:
+            self.f[0] = self.f[0][(len(self.f[0])/2):][:]
+            self.f[1] = self.f[1][(len(self.f[1])/2):][:]
+            self.s = self.s[(len(self.s)/2):][:]        
+        
+        # fix the axes
+        try:
+            self.s_axis[0] = croc.Absorptive.make_ft_axis(length = 2*numpy.shape(self.s)[0], dt = self.r_axis[0][1]-self.r_axis[0][0], undersampling = self.undersampling)
+        except TypeError:
+            print("\nERROR (croc.pe.pe_exp.absorptive): Problem with making the Fourier Transformed axis. Is r_axis[0] assigned?")
+            return 0
+            
+        self.s_axis[0] = self.s_axis[0][0:len(self.s_axis[0])/2]
+        self.s_axis[2] = self.r_axis[2] + self.r_correction[2]  
+        
+        # add some stuff to self
+        self.s_units = ["cm-1", "fs", "cm-1"]
+        try:
+            self.s_resolution = [(self.s_axis[0][1] - self.s_axis[0][0]), 0, (self.s_axis[2][1] - self.s_axis[2][0])]
+        except TypeError:
+            print("\nERROR (croc.pe.pe_exp.absorptive): The resolution of the spectrum can not be determined. This can mean that the original axes (r_axis) or the spectral axes (s_axis) contains an error.")
+            print("r_axis[0]:", self.r_axis[0])
+            print("r_axis[2]:", self.r_axis[2])
+            print("s_axis[0]:", self.s_axis[0])
+            print("s_axis[2]:", self.s_axis[2])
+            return 0                
+            
+            
+
+
 
 
 
@@ -405,6 +513,25 @@ class pe_sub(pe):
         self.s_axis[1] = class_plus.s_axis[1]
         self.s_axis[2] = class_plus.s_axis[2]
         self.comment = ("Subtraction of " + class_plus.objectname + " with " + class_min.objectname)
+        
+        self.phase_degrees = class_plus.phase_degrees
+        #self.zeropad_by = class_plus.zeropad_by
+        self.mess_type = class_plus.mess_type
+        #self.n_scans = class_plus.n_scans + class_min.n_scans
+        self.n_shots = class_plus.n_shots
+        self.n_steps = class_plus.n_steps
+        self.r = [0] * 2
+        for i in range(2):
+            self.r[i] = class_plus.r[i] - class_min.r[i]
+        self.r_axis = class_plus.r_axis
+        self.r_domain = class_plus.r_domain
+        self.r_units = class_plus.r_units
+        self.s = class_plus.s - class_min.s
+        self.s_axis = class_plus.s_axis
+        self.s_domain = class_plus.s_domain
+        self.s_resolution = class_plus.s_resolution
+        self.s_units = class_plus.s_units
+        self.undersampling = class_plus.undersampling
 
     
     
@@ -660,112 +787,10 @@ class pe_exp(pe):
 
 
 
-    def fourier_helper(self, array, window_function = "none", window_length = 0, flag_plot = False):
-        """
-        fourier_helper
-        
-        20101204/RB: started
-        20110909 RB: continued
-        
-        This is a function to Fourier Transform experimental 2DIR spectra, ie, spectra with a time and frequency axis. It basically repeats the Fourier function for all pixels.
-        
-        INPUT:
-        - array (numpy.ndarray): a 2d array of time * pixels
-        - window_function (name, "none"): "none", "guassian" etc
-        - window_length (int, 0): length of the window. 0 means the whole range
-        - flag_plot (BOOL, False): will plot the windowed time domain
-         
-        """
-    
-        # you need a new array that also has complex numbers  
-        # the length depends on zeropadding      
-        [x, y] = numpy.shape(array)
-        if self.zeropad_to != None:
-            x = self.zeropad_to
-        ft_array = numpy.reshape( numpy.zeros(x*y, dtype=numpy.cfloat), (x, y))
 
-        # iterate over all the pixels
-        for i in range(y):
-            ft_array[:,i] = croc.Absorptive.fourier(array[:,i], zero_in_middle = False, first_correction = True, zeropad_to = self.zeropad_to, window_function = window_function, window_length = window_length, flag_plot = flag_plot)  
-            flag_plot = False
-        
-        return ft_array  
-        
-
-        
-      
         
           
 
-
-  
-                
-    def absorptive(self, window_function = "none", window_length = 0, flag_plot = False):
-        """
-        croc.pe.fourier
-        
-        This function does the Fourier transform.
-        It checks the undersampling.
-        It phases the spectrum.
-        It makes the axes.
-        
-        INPUT:
-        - window_function (name, "none"): "none", "guassian" etc
-        - window_length (int, 0): length of the window. 0 means the whole range
-        - flag_plot (BOOL, False): will plot the windowed time domain
-        
-        """
-        
-        # CHECKS
-        # checks the undersampling. It can be 0, but that is hardly used
-#         if self.undersampling == 0:
-#             print("\nWARNING (croc.pe.pe_exp.absorptive): undersampling is 0!\n")
-        
-        # do the fft
-        # copy the arrays to prevent changing the originals
-        try:
-            self.f[0] = self.fourier_helper(numpy.copy(self.r[0]), window_function = window_function, window_length = window_length, flag_plot = flag_plot)
-            self.f[1] = self.fourier_helper(numpy.copy(self.r[1]), window_function = window_function, window_length = window_length, flag_plot = flag_plot)
-        except ValueError:
-            print("\nERROR (croc.pe.pe_exp.absorptive): Problem with the Fourier Transforms. Are r[0] and r[1] assigned?")
-            return 0
-        
-        # phase the spectrum
-        self.s = numpy.real(numpy.exp(1j * self.phase_rad) * self.f[0] + numpy.exp(-1j * self.phase_rad) * self.f[1])
-        
-        # select part of the data
-        if self.undersampling % 2 == 0:
-            self.f[0] = self.f[0][:(len(self.f[0])/2)][:]
-            self.f[1] = self.f[1][:(len(self.f[1])/2)][:]
-            self.s = self.s[:(len(self.s)/2)][:]
-        else:
-            self.f[0] = self.f[0][(len(self.f[0])/2):][:]
-            self.f[1] = self.f[1][(len(self.f[1])/2):][:]
-            self.s = self.s[(len(self.s)/2):][:]        
-        
-        # fix the axes
-        try:
-            self.s_axis[0] = croc.Absorptive.make_ft_axis(length = 2*numpy.shape(self.s)[0], dt = self.r_axis[0][1]-self.r_axis[0][0], undersampling = self.undersampling)
-        except TypeError:
-            print("\nERROR (croc.pe.pe_exp.absorptive): Problem with making the Fourier Transformed axis. Is r_axis[0] assigned?")
-            return 0
-            
-        self.s_axis[0] = self.s_axis[0][0:len(self.s_axis[0])/2]
-        self.s_axis[2] = self.r_axis[2] + self.r_correction[2]  
-        
-        # add some stuff to self
-        self.s_units = ["cm-1", "fs", "cm-1"]
-        try:
-            self.s_resolution = [(self.s_axis[0][1] - self.s_axis[0][0]), 0, (self.s_axis[2][1] - self.s_axis[2][0])]
-        except TypeError:
-            print("\nERROR (croc.pe.pe_exp.absorptive): The resolution of the spectrum can not be determined. This can mean that the original axes (r_axis) or the spectral axes (s_axis) contains an error.")
-            print("r_axis[0]:", self.r_axis[0])
-            print("r_axis[2]:", self.r_axis[2])
-            print("s_axis[0]:", self.s_axis[0])
-            print("s_axis[2]:", self.s_axis[2])
-            return 0                
-            
-            
 
 
 
