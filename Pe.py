@@ -84,6 +84,7 @@ def import_pickle(mess_date, mess_array, pickle_name = ""):
 def import_data(mess_date, import_mess, import_from, import_to, mess_array, 
         data_dir = "", 
         anal_dir = "",
+        pickle_name = "",
         flag_calculate_noise = False,
         flag_no_pickle = False,
         flag_overwrite_pickle = False
@@ -114,7 +115,8 @@ def import_data(mess_date, import_mess, import_from, import_to, mess_array,
                 
             # default name of the pickle
             # use the _fs postfix to differentiate it from other pickles
-            pickle_name = str(mess_date) + "_fs.pickle"
+            if pickle_name == "":
+                pickle_name = str(mess_date) + "_fs.pickle"
 
             # first, check if there is a pickle
             if flag_overwrite_pickle == False and croc.Pe.check_pickle_exists(pickle_name): 
