@@ -124,17 +124,20 @@ def window_functions(array, window_function, window_length = 0, flag_plot = Fals
             window = numpy.ones(array_length)
     
         if flag_plot:
+            m = numpy.max(array)
+        
             plt.figure()
             plt.plot(array)
-            plt.plot(window)
+            plt.plot(window * m)
             plt.plot(array*window)
+            plt.title("window function is scaled")
             plt.show()
     
         return array * window
 
     # for higher dimensions
     else:
-        print("ERROR (croc.Absorptive.triangle_window): Not implemented yet for multiple dimensions.")
+        print("ERROR (croc.Absorptive.window_functions): Not implemented yet for multiple dimensions.")
         return 0        
 
 
