@@ -81,6 +81,37 @@ def import_pickle(mess_date, mess_array, pickle_name = ""):
 
 
 
+
+
+def import_mess_array(mess_date, mess_array, n_scans, pickle_name, data_dir = "", anal_dir = ""):
+    """
+    croc.Pe.import_mess_array
+    
+    Imports a whole array with measurements without saving, closing and re-opening the pickle all the time. This significantly reduces time for long series of measurements. 
+    
+    
+    """
+    
+    if data_dir == "":
+        data_dir = os.getcwd()[:-17] + "data/" + str(mess_date) + "/"   
+    
+    imp = [0] * len(mess_array)
+    
+    for i in range(len(mess_array)):
+        imp[i] = croc.Pe.pefs(mess_array[i][0], mess_array[i][1], mess_array[i][2], mess_array[i][3])
+        imp[i].path = data_dir + imp[i].path
+        
+        for j in range(n_scans):
+            imp[i].add_data(scan = j + 1)
+        
+        imp[i].construct_r()
+    
+    croc.DataClasses.make_db(imp, pickle_name)
+
+
+
+
+
 def import_data(mess_date, import_mess, import_from, import_to, mess_array, 
         data_dir = "", 
         anal_dir = "",
@@ -90,9 +121,9 @@ def import_data(mess_date, import_mess, import_from, import_to, mess_array,
         flag_overwrite_pickle = False
     ):
     """
-    croc.Croc.import_data()
+    croc.Pe.import_data()
     
-    Imports data and saves it into a pickle.
+    Imports data and saves it into a pickle. The method will import several scans from a measurement. This works best when you have fewer measurements with more scans. 
     
     
     
@@ -271,7 +302,7 @@ class pe(croc.DataClasses.mess_data):
         ft_array = numpy.reshape( numpy.zeros(x*y, dtype=numpy.cfloat), (x, y))
 
         # iterate over all the pixels
-        for i in range(y):
+        for i in range(y):            
             ft_array[:,i] = croc.Absorptive.fourier(array[:,i], zero_in_middle = False, first_correction = True, zeropad_to = self.zeropad_to, window_function = window_function, window_length = window_length, flag_plot = flag_plot)  
             flag_plot = False
         
@@ -352,12 +383,45 @@ class pe(croc.DataClasses.mess_data):
             
             
 
+    def find_z(self, x_range = [0,0], y_range = [0, -1]):
+        
+        # determine the range to be plotted
+        x_min, x_max, y_min, y_max = croc.Plotting.find_axes(self.s_axis[2], self.s_axis[0], x_range, y_range)
+        
+        # make the contours
+        # first find the area to be plotted
+        # not the most elegant way I guess
+        try:
+            y_min_i = numpy.where(self.s_axis[0] < y_min)[0][-1]
+        except: 
+            y_min_i = 0
+        
+        try:
+            y_max_i = numpy.where(self.s_axis[0] > y_max)[0][0]
+        except: 
+            y_max_i = len(self.s_axis[0])
+    
+        try:
+            x_min_i = numpy.where(self.s_axis[2] < x_min)[0][-1]
+        except: 
+            x_min_i = 0
+        
+        try:
+            x_max_i = numpy.where(self.s_axis[2] > x_max)[0][0]
+        except: 
+            x_max_i = len(self.s_axis[2])
+            
+        ma = numpy.amax(self.s[y_min_i:y_max_i, x_min_i:x_max_i])
+        mi = numpy.amin(self.s[y_min_i:y_max_i, x_min_i:x_max_i])
+        
+        return ma, mi
+
 
 
 
 
     # plot the spectrum
-    def plot(self, plot_type = "S", x_range = [0, 0], y_range = [0, -1], zlimit = -1, contours = 12, filled = True, black_contour = True, title = "", x_label = "", y_label = "", diagonal_line = True, new_figure = True, flag_no_units = False, pixel = -1):
+    def plot(self, plot_type = "S", x_range = [0, 0], y_range = [0, -1], zlimit = -1, contours = 12, filled = True, black_contour = True, title = "", x_label = "", y_label = "", diagonal_line = True, new_figure = True, flag_no_units = False, pixel = -1, invert_colors = True):
         """
         croc.pe.plot
         
@@ -385,9 +449,9 @@ class pe(croc.DataClasses.mess_data):
                 y_axis = numpy.arange(len(self.s_axis[0]))
                 y_range = [0,0]
                 if x_label == "":
-                    x_label = "FT (steps)"
+                    x_label = "spectrometer (pixels)"
                 if y_label == "":
-                    y_label = "spectrometer (pixels)"
+                    y_label = "FT (steps)"
                 diagonal_line = False
 
             else:
@@ -402,7 +466,7 @@ class pe(croc.DataClasses.mess_data):
                 title = self.objectname + ", t2: " + str(self.r_axis[1]) + "\n scans x shots: " + str(self.n_scans) + "x" + str(self.n_shots)
             
                    
-            croc.Plotting.contourplot(data, x_axis, y_axis, x_range = x_range, y_range = y_range, zlimit = zlimit, contours = contours, filled = filled, black_contour = black_contour, title = title, x_label = x_label, y_label = y_label, diagonal_line = diagonal_line, new_figure = new_figure) 
+            croc.Plotting.contourplot(data, x_axis, y_axis, x_range = x_range, y_range = y_range, zlimit = zlimit, contours = contours, filled = filled, black_contour = black_contour, title = title, x_label = x_label, y_label = y_label, diagonal_line = diagonal_line, new_figure = new_figure, invert_colors = invert_colors) 
         
         else:
             data = data.T
@@ -446,7 +510,7 @@ class pe(croc.DataClasses.mess_data):
 
 
     # plot the time domain
-    def plot_T(self, pixel = 0, x_range = [0, 0], y_range = [0, 0], zlimit = -1, contours = 12, filled = True, black_contour = True, title = "", x_label = "", y_label = "", new_figure = True, flag_no_units = False):
+    def plot_T(self, pixel = -1, x_range = [0, 0], y_range = [0, 0], zlimit = -1, contours = 12, filled = True, black_contour = True, title = "", x_label = "", y_label = "", new_figure = True, flag_no_units = False):
         """
         croc.pe.plot_T
         
@@ -477,11 +541,11 @@ class pe(croc.DataClasses.mess_data):
                 y_label = "Pixels"
 
         
-        if pixel == 0:
-            croc.Plotting.contourplot(data, x_axis, y_axis, x_range = x_range, y_range = y_range, zlimit = zlimit, contours = contours, filled = filled, black_contour = black_contour, title = title, x_label = x_label, y_label = y_label, new_figure = new_figure,  diagonal_line = False)  
+        if pixel == -1:
+            croc.Plotting.contourplot(data, x_axis, y_axis, x_range = x_range, y_range = y_range, zlimit = zlimit, contours = contours, filled = filled, black_contour = black_contour, title = title, x_label = x_label, y_label = y_label, new_figure = new_figure, diagonal_line = False)  
         
         else:
-            croc.Plotting.linear(data[pixel,:], x_axis, x_range = [0, 0], y_range = [0, 0], x_label = "Time (fs)", y_label = "Absorbance", title = "Time", new_figure = True)
+            croc.Plotting.linear(data[pixel,:], x_axis, x_range = [0, 0], y_range = [0, 0], x_label = "Time (fs)", y_label = "Absorbance", title = "Time", new_figure = new_figure)
 
 
 
@@ -561,6 +625,10 @@ class pe_add(pe):
             self.x_channel = class1.x_channel
             self.y_channel = class1.y_channel
             
+            
+            self.incorrect_count = [0] * 4
+            for i in range(4):
+                self.incorrect_count[i] = class1.incorrect_count[i] + class2.incorrect_count[i]
         
         self.phase_degrees = class1.phase_degrees
         #self.zeropad_by = class1.zeropad_by

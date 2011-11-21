@@ -190,7 +190,7 @@ def make_contours_2d(data, zlimit = 0, contours = 21):
 
 
 
-def contourplot(data, x_axis, y_axis, x_range = [0, 0], y_range = [0, -1], zlimit = -1, contours = 12, filled = True, black_contour = True, x_label = "", y_label = "", title = "", diagonal_line = True, new_figure = True):
+def contourplot(data, x_axis, y_axis, x_range = [0, 0], y_range = [0, -1], zlimit = -1, contours = 12, filled = True, black_contour = True, x_label = "", y_label = "", title = "", diagonal_line = True, new_figure = True, invert_colors = False):
 
     """
     croc.Plotting.contourplot
@@ -216,6 +216,7 @@ def contourplot(data, x_axis, y_axis, x_range = [0, 0], y_range = [0, -1], zlimi
     - title (string): the title of the plot
     - diagonal_line (BOOL): plot a diagonal line
     - new_figure (BOOL): will make a new figure. To make subplots etc, set it to False
+    - invert_colors (BOOL, False): will make the red blue and the other way around
     
     """
     
@@ -233,6 +234,9 @@ def contourplot(data, x_axis, y_axis, x_range = [0, 0], y_range = [0, -1], zlimi
 #         print("new_figure:", new_figure)
             
     # CHECKS
+    
+    if invert_colors:
+        data = -data
     
     # check if the lengths of the axes correspond to the shape of the data
     y, x = numpy.shape(data)
@@ -292,13 +296,14 @@ def contourplot(data, x_axis, y_axis, x_range = [0, 0], y_range = [0, -1], zlimi
         print("Indices of plotted range (x_min_i, x_max_i, y_min_i, y_max_i):")
         print(x_min_i, x_max_i, y_min_i, y_max_i)
         
-        print("Contours:")
-        print(V)
+    print("Contours:")
+    print(V)
     
     # make the actual figure
     if new_figure:
         plt.figure()
     if filled:
+                
         plt.contourf(x_axis, y_axis, data, V, cmap = my_cmap)
         if debug_flag:
             plt.colorbar()
