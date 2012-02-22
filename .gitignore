@@ -1,4 +1,3 @@
 *.pyc
 .DS_Store
-Tests/TestData/azide_1343_T300/*
-Tests/TestData/azide_1343_T300_pickle/azide_1343_T300_noise.pickle
+Tests/TestData/*

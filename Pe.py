@@ -31,22 +31,22 @@ import scipy
 
 import croc
 # to prevent a conflict with other classes (like ftir)
-from croc.DataClasses import mess_data
-import croc.Functions
-import croc.Absorptive
-import croc.Plotting
-import croc.Constants
+from croc.Resources.DataClasses import mess_data
+#import croc.Resources.Functions as F
+import croc.Resources.Mathematics as M
+import croc.Resources.Plotting as P
+import croc.Resources.Constants as C
 import croc.Debug
 
 reload(croc.Debug)
 
 if croc.Debug.reload_flag:
     reload(croc)
-    reload(croc.DataClasses)
-    reload(croc.Functions)
-    reload(croc.Absorptive)
-    reload(croc.Plotting)
-    reload(croc.Constants)
+    reload(croc.Resources.DataClasses)
+#    reload(F)
+    reload(M)
+    reload(P)
+    reload(C)
     
 
 
@@ -56,8 +56,10 @@ debug_flag = croc.Debug.debug_flag
 def make_pickle_name(base_filename, pop_time, time_stamp, path = ""):
     return path + base_filename + "_" + str(time_stamp) + "_T" + str(pop_time) + ".pickle"
 
+
 def make_path(base_filename, pop_time, time_stamp, path = ""):
     return path + base_filename + "_" + str(time_stamp) + "_T" + str(pop_time) + "/"
+
 
 def check_pickle_exists(path_and_filename):
     return os.path.exists(path_and_filename)
@@ -78,9 +80,6 @@ def import_pickle(mess_date, mess_array, pickle_name = ""):
                 new_obj[i] = obj[j]
 
     return new_obj
-
-
-
 
 
 def import_mess_array(mess_date, mess_array, n_scans, pickle_name, data_dir = "", anal_dir = ""):
@@ -205,13 +204,7 @@ def import_data(mess_date, import_mess, import_from, import_to, mess_array,
             # mess_i does not exist
             print("ERROR (script_import.py): mess_i is outside of the range of mess_array")
             
-          
-      
-      
-      
-      
-      
-        
+           
 def print_summary(object_array):
     print("")
     
@@ -238,7 +231,7 @@ def print_summary(object_array):
 
 
 
-class pe(croc.DataClasses.mess_data):
+class pe(croc.Resources.DataClasses.mess_data):
     """
     croc.pe.pe
     
@@ -272,7 +265,7 @@ class pe(croc.DataClasses.mess_data):
             print(">>> DEBUG MODE <<<")
         
         # photon echo has 3 dimensions: t1/w1, t2, w3
-        croc.DataClasses.mess_data.__init__(self, object_name, measurements = 2, dimensions = 3)
+        croc.Resources.DataClasses.mess_data.__init__(self, object_name, measurements = 2, dimensions = 3)
 
 
 
@@ -303,7 +296,7 @@ class pe(croc.DataClasses.mess_data):
 
         # iterate over all the pixels
         for i in range(y):            
-            ft_array[:,i] = croc.Absorptive.fourier(array[:,i], zero_in_middle = False, first_correction = True, zeropad_to = self.zeropad_to, window_function = window_function, window_length = window_length, flag_plot = flag_plot)  
+            ft_array[:,i] = M.fourier(array[:,i], zero_in_middle = False, first_correction = True, zeropad_to = self.zeropad_to, window_function = window_function, window_length = window_length, flag_plot = flag_plot)  
             flag_plot = False
         
         return ft_array  
@@ -361,7 +354,7 @@ class pe(croc.DataClasses.mess_data):
         
         # fix the axes
         try:
-            self.s_axis[0] = croc.Absorptive.make_ft_axis(length = 2*numpy.shape(self.s)[0], dt = self.r_axis[0][1]-self.r_axis[0][0], undersampling = self.undersampling)
+            self.s_axis[0] = M.make_ft_axis(length = 2*numpy.shape(self.s)[0], dt = self.r_axis[0][1]-self.r_axis[0][0], undersampling = self.undersampling)
         except TypeError:
             print("\nERROR (croc.pe.pe_exp.absorptive): Problem with making the Fourier Transformed axis. Is r_axis[0] assigned?")
             return 0
@@ -386,7 +379,7 @@ class pe(croc.DataClasses.mess_data):
     def find_z(self, x_range = [0,0], y_range = [0, -1]):
         
         # determine the range to be plotted
-        x_min, x_max, y_min, y_max = croc.Plotting.find_axes(self.s_axis[2], self.s_axis[0], x_range, y_range)
+        x_min, x_max, y_min, y_max = P.find_axes(self.s_axis[2], self.s_axis[0], x_range, y_range)
         
         # make the contours
         # first find the area to be plotted
@@ -428,8 +421,8 @@ class pe(croc.DataClasses.mess_data):
         INPUT:
         - plot_type: 'S' plots the purely absorptive spectrum (default), 'R' plots the rephasing part, 'NR' the non-rephasing part.
         
-        This function will plot the purely absorptive spectrum. It is a wrapper function for croc.Plotting.contourplot. It will put the data in the right format, adds some labels etc. This should do for 99% of the cases. 
-        For details about the options, see croc.Plotting.contourplot.    
+        This function will plot the purely absorptive spectrum. It is a wrapper function for P.contourplot. It will put the data in the right format, adds some labels etc. This should do for 99% of the cases. 
+        For details about the options, see P.contourplot.    
         """
         
         if plot_type == "spectrum" or plot_type == "S":
@@ -466,7 +459,7 @@ class pe(croc.DataClasses.mess_data):
                 title = self.objectname + ", t2: " + str(self.r_axis[1]) + "\n scans x shots: " + str(self.n_scans) + "x" + str(self.n_shots)
             
                    
-            croc.Plotting.contourplot(data, x_axis, y_axis, x_range = x_range, y_range = y_range, zlimit = zlimit, contours = contours, filled = filled, black_contour = black_contour, title = title, x_label = x_label, y_label = y_label, diagonal_line = diagonal_line, new_figure = new_figure, invert_colors = invert_colors) 
+            P.contourplot(data, x_axis, y_axis, x_range = x_range, y_range = y_range, zlimit = zlimit, contours = contours, filled = filled, black_contour = black_contour, title = title, x_label = x_label, y_label = y_label, diagonal_line = diagonal_line, new_figure = new_figure, invert_colors = invert_colors) 
         
         else:
             data = data.T
@@ -489,7 +482,7 @@ class pe(croc.DataClasses.mess_data):
             if title == "":
                 title = "Spectrum for pixel " + str(pixel) + " - " + self.objectname + ", t2: " + str(self.r_axis[1]) + "\n scans x shots: " + str(self.n_scans) + "x" + str(self.n_shots)            
         
-            croc.Plotting.linear(data[pixel,:], x_axis, x_range = [0, 0], y_range = [0, 0], x_label = x_label, y_label = y_label, title = title, new_figure = new_figure)
+            P.linear(data[pixel,:], x_axis, x_range = [0, 0], y_range = [0, 0], x_label = x_label, y_label = y_label, title = title, new_figure = new_figure)
             
 
 
@@ -514,8 +507,8 @@ class pe(croc.DataClasses.mess_data):
         """
         croc.pe.plot_T
         
-        This function will plot the measured data, still in the time domain. It is a wrapper function for croc.Plotting.contourplot. It will put the data in the right format, adds some labels etc. This should do for 99% of the cases. 
-        For details about the options, see croc.Plotting.contourplot.    
+        This function will plot the measured data, still in the time domain. It is a wrapper function for P.contourplot. It will put the data in the right format, adds some labels etc. This should do for 99% of the cases. 
+        For details about the options, see P.contourplot.    
         """
         
         # concatenate the two diagrams
@@ -542,10 +535,10 @@ class pe(croc.DataClasses.mess_data):
 
         
         if pixel == -1:
-            croc.Plotting.contourplot(data, x_axis, y_axis, x_range = x_range, y_range = y_range, zlimit = zlimit, contours = contours, filled = filled, black_contour = black_contour, title = title, x_label = x_label, y_label = y_label, new_figure = new_figure, diagonal_line = False)  
+            P.contourplot(data, x_axis, y_axis, x_range = x_range, y_range = y_range, zlimit = zlimit, contours = contours, filled = filled, black_contour = black_contour, title = title, x_label = x_label, y_label = y_label, new_figure = new_figure, diagonal_line = False)  
         
         else:
-            croc.Plotting.linear(data[pixel,:], x_axis, x_range = [0, 0], y_range = [0, 0], x_label = "Time (fs)", y_label = "Absorbance", title = "Time", new_figure = new_figure)
+            P.linear(data[pixel,:], x_axis, x_range = [0, 0], y_range = [0, 0], x_label = "Time (fs)", y_label = "Absorbance", title = "Time", new_figure = new_figure)
 
 
 
@@ -1870,7 +1863,7 @@ class pefs(pe_exp):
         if flag_noise_time_domain:        
             axis = numpy.arange(shape0[1]) * croc.Constants.hene_fringe_fs
         else:
-            axis = croc.Absorptive.make_ft_axis(length = shape0[1], dt = croc.Constants.hene_fringe_fs, undersampling = self.undersampling)
+            axis = M.make_ft_axis(length = shape0[1], dt = croc.Constants.hene_fringe_fs, undersampling = self.undersampling)
             axis = axis[:len(axis)/2]
  
        

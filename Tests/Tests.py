@@ -10,22 +10,24 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 import croc
-import croc.DataClasses
+#import croc.DataClasses
 import croc.Ftir
 import croc.Pe
-import croc.Absorptive
-import croc.Plotting
+import croc.Resources.Mathematics as M
+import croc.Resources.Functions as F
+#import croc.Plotting
 import croc.Debug
 
 reload(croc.Debug)
 
 if croc.Debug.reload_flag:
     reload(croc)
-    reload(croc.DataClasses)
+#    reload(croc.DataClasses)
     reload(croc.Ftir)
     reload(croc.Pe)
-    reload(croc.Absorptive)
-    reload(croc.Plotting)
+    reload(M)
+    reload(F)
+#    reload(croc.Plotting)
 
 
 
@@ -294,7 +296,7 @@ def ABSORPTIVE1():
     
     for i in range(len(window_fxn)):    
     
-        w_array = croc.Absorptive.window_functions(array, window_fxn[i][0], window_fxn[i][1])
+        w_array = M.window_functions(array, window_fxn[i][0], window_fxn[i][1])
         
         plt.subplot(2, 4, i+1)
         
@@ -784,7 +786,7 @@ def PE6():
 def F1():
     length = 50
     
-    wa = croc.Absorptive.window_functions(numpy.ones(length), window_function = "gaussian", window_length = 25, flag_plot = False)  
+    wa = croc.Resources.Mathematics.window_functions(numpy.ones(length), window_function = "gaussian", window_length = 25, flag_plot = False)  
     
     print(wa[-1])
     
@@ -793,7 +795,20 @@ def F1():
     plt.show() 
 
 
-
+def GVD1():
+    ### PARAMETERS ###
+    material = "baf2"
+    range_um = [1.0, 2.0] # [minimum, maximum]
+    n_steps = 100 # more steps give a higher resolution
+    material_path_mm = 3.5 # path through material 
+    pulse_length_fs = 100 # pulse length
+    
+    flag_plot_n = False
+    flag_plot_gvd = True
+    y_range_gvd = [0,0]
+    print_for_um = [1.3, 1.9] # array, in micron
+    
+    n, gvd_x, gvd_y = F.GroupVelocityDispersion(material = material, print_for_um = print_for_um, range_um = range_um, material_path_mm = material_path_mm, pulse_length_fs = pulse_length_fs, n_steps = n_steps, flag_plot_n = flag_plot_n, flag_plot_gvd = flag_plot_gvd, y_range_gvd = y_range_gvd)
 
 
 

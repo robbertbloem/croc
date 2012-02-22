@@ -17,14 +17,14 @@ import matplotlib.pyplot as plt
 
 import croc
 from croc.DataClasses import mess_data
-import croc.Plotting
+import croc.Resources.Plotting as P
 import croc.Debug
 
 reload(croc.Debug)
 
 if croc.Debug.reload_flag:
     reload(croc)
-    reload(croc.Plotting)
+    reload(P)
 
 
 
@@ -122,7 +122,7 @@ class ftir(croc.DataClasses.mess_data):
                 y_label = "Absorption (OD)"
                 
         
-        croc.Plotting.linear(data, axis, x_range = x_range, y_range = y_range, x_label = x_label, y_label = y_label, title = title, new_figure = new_figure)
+        P.linear(data, axis, x_range = x_range, y_range = y_range, x_label = x_label, y_label = y_label, title = title, new_figure = new_figure)
         
         
 
