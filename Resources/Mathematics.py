@@ -14,6 +14,40 @@ import numpy
 import matplotlib 
 import matplotlib.pyplot as plt
 
+from scipy.optimize.minpack import leastsq
+
+
+### CODE FOR FITTING PROCEDURE ###
+
+def minimize(A, t, y0, function):
+    """
+    does something, not sure what
+    """
+    return y0 - function(A, t)
+
+def fit(x_array, y_array, function, A_start):
+    """
+    used to fit things
+    20101209/RB: started
+    
+    INPUT:
+    x_array: the array with time or something
+    y-array: the array with the values that have to be fitted
+    function: one of the functions, in the format as in the file "functions"
+    A_start: a starting point for the fitting
+    
+    OUTPUT:
+    A_final: the final parameters of the fitting
+    
+    WARNING:
+    Always check the result, it might sometimes be sensitive to a good starting point.
+
+    """
+    param = (x_array, y_array, function)
+
+    A_final, cov_x, infodict, mesg, ier = leastsq(minimize, A_start, args=param, full_output=True)#, warning=True)
+    
+    return A_final
 
 ### FOURIER TRANSFORM STUFF ###
 

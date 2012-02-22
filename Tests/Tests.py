@@ -16,19 +16,21 @@ import croc.Pe
 import croc.Resources.Mathematics as M
 import croc.Resources.Functions as F
 import croc.GroupVelocityDispersion
-#import croc.Plotting
+import croc.LaserCorrelation
+import croc.Resources.Plotting as P
 import croc.Debug
 
 reload(croc.Debug)
 
 if croc.Debug.reload_flag:
     reload(croc)
-#    reload(croc.DataClasses)
+    reload(P)
     reload(croc.Ftir)
     reload(croc.Pe)
     reload(M)
     reload(F)
     reload(croc.GroupVelocityDispersion)
+    reload(croc.LaserCorrelation)
 #    reload(croc.Plotting)
 
 
@@ -262,7 +264,7 @@ def PLOTTING1():
     y_axis = numpy.linspace(0, 1, num=11)
     S = X + Y
     title = "range:-1, 1, zlimit:-1"
-    croc.Plotting.contourplot(S, x_axis, y_axis, zlimit = -1, title = title)
+    P.contourplot(S, x_axis, y_axis, zlimit = -1, title = title)
 
     # plot 2
     X, Y = numpy.meshgrid(numpy.linspace(-1, 0, num=11), numpy.linspace(0, 0.9, num=11))
@@ -270,7 +272,7 @@ def PLOTTING1():
     y_axis = numpy.linspace(0, 1, num=11)
     S = X + Y
     title = "range:-1, 0.9, zlimit:-1"
-    croc.Plotting.contourplot(S, x_axis, y_axis, zlimit = -1)
+    P.contourplot(S, x_axis, y_axis, zlimit = -1)
 
 
 def ABSORPTIVE1():
@@ -812,5 +814,34 @@ def GVD1():
     
     n, gvd_x, gvd_y = croc.GroupVelocityDispersion.GVD(material = material, print_for_um = print_for_um, range_um = range_um, material_path_mm = material_path_mm, pulse_length_fs = pulse_length_fs, n_steps = n_steps, flag_plot_n = flag_plot_n, flag_plot_gvd = flag_plot_gvd, y_range_gvd = y_range_gvd)
 
+
+
+def LASERCORRELATION1a():
+    
+    mess_array = ["correlation_30k_1845_T300"]
+    scan_array = ["_NR1_1", "_NR2_1", "_R1_1", "_R2_1"]
+    mess_date = 20111025
+    
+    pixel = 16
+    
+    maxtau = 1000
+    
+    path_input = "/Volumes/public_hamm/PML3/data/" + str(mess_date) + "/"
+    path_output = "/Volumes/public_hamm/PML3/analysis/" + str(mess_date) + "/"
+    
+    croc.LaserCorrelation.import_and_process(path_input, path_output, mess_array, scan_array, mess_date, pixel = 16, maxtau = 2000, debug = False)
+
+def LASERCORRELATION1b():
+    
+    mess_array = ["correlation_30k_1845_T300"]
+    scan_array = ["_NR1_1", "_NR2_1", "_R1_1", "_R2_1"]
+    mess_date = 20111025
+    
+    maxtau = 1000
+    
+    path_input = "/Volumes/public_hamm/PML3/data/" + str(mess_date) + "/"
+    path_output = "/Volumes/public_hamm/PML3/analysis/" + str(mess_date) + "/"
+    
+    croc.LaserCorrelation.fit_correlation(path_output, mess_array, scan_array, mess_date, maxtau)
 
 

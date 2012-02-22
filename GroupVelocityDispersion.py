@@ -13,7 +13,14 @@ reload(C)
 reload(F)
 reload(Resources.GVD_Materials)
 
+
+
 def GVD(material, print_for_um = [4], range_um = [1,10], material_path_mm = 0, pulse_length_fs = 0, n_steps = 100, flag_plot_n = True, flag_plot_gvd = True, y_range_gvd = [0,0]):
+    """
+    croc.GroupVelocityDispersion.GVD calculates the GVD for a certain material in a certain wavelength range using the Sellmeier equation.
+    
+    """
+    
     
     # import properties
     [n, SC] = Resources.GVD_Materials.MaterialProperties(material)
