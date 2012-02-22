@@ -42,7 +42,7 @@ def import_and_process(path_input, path_output, mess_array, scan_array, mess_dat
 
             # import data
             path_and_filename = path_input + mess_array[i] + "/" + mess_array[i] + scan_array[j] + ".bin"
-            data = Resources.IOMethods.import_data_FS(path_and_filename)
+            data, fringes = Resources.IOMethods.import_data_FS(path_and_filename)
             data = data[pixel,:]
             
             # fft method

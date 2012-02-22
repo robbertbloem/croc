@@ -1,5 +1,5 @@
 """
-croc.Absorptive
+croc.Resources.Mathematics
 
 
 
@@ -15,6 +15,18 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 from scipy.optimize.minpack import leastsq
+
+
+
+def square_formula(a, b, c):
+    """
+    Calculates 
+    ax^2 + bx + c = 0
+    
+    """
+    x0 = (-b + numpy.sqrt(b**2 - 4*a*c))/(2*a)
+    x1 = (-b - numpy.sqrt(b**2 - 4*a*c))/(2*a)
+    return x0, x1
 
 
 ### CODE FOR FITTING PROCEDURE ###

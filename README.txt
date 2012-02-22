@@ -19,19 +19,23 @@ This should result in a 2D spectrum.
 
 2. STRUCTURE:
 
-The highest classes are in DataClasses. This file contains mess_data which contains basic data structure and some functions for writing/reading/printing the data. All classes are fairly abstract and the file shouldn't be changed.
+The code is split in two parts. First, there is the code to calculate spectra. They use a common data class structure and some mathematical and plotting stuff. Second, there are some scripts to calculate stuff. Since it uses a lot of the mathematical and plotting stuff of the first part (but not the class-structure), I decided to include it here as well. 
 
-Some files contain functions. 
-- Absorptive.py contains stuff related to Fourier Transform calculations. The name comes from the intention to write a general method to calculate the absorptive spectrum.
+The highest classes are in Resources/DataClasses.py. This file contains mess_data which contains basic data structure and some functions for writing/reading/printing the data. All classes are fairly abstract and the file shouldn't be changed.
+
+The actual code to calculate spectra is contained in sub classes: Pe.py, Ftir.py. These contain code specific for those classes. 
+
+In Resources/ the more general functions are collected. There are important diferences between Mathematics.py, Equations.py and Functions.py.
+- Mathematics.py: contains Fourier Transform stuff, fitting stuff etc. 
+- Equations.py: mathematical equations. They are used for fitting (and are formatted that the fitting procedure can use them) but can also be used for plotting. New equations can be added, but be careful when changing and/or removing. 
+- Functions.py: functions called by the scripts. This is probably the only file where you should make changes.
+
+Other files in Resources/ are. 
 - Constants.py contains some constants
 - Debug.py sets the debug_flag. Leave it at False for everyday use. It also sets the reload_flag. If you make changes to the code, set this to True.
 - Plotting.py contains plotting functions. At the end of the day, these plotting functions are wrappers around Matplotlib functions.
-
-Some files contain routines for specific situations:
-- pe.py contains methods related to photon echo/four wave mixing/2DIR. 
-    - pe_exp contains stuff to calculate a spectrum from experimental data. Some of the functions are very specific (like importing etc). 
-    - pe_sub is for calculating and plotting subtractions of two spectra
-- ftir is for calculating ftir spectra.
+- GVD_Materials.py contains data of different materials.
+- IOMethods.py has methods to import data. They are derived from the DataClasses methods, but don't use the DataClasses.
 
 The directory Tests contains some stuff for testing. In the file Tests there are several methods that will test a certain subject. 
 
@@ -94,7 +98,8 @@ The variables declared in croc.DataClasses.mess_data are suggestions that you ca
 
 
 6. CHANGELOG:
-20110912 RB: started the readme
+20110912/RB: started the readme
+20120222/RB: made major changes in the organization of files
 
 
 

@@ -801,16 +801,16 @@ def F1():
 
 def GVD1():
     ### PARAMETERS ###
-    material = "baf2"
-    range_um = [1.0, 2.0] # [minimum, maximum]
+    material = "caf2"
+    range_um = [1.0, 7.0] # [minimum, maximum]
     n_steps = 100 # more steps give a higher resolution
-    material_path_mm = 3.5 # path through material 
+    material_path_mm = 3 # path through material 
     pulse_length_fs = 100 # pulse length
     
     flag_plot_n = False
     flag_plot_gvd = True
     y_range_gvd = [0,0]
-    print_for_um = [1.3, 1.9] # array, in micron
+    print_for_um = [1.3, 1.9, 4.9] # array, in micron
     
     n, gvd_x, gvd_y = croc.GroupVelocityDispersion.GVD(material = material, print_for_um = print_for_um, range_um = range_um, material_path_mm = material_path_mm, pulse_length_fs = pulse_length_fs, n_steps = n_steps, flag_plot_n = flag_plot_n, flag_plot_gvd = flag_plot_gvd, y_range_gvd = y_range_gvd)
 
