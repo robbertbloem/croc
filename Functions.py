@@ -23,7 +23,20 @@ if croc.Debug.reload_flag:
 
 
 
-def correlation(array, maxtau = 200):
+def correlation(array, maxtau = 200, step_type = "tau"):
+    """
+    Calculation of the correlation using the method Jan used.
+    
+    For every iteration, the copied array will be 'rolled' or 'rotated' left by 1 for maxtau times. The copied array will be multiplied with the original array, but only the elements with a certain step between them will be used. The larger the step size, the quicker the method but also the more noisy the result will become.
+    
+    INPUT:
+    array (ndarray): 1-d array with the data
+    maxtau (int): the maximum shift, also the maximum to where the correlation is calculated. This directly affects the speed of the calculation. (with N^2?)
+    step_type ("1", "tau"): The step size. With "1" the step size is 1, this will result in a longer calculation but less noise. With "tau" the step size is the current "tau". The calculation will be faster but the result will be noisier.
+    
+    CHANGELOG:
+    20120215: Introduced step_type
+    """
 
     array = array - numpy.mean(array)
     
@@ -35,9 +48,15 @@ def correlation(array, maxtau = 200):
         
         array2 = numpy.roll(array2, -1)
         
-        step = numpy.ceil((i+1)/4)
+        if step_type == "tau":
+            step = i+1
+        elif step_type == "1":
+            step = 1
+        else:   
+            print("croc.Functions (correlation): step_type is not recognized, will use 'tau'")
+            step = i+1
 
-        a = list(itertools.islice(array * array2, None, len(array), step))
+        a = list(itertools.islice(array * array2, None, len(array)-i-1, step))
         
         c[i] = numpy.sum(a) / len(a)
     
