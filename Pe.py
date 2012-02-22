@@ -32,7 +32,6 @@ import scipy
 import croc
 # to prevent a conflict with other classes (like ftir)
 from croc.Resources.DataClasses import mess_data
-#import croc.Resources.Functions as F
 import croc.Resources.Mathematics as M
 import croc.Resources.Plotting as P
 import croc.Resources.Constants as C
@@ -43,7 +42,6 @@ reload(croc.Debug)
 if croc.Debug.reload_flag:
     reload(croc)
     reload(croc.Resources.DataClasses)
-#    reload(F)
     reload(M)
     reload(P)
     reload(C)
@@ -65,21 +63,28 @@ def check_pickle_exists(path_and_filename):
     return os.path.exists(path_and_filename)
 
 
-def import_pickle(mess_date, mess_array, pickle_name = ""):
+def import_pickle(mess_date, mess_array = [], pickle_name = ""):
 
     if pickle_name == "":
         pickle_name = str(mess_date) + "_fs.pickle"
     
-    obj = croc.DataClasses.import_db(pickle_name)
+    obj = croc.Resources.DataClasses.import_db(pickle_name)
 
     new_obj = [0] * len(obj)
 
-    for i in range(len(mess_array)):
-        for j in range(len(obj)):
-            if mess_array[i][0] == obj[j].objectname:
-                new_obj[i] = obj[j]
-
+    if len(mess_array) == 0:
+        new_obj = obj
+    else:
+        for i in range(len(mess_array)):
+            for j in range(len(obj)):
+                if mess_array[i][0] == obj[j].objectname:
+                    new_obj[i] = obj[j]
+    
     return new_obj
+
+
+def save_pickle(obj, pickle_name):
+    croc.Resources.DataClasses.make_db(obj, pickle_name)
 
 
 def import_mess_array(mess_date, mess_array, n_scans, pickle_name, data_dir = "", anal_dir = ""):
@@ -105,7 +110,7 @@ def import_mess_array(mess_date, mess_array, n_scans, pickle_name, data_dir = ""
         
         imp[i].construct_r()
     
-    croc.DataClasses.make_db(imp, pickle_name)
+    croc.Resources.DataClasses.make_db(imp, pickle_name)
 
 
 
@@ -152,7 +157,7 @@ def import_data(mess_date, import_mess, import_from, import_to, mess_array,
             if flag_overwrite_pickle == False and croc.Pe.check_pickle_exists(pickle_name): 
                 # found a pickle, now import it
                 print("Found pickle")
-                mess = croc.DataClasses.import_db(pickle_name)
+                mess = croc.Resources.DataClasses.import_db(pickle_name)
             else:
                 # there is no pickle, so make a new a new data structure
                 print("No pickle found")
@@ -194,7 +199,7 @@ def import_data(mess_date, import_mess, import_from, import_to, mess_array,
             if flag_no_pickle == False:
                 if flag_change:
                     print("Updating pickle...")
-                    croc.DataClasses.make_db(mess, pickle_name)
+                    croc.Resources.DataClasses.make_db(mess, pickle_name)
                 else:
                     print("No need to update pickle...")
             else:
@@ -1297,7 +1302,7 @@ class pefs(pe_exp):
         temp = temp[:,self.extra_fringes:(self.n_fringes+self.extra_fringes),:self.n_pixels]
               
         # make the r_axis
-        self.r_axis[0] = self.b_axis[0][self.extra_fringes:(self.n_fringes+self.extra_fringes)] * croc.Constants.hene_fringe_fs
+        self.r_axis[0] = self.b_axis[0][self.extra_fringes:(self.n_fringes+self.extra_fringes)] * C.hene_fringe_fs
 
         if flag_no_logarithm:
             # for testing purposes
