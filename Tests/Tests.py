@@ -15,6 +15,7 @@ import croc.Ftir
 import croc.Pe
 import croc.Resources.Mathematics as M
 import croc.Resources.Functions as F
+import croc.GroupVelocityDispersion
 #import croc.Plotting
 import croc.Debug
 
@@ -27,6 +28,7 @@ if croc.Debug.reload_flag:
     reload(croc.Pe)
     reload(M)
     reload(F)
+    reload(croc.GroupVelocityDispersion)
 #    reload(croc.Plotting)
 
 
@@ -808,7 +810,7 @@ def GVD1():
     y_range_gvd = [0,0]
     print_for_um = [1.3, 1.9] # array, in micron
     
-    n, gvd_x, gvd_y = F.GroupVelocityDispersion(material = material, print_for_um = print_for_um, range_um = range_um, material_path_mm = material_path_mm, pulse_length_fs = pulse_length_fs, n_steps = n_steps, flag_plot_n = flag_plot_n, flag_plot_gvd = flag_plot_gvd, y_range_gvd = y_range_gvd)
+    n, gvd_x, gvd_y = croc.GroupVelocityDispersion.GVD(material = material, print_for_um = print_for_um, range_um = range_um, material_path_mm = material_path_mm, pulse_length_fs = pulse_length_fs, n_steps = n_steps, flag_plot_n = flag_plot_n, flag_plot_gvd = flag_plot_gvd, y_range_gvd = y_range_gvd)
 
 
 
