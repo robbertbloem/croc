@@ -1,3 +1,9 @@
+"""
+Methods to calculate the group velocity dispersion.
+
+"""
+
+
 from __future__ import print_function
 from __future__ import division
 
