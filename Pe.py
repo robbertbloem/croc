@@ -608,25 +608,35 @@ class pe_add(pe):
             print("WARNING (croc.Pe.pe_add.__init__): The phases of the two classes differ")
         
         if class1.mess_type == "FastScan":
-            self.b = [0] * 4
-            for i in range(4):
-                self.b[i] = class1.b[i] + class2.b[i]
-            self.b_axis = class1.b_axis
-            self.b_count = [0] * 4
-            for i in range(4):
-                self.b_count[i] = class1.b_count[i] + class2.b_count[i]
-            self.chopper_channel = class1.chopper_channel
-            self.n_channels = class1.n_channels
-            #self.imported_scans = 
-            self.extra_fringes = class1.extra_fringes
-            self.reference = class1.reference
-            self.x_channel = class1.x_channel
-            self.y_channel = class1.y_channel
             
+#             if class1.b:
+#                 self.b = [0] * 4
+#                 for i in range(4):
+#                     self.b[i] = class1.b[i] + class2.b[i]
+#                 self.b_axis = class1.b_axis
+#                 self.b_count = [0] * 4
+#                 for i in range(4):
+#                     self.b_count[i] = class1.b_count[i] + class2.b_count[i]
+#             if class1.chopper_channel:
+                
             
-            self.incorrect_count = [0] * 4
-            for i in range(4):
-                self.incorrect_count[i] = class1.incorrect_count[i] + class2.incorrect_count[i]
+            try:
+                self.chopper_channel = class1.chopper_channel
+                self.n_channels = class1.n_channels
+                #self.imported_scans = 
+                self.extra_fringes = class1.extra_fringes
+                self.reference = class1.reference
+                self.x_channel = class1.x_channel
+                self.y_channel = class1.y_channel
+                    
+                self.incorrect_count = [0] * 4
+                for i in range(4):
+                    self.incorrect_count[i] = class1.incorrect_count[i] + class2.incorrect_count[i]
+
+
+            except AttributeError:
+                # this will typically fail for the subtraction class
+                pass
         
         self.phase_degrees = class1.phase_degrees
         #self.zeropad_by = class1.zeropad_by
