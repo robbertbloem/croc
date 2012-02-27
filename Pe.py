@@ -984,6 +984,8 @@ class pefs(pe_exp):
         
         """
         
+        error_flag = False
+        
         if len(self.imported_scans) == 0:
             # set self.reference
             self.import_reference()
@@ -1027,14 +1029,13 @@ class pefs(pe_exp):
             # check for consistency
             if correct_count == False:
                 print("Scan: " + str(scan) + ", File: " + str(k) + ": Miscount!")
-                #print("start:", fringes[0], m_axis[0], "end:", fringes[1], m_axis[-1])
+                
                 self.incorrect_count[k] += 1
 
             # if it is consistent, continue
             else:
                 print("Scan: " + str(scan) + ", File: " + str(k) + ": Count is correct!")
-                #print("start:", fringes[0], m_axis[0], "end:", fringes[1], m_axis[-1])
-            
+                          
                 # make b the correct size, if it isn't already
                 if numpy.shape(self.b_axis)[-1] == 2:
                     self.make_arrays()
@@ -1044,20 +1045,28 @@ class pefs(pe_exp):
                 
                 # calculate the noise
                 if flag_calculate_noise:
+#                    print("This function does not exist anymore.")
                     self.bin_for_noise(m, m_axis, diagram, flag_noise_time_domain)
 
                 # all the data is now written into self.b* 
 
         # construct the actual measurement
-        if flag_construct_r:
-            self.construct_r()
+        # this should catch the situation that there are 4 miscounts in the first scan
+        if type(self.b_count) == numpy.ndarray:
+            if flag_construct_r:
+                self.construct_r()
+        else:
+            error_flag = True
 
         # now append that we imported this scan
         self.imported_scans.append(scan)
         
         self.n_scans = len(self.imported_scans)
         
-        return True
+        if error_flag:
+            return False
+        else:
+            return True
 
 
     def phase_correction(self, array, run, phases = [0,0,0,0]):
