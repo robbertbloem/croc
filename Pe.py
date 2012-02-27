@@ -1033,14 +1033,19 @@ class pefs(pe_exp):
             # if it is consistent, continue
             else:
                 print("Scan: " + str(scan) + ", File: " + str(k) + ": Count is correct!")
-                #print("start:", fringes[0], m_axis[0], "end:", fringes[1], m_axis[-1])
-            
+                
+                noise_channel = 35
+
+                me = numpy.mean(m[noise_channel,:])
+                
+                weight = me 
+                
                 # make b the correct size, if it isn't already
                 if numpy.shape(self.b_axis)[-1] == 2:
                     self.make_arrays()
         
                 # bin the data
-                self.bin_data(m, m_axis, diagram)
+                self.bin_data(m, m_axis, diagram, weight)
                 
                 # calculate the noise
                 if flag_calculate_noise:
@@ -1190,7 +1195,7 @@ class pefs(pe_exp):
         
 
 
-    def bin_data(self, m, m_axis, diagram):
+    def bin_data(self, m, m_axis, diagram, weight = 0):
         """
         croc.Pe.pefs.bin_data()
         
@@ -1212,12 +1217,17 @@ class pefs(pe_exp):
         - self.b_count        
         
         """
-        self.bin_data_helper(m, m_axis, diagram, b = self.b, b_count = self.b_count)
+        self.bin_data_helper(m, m_axis, diagram, b = self.b, b_count = self.b_count, weight = weight)
         
 
 
 
-    def bin_data_helper(self, m, m_axis, diagram, b, b_count):
+    def bin_data_helper(self, m, m_axis, diagram, b, b_count, weight = 0):
+        if weight > 0:
+            pass
+        else:
+            weight = 1 
+        noise_channel = 35
 
         for i in range(self.n_shots):            
             # find the fringe
@@ -1226,10 +1236,12 @@ class pefs(pe_exp):
             # add it to the bin, depending on pem-state and diagram
             # and add 1 to counter 
             if m[self.chopper_channel, i] < 2.5:         
-                b[2 * diagram][j, :] += m[:,i] 
+                b[2 * diagram][j, :] += weight * m[:,i] 
+#                 b[2 * diagram][j, :] += m[noise_channel,i] * m[:,i] 
                 b_count[2 * diagram, j] += 1
             else:
-                b[2 * diagram + 1][j, :] += m[:,i] 
+                b[2 * diagram + 1][j, :] += weight  * m[:,i]
+#                 b[2 * diagram + 1][j, :] += m[noise_channel,i]  * m[:,i] 
                 b_count[2 * diagram + 1, j] += 1
         
         return b, b_count
