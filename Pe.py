@@ -1036,9 +1036,9 @@ class pefs(pe_exp):
                 
                 noise_channel = 35
 
-                me = numpy.mean(m[noise_channel,:])
+                #me = numpy.mean(m[noise_channel,:])
                 
-                weight = me 
+                weight = 0 #me 
                 
                 # make b the correct size, if it isn't already
                 if numpy.shape(self.b_axis)[-1] == 2:
