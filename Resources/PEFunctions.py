@@ -1,9 +1,59 @@
+"""
+croc.Resources.PEFunctions
+
+A set of functions that are needed for croc.Pe. The functions were moved here to clean up Pe.py and were selected on how easy it was to move them out, ie. they are probably not very dependent on the class-structure.
+
+
+"""
+
 from __future__ import print_function
 from __future__ import division
 
 import numpy
 import matplotlib 
 import matplotlib.pyplot as plt
+
+
+
+
+def find_z(s, s_axis, x_range = [0,0], y_range = [0, -1]):
+    
+    # determine the range to be plotted
+    x_min, x_max, y_min, y_max = P.find_axes(self.s_axis[2], self.s_axis[0], x_range, y_range)
+    
+    # make the contours
+    # first find the area to be plotted
+    # not the most elegant way I guess
+    try:
+        y_min_i = numpy.where(s_axis[0] < y_min)[0][-1]
+    except: 
+        y_min_i = 0
+    
+    try:
+        y_max_i = numpy.where(s_axis[0] > y_max)[0][0]
+    except: 
+        y_max_i = len(s_axis[0])
+
+    try:
+        x_min_i = numpy.where(s_axis[2] < x_min)[0][-1]
+    except: 
+        x_min_i = 0
+    
+    try:
+        x_max_i = numpy.where(s_axis[2] > x_max)[0][0]
+    except: 
+        x_max_i = len(s_axis[2])
+        
+    ma = numpy.amax(s[y_min_i:y_max_i, x_min_i:x_max_i])
+    mi = numpy.amin(s[y_min_i:y_max_i, x_min_i:x_max_i])
+    
+    return ma, mi
+
+
+
+
+
+
 
 
 def bin_info(b_axis, b_count):
@@ -41,7 +91,7 @@ def bin_info(b_axis, b_count):
 
 def reconstruct_counter(data, x_channel, y_channel, start_counter = 0, end_counter = 0, flag_plot = False):
     """
-    croc.Pe.pefs.reconstruct_counter()
+    croc.Resources.PEFunctions.reconstruct_counter()
     
     This function will use the feedback from the HeNe's and reconstruct the fringes. It will check whether y > 0 and whether x changes from x[i-1] < 0 to x[i+1] > 0 and whether x[i-1] < x[i] < x[i+1] (or the other way around for a count back). 
     After a count in a clockwise direction, it can only count again in the clockwise direction after y < 0. 
@@ -60,6 +110,7 @@ def reconstruct_counter(data, x_channel, y_channel, start_counter = 0, end_count
     CHANGELOG:
     20110920 RB: started the function
     20111003 RB: change the way it counts. It will now not only check if the x goes through zero, it will also make sure that the point in between is actually in between. This reduced the miscounts from 80/400 t0 30/400.
+    20120227 RB: moved the function to croc.Resources.PEFunctions
     
     
     """
@@ -181,7 +232,7 @@ def reconstruct_counter(data, x_channel, y_channel, start_counter = 0, end_count
 
 def angle_distribution(m, x_channel, y_channel, m_axis, k = 0, skip_first = 0, skip_last = 0, flag_normalize_circle = True, flag_scatter_plot = True, new_figure = True):   
     """
-    croc.Resources.PEFunction.find_angle_distribution()
+    croc.Resources.PEFunction.angle_distribution()
     
     Checks the distribution of the samples within the fringes, ie. it checks whether there is a bias-angle.
     

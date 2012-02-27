@@ -8,6 +8,7 @@ DESCRIPTION
 CHANGELOG
     RB 20091214 - first draft.
     RB 20110908 - combined some stuff together
+    RB 20120227 - moved some functions to croc.Resources.PEFunctions
 
 REMARKS
 - T3 is not imported. I didn't think about it too much, but I think that would need an extra dimension or so.
@@ -54,18 +55,16 @@ if croc.Debug.reload_flag:
 
 debug_flag = croc.Debug.debug_flag
 
+### METHODS TO WORK WITH PICKLES ###
 
 def make_pickle_name(base_filename, pop_time, time_stamp, path = ""):
     return path + base_filename + "_" + str(time_stamp) + "_T" + str(pop_time) + ".pickle"
 
-
 def make_path(base_filename, pop_time, time_stamp, path = ""):
     return path + base_filename + "_" + str(time_stamp) + "_T" + str(pop_time) + "/"
 
-
 def check_pickle_exists(path_and_filename):
     return os.path.exists(path_and_filename)
-
 
 def import_pickle(mess_date, mess_array = [], pickle_name = ""):
 
@@ -86,9 +85,10 @@ def import_pickle(mess_date, mess_array = [], pickle_name = ""):
     
     return new_obj
 
-
 def save_pickle(obj, pickle_name):
     croc.Resources.DataClasses.make_db(obj, pickle_name)
+
+
 
 
 def import_mess_array(mess_date, mess_array, n_scans, pickle_name, data_dir = "", anal_dir = ""):
@@ -118,101 +118,9 @@ def import_mess_array(mess_date, mess_array, n_scans, pickle_name, data_dir = ""
 
 
 
+def import_data(mess_date, import_mess, import_from, import_to, mess_array, data_dir = "", anal_dir = "", pickle_name = "", flag_calculate_noise = False, flag_no_pickle = False, flag_overwrite_pickle = False):
+    IOM.import_data(mess_date, import_mess, import_from, import_to, mess_array, data_dir = data_dir, anal_dir = anal_dir, pickle_name = pickle_name, flag_calculate_noise = flag_calculate_noise, flag_no_pickle = flag_no_pickle, flag_overwrite_pickle = flag_overwrite_pickle)       
 
-
-def import_data(mess_date, import_mess, import_from, import_to, mess_array, 
-        data_dir = "", 
-        anal_dir = "",
-        pickle_name = "",
-        flag_calculate_noise = False,
-        flag_no_pickle = False,
-        flag_overwrite_pickle = False
-    ):
-    """
-    croc.Pe.import_data()
-    
-    Imports data and saves it into a pickle. The method will import several scans from a measurement. This works best when you have fewer measurements with more scans. 
-    
-    
-    
-    """
-    if import_from == 0 or import_to == 0:
-        print("No import required...")
-        return 0
-    else:
-    
-        # first check if mess_i actually exists
-        try:
-            mess_array[import_mess]
-            
-            if anal_dir == "":
-                anal_dir = os.getcwd() + "/"
-            
-            if data_dir == "":
-                # the 'root' is removes the '/analysis/20111111/'
-                data_dir = os.getcwd()[:-17] + "data/" + str(mess_date) + "/"
-                
-            # default name of the pickle
-            # use the _fs postfix to differentiate it from other pickles
-            if pickle_name == "":
-                pickle_name = str(mess_date) + "_fs.pickle"
-
-            # first, check if there is a pickle
-            if flag_overwrite_pickle == False and croc.Pe.check_pickle_exists(pickle_name): 
-                # found a pickle, now import it
-                print("Found pickle")
-                mess = croc.Resources.DataClasses.import_db(pickle_name)
-            else:
-                # there is no pickle, so make a new a new data structure
-                print("No pickle found")
-                mess = [0]
-                mess[0] = croc.Pe.pefs(mess_array[0][0], mess_array[0][1], mess_array[0][2], mess_array[0][3])
-                mess[0].path = data_dir + mess[0].path
-            
-            # see if we have to extend mess to fit with mess_array
-            if len(mess) < len(mess_array):
-                for i in range(len(mess_array)):
-                    try:
-                        # this works if mess[i] exists
-                        mess[i].objectname
-                    except IndexError:
-                        # it fails if it does not exists, so make a new one
-                        mess.append(croc.Pe.pefs(mess_array[i][0], mess_array[i][1], mess_array[i][2], mess_array[i][3]))    
-                        mess[-1].path = data_dir + mess[-1].path
-            
-                        
-            # pickle can confuse the order of measurements
-            # use the unique object names to find the correct one
-            for i in range(len(mess)):
-                if mess[i].objectname == mess_array[import_mess][0]:
-                    mess_i = i
-                
-            # construct the import range
-            import_range = range(import_from, import_to + 1)
-            
-            flag_change = False
-            
-            # import the data
-            for i in import_range:
-                print("Importing object: " + mess[mess_i].objectname + ", scan:", str(i))
-                result = mess[mess_i].add_data(scan = i, flag_construct_r = False, flag_calculate_noise = flag_calculate_noise)
-                
-                if result == True:  
-                    flag_change = True
-            
-            if flag_no_pickle == False:
-                if flag_change:
-                    print("Updating pickle...")
-                    croc.Resources.DataClasses.make_db(mess, pickle_name)
-                else:
-                    print("No need to update pickle...")
-            else:
-                print("flag_no_pickle == True")
-        
-        except IndexError:
-            # mess_i does not exist
-            print("ERROR (script_import.py): mess_i is outside of the range of mess_array")
-            
            
 def print_summary(object_array):
     print("")
@@ -386,37 +294,10 @@ class pe(croc.Resources.DataClasses.mess_data):
             
 
     def find_z(self, x_range = [0,0], y_range = [0, -1]):
-        
-        # determine the range to be plotted
-        x_min, x_max, y_min, y_max = P.find_axes(self.s_axis[2], self.s_axis[0], x_range, y_range)
-        
-        # make the contours
-        # first find the area to be plotted
-        # not the most elegant way I guess
-        try:
-            y_min_i = numpy.where(self.s_axis[0] < y_min)[0][-1]
-        except: 
-            y_min_i = 0
-        
-        try:
-            y_max_i = numpy.where(self.s_axis[0] > y_max)[0][0]
-        except: 
-            y_max_i = len(self.s_axis[0])
-    
-        try:
-            x_min_i = numpy.where(self.s_axis[2] < x_min)[0][-1]
-        except: 
-            x_min_i = 0
-        
-        try:
-            x_max_i = numpy.where(self.s_axis[2] > x_max)[0][0]
-        except: 
-            x_max_i = len(self.s_axis[2])
-            
-        ma = numpy.amax(self.s[y_min_i:y_max_i, x_min_i:x_max_i])
-        mi = numpy.amin(self.s[y_min_i:y_max_i, x_min_i:x_max_i])
-        
-        return ma, mi
+        """
+        Finds the z for a certain area of the spectrum. 
+        """
+        return PEF.find_z(self.s, self.s_axis, x_range = x_range, y_range = y_range)
 
 
 
@@ -1133,47 +1014,14 @@ class pefs(pe_exp):
 
 
 
-
-    def import_raw_data(self, path_and_filename):
-        """
-        See croc.Resources.IOMethods.import_data_FS for instructions.
-        
-        This function is for legacy purposes.
-        
-        """
-        return IOM.import_data_FS(path_and_filename, n_shots = self.n_shots, n_channels = self.n_channels)
-        
-
-
-
-   
-        
-        
-
-
     def bin_data(self, m, m_axis, diagram):
         """
-        croc.Pe.pefs.bin_data()
-        
-        After determining the fringe for all shots, this will bin the data in the correct bin. There are 4 bins: 2 (for rephasinga and non-rephasing) x 2 (for the two PEM-states). 
-        The PEM trigger should vary between ~0V and ~5V. It will check if the state of the PEM is higher or lower than 2.5V. 
-
-        
-        INPUT:
-        - m (2d-ndarray, channels x samples): the data
-        - m_axis (1d-ndarray, length of samples): the fringe for each sample
-        - diagram (number): rephasing (0) or non-rephasing (1)
-
-        
-        IMPLICIT REQUIREMENTS:
-        In the data structure, the following variables should be set:
-        - self.n_shots
-        - self.chopper_channel
-        - self.b
-        - self.b_count        
+        See croc.Resources.PEFunctions.bin_data() for instructions. This function is for legacy purposes.
         
         """
         self.bin_data_helper(m, m_axis, diagram, b = self.b, b_count = self.b_count)
+
+
         
 
 
@@ -1196,16 +1044,6 @@ class pefs(pe_exp):
         return b, b_count
 
 
-
-
-    def bin_info(self):   
-        """
-        See croc.Resources.bin_info for instructions.
-        
-        Gives some statistics about the binning.
-        """ 
-        PEF.bin_info(self.b_axis, self.b_count)   
-        
 
 
 
@@ -1277,47 +1115,28 @@ class pefs(pe_exp):
   
     def reconstruct_counter(self, data, start_counter = 0, end_counter = 0, flag_plot = False):
         """
-        croc.Pe.pefs.reconstruct_counter()
-        
-        See croc.Resources.PEFunctions.reconstruct_counter for instructions.
-        
-        This function is for legacy purposes. 
-        
-        CHANGELOG:
-        20110920 RB: started the function
-        20111003 RB: change the way it counts. It will now not only check if the x goes through zero, it will also make sure that the point in between is actually in between. This reduced the miscounts from 80/400 t0 30/400.
-        20120227 RB: moved the function to croc.Resources.PEFunctions
-        
+        See croc.Resources.PEFunctions.reconstruct_counter for instructions. This function is for legacy purposes.   
         """
-        
-        PEF.reconstruct_counter(data, self.x_channel, self.y_channel, start_counter = start_counter, end_counter = end_counter, flag_plot = flag_plot)
-
-
-
-
-
-
-
-
+        return PEF.reconstruct_counter(data, self.x_channel, self.y_channel, start_counter = start_counter, end_counter = end_counter, flag_plot = flag_plot)
 
     def find_angle(self, m, m_axis, k = 0, skip_first = 0, skip_last = 0, flag_normalize_circle = True, flag_scatter_plot = True, new_figure = True):   
         """
-        croc.pe.pefs.find_angle()
-        
-        See croc.Resources.PEFunctions.angle_distribution for instructions.
-        
-        This function is for legacy purposes. 
-        
-
+         See croc.Resources.PEFunctions.angle_distribution for instructions. This function is for legacy purposes. 
         """ 
-        
         PEF.angle_distribution(m = m, x_channel = self.x_channel, y_channel = y_channel, m_axis = m_axis, k = k, skip_first = skip_first, skip_last = skip_last, flag_normalize_circle = flag_normalize_circle, flag_scatter_plot = flag_scatter_plot, new_figure = new_figure)
 
+    def import_raw_data(self, path_and_filename):
+        """
+        See croc.Resources.IOMethods.import_data_FS for instructions. This function is for legacy purposes.
+        """
+        return IOM.import_data_FS(path_and_filename, n_shots = self.n_shots, n_channels = self.n_channels)
+
+    def bin_info(self):   
+        """
+        See croc.Resources.bin_info for instructions. Gives some statistics about the binning.
+        """ 
+        PEF.bin_info(self.b_axis, self.b_count)   
         
-
-
-
-
 
 
 
