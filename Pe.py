@@ -35,6 +35,8 @@ from croc.Resources.DataClasses import mess_data
 import croc.Resources.Mathematics as M
 import croc.Resources.Plotting as P
 import croc.Resources.Constants as C
+import croc.Resources.PEFunctions as PEF
+import croc.Resources.IOMethods as IOM
 import croc.Debug
 
 reload(croc.Debug)
@@ -45,6 +47,8 @@ if croc.Debug.reload_flag:
     reload(M)
     reload(P)
     reload(C)
+    reload(PEF)
+    reload(IOM)
     
 
 
@@ -1016,9 +1020,7 @@ class pefs(pe_exp):
                 [m, fringes] = self.import_raw_data(filename[k])
             except IOError:
                 return False
-            
-            #m = self.phase_correction(m, k, phases = [+8*numpy.pi/180, -8*numpy.pi/180, 1*numpy.pi/180, -1*numpy.pi/180])
-                        
+                                    
             # if the number of fringes can not be set using the meta file, find it here 
             if self.n_fringes == 0:
                 self.n_fringes = int(numpy.abs(fringes[1] - fringes[0]))
@@ -1085,8 +1087,6 @@ class pefs(pe_exp):
         - self.time_stamp
         - self.r_axis[1]: (population time)
 
-        
-        
         """
         
     
@@ -1136,54 +1136,14 @@ class pefs(pe_exp):
 
     def import_raw_data(self, path_and_filename):
         """
-        croc.Pe.pefs.import_raw_data()
+        See croc.Resources.IOMethods.import_data_FS for instructions.
         
-        Imports the actual data and parses it.
-        
-        The data comes in binary form as an array. Also, the start and stop fringe are added to the end. 
-        
-        INPUT:
-        - path_and_filename (string): where the file can be found
-
-
-        IMPLICIT REQUIREMENTS:
-        In the data structure, the following variables should be set:
-        - self.n_shots (optional)
-        - self.n_channels
-        
-        OUTPUT:
-        - m (2d array): the data in channels x samples format
-        - fringes (array): an array with the fringe at the beginning ([0]) and the end ([1])
-        - self.n_shots: number of shots, if not determined earlier
-        
+        This function is for legacy purposes.
         
         """
+        return IOM.import_data_FS(path_and_filename, n_shots = self.n_shots, n_channels = self.n_channels)
         
-        # import the data
-        try:
-            data = numpy.fromfile(path_and_filename) 
-           
-            # read the fringes and remove them from the measurement data
-            fringes = [data[-2], data[-1]]
-            data = data[:-2]
-            
-            # determine the length
-            if self.n_shots == 0:
-                self.n_shots = int(numpy.shape(data)[0] / self.n_channels)            
-            
-            # construct m
-            m = numpy.zeros((self.n_channels, self.n_shots), dtype = "cfloat")
-            
-            # order the data in a 2d array
-            for i in range(self.n_shots):
-                for j in range(self.n_channels):
-                    m[j, i] = data[j + i * self.n_channels] 
-            
-            return m, fringes
-        except IOError:
-            print("ERROR (croc.Pe.pefs.add_data): Unable to import data from file " + path_and_filename)
-            raise
-            return 0, 0
+
 
 
    
@@ -1236,35 +1196,15 @@ class pefs(pe_exp):
         return b, b_count
 
 
-    def bin_info(self):
-        """
-        croc.Pe.pefs.bin_info()
-        
-        Will plot some stuff related to the binning. 
-        The first plot shows the amount of samples for every fringe.
-        The second plot shows a histogram of the samples per bin.
-        
-        """
-    
-        plt.figure()
-        plt.plot(self.b_axis[0], self.b_count[0], ".-")
-        plt.plot(self.b_axis[0], self.b_count[1], ".-") 
-        plt.plot(self.b_axis[0], self.b_count[2], ".-")
-        plt.plot(self.b_axis[0], self.b_count[3], ".-")   
-        plt.title("Shots per fringe (4000 = 0)")
-        plt.xlabel("Fringe")
-        plt.ylabel("Shots per fringe")
 
-        plt.figure()
-        plt.plot(numpy.bincount(numpy.array(self.b_count[0], dtype=numpy.int)))
-        plt.plot(numpy.bincount(numpy.array(self.b_count[1], dtype=numpy.int)))
-        plt.plot(numpy.bincount(numpy.array(self.b_count[2], dtype=numpy.int)))
-        plt.plot(numpy.bincount(numpy.array(self.b_count[3], dtype=numpy.int)))
-        plt.title("Bins with certain number of shots")
-        plt.xlabel("Number of shots")
-        plt.ylabel("Number of bins")
+
+    def bin_info(self):   
+        """
+        See croc.Resources.bin_info for instructions.
         
-        plt.show()           
+        Gives some statistics about the binning.
+        """ 
+        PEF.bin_info(self.b_axis, self.b_count)   
         
 
 
@@ -1339,144 +1279,18 @@ class pefs(pe_exp):
         """
         croc.Pe.pefs.reconstruct_counter()
         
+        See croc.Resources.PEFunctions.reconstruct_counter for instructions.
         
-        
-        This function will use the feedback from the HeNe's and reconstruct the fringes. It will check whether y > 0 and whether x changes from x[i-1] < 0 to x[i+1] > 0 and whether x[i-1] < x[i] < x[i+1] (or the other way around for a count back). 
-        After a count in a clockwise direction, it can only count again in the clockwise direction after y < 0. 
-        
-        INPUT:
-        - data (2darray, channels x samples): data. It will use self.x_channel and self.y_channel to find the data.
-        - start_counter (int, 0): where the count starts. 
-        - flag_plot (BOOL, False): plot the x and y axis and the counts. Should be used for debugging purposes.
-
-
-        IMPLICIT REQUIREMENTS:
-        In the data structure, the following variables should be set:
-        - self.x_channel, self.y_channel
-        
-        
-        
-        
-        OUTPUT:
-        - m_axis (1d-ndarray, length of samples): the exact fringe for that sample
-        - counter (int): the last value of the fringes. It is the same as m_axis[-1]. For legacy's sake.
-        
+        This function is for legacy purposes. 
         
         CHANGELOG:
         20110920 RB: started the function
         20111003 RB: change the way it counts. It will now not only check if the x goes through zero, it will also make sure that the point in between is actually in between. This reduced the miscounts from 80/400 t0 30/400.
-        
+        20120227 RB: moved the function to croc.Resources.PEFunctions
         
         """
         
-        
-        # put the required data in some better readable arrays
-        x = data[self.x_channel,:]
-        y = data[self.y_channel,:]
-        
-        # determine the median values
-        med_x = numpy.min(x) + (numpy.max(x) - numpy.min(x))/2
-        med_y = numpy.min(y) + (numpy.max(y) - numpy.min(y))/2
-        
-        # some stuff
-        length = len(x)
-        counter = start_counter
-        
-        # the fringe count will be written in this array
-        m_axis = numpy.zeros(length)
-        
-        # this is the (counter-) clockwise lock
-        c_lock = False
-        cc_lock = False
-        
-        count_c = 0
-        count_cc = 0
-        
-        count_limit = 20
-        length_limit = 1500
-        
-        # where did the counter start
-        m_axis[0] = counter
-        
-        if flag_plot:
-            change_array = numpy.zeros(length)
-        
-        # do the loop
-        for i in range(1, length - 1):
-            # count can only change when y > 0
-            if y[i] > med_y:
-                if c_lock == False:
-                    if x[i-1] < med_x and x[i] > med_x: 
-                        # add 1 to the counter
-                        counter += 1        
-                        
-                        # lock clockwise count       
-                        c_lock = True
-                        
-                        count_c += 1
-                        
-                        # if we are the beginning or end, unlock  counterclockwise 
-                        if count_c < count_limit or i > length - length_limit:
-                            cc_lock = False
-                        else:
-                            cc_lock = True
-                        
-                        if flag_plot:
-                            change_array[i] = 0.05
-
-                if cc_lock == False:
-                    if x[i-1] > med_x and x[i] < med_x:
-                        counter -= 1
-                        
-                        cc_lock = True  
-                        
-                        count_cc += 1
-                        
-                        if count_cc < count_limit or i > length - length_limit:
-                            c_lock = False
-                        else:
-                            c_lock = True
-                        
-                        if flag_plot:
-                            change_array[i] = -0.05
-
-            else:
-                # we are at y<0
-                # only unlock clockwise if we have more than 100 counts up
-                if count_c > count_limit:              
-                    c_lock = False
-                if count_cc > count_limit:
-                    cc_lock = False
-                # or if we are the beginning or end
-                if i < length_limit or i > length - length_limit:
-                    c_lock = False
-                    cc_lock = False
-                
-            m_axis[i] = counter
-        
-        m_axis[-1] = counter
-        
-        if counter == end_counter:
-            correct_count = True
-        else:
-            correct_count = False
-            #print(counter, end_counter)
-
-        if flag_plot:        
-            plt.figure()
-            plt.plot(x-0.1, ".-")
-            plt.plot(y+0.1, ".-")
-            plt.axhline(med_y+0.1, color = "k")
-            plt.axhline(med_x - 0.1, color = "k")
-            plt.plot(change_array, ".")
-            plt.xlabel("Shots")
-            plt.ylabel("Volts")
-            plt.title("x (blue), y (green) and counts up or down (red)")
-            plt.show()
-
-        return m_axis, counter, correct_count   
-
-
+        PEF.reconstruct_counter(data, self.x_channel, self.y_channel, start_counter = start_counter, end_counter = end_counter, flag_plot = flag_plot)
 
 
 
@@ -1490,114 +1304,14 @@ class pefs(pe_exp):
         """
         croc.pe.pefs.find_angle()
         
-        Checks the distribution of the samples within the fringes, ie. it checks whether there is a bias-angle.
+        See croc.Resources.PEFunctions.angle_distribution for instructions.
         
-        INPUT:
-        - m (2d-array (channels*samples)): data, with an x and y channel defined in the data structure
-        - m_axis (1d-array (length of samples)): the fringes corresponding to the data in m
-        - k (int, 0): makes a difference between different files. 
-        - skip_first (int, 0): option to skip the first n samples. The first few and last fringes the motors are stationary, which should result in the feedback not changing. This would appear as to bias the measurement.
-        - skip_last (int, 0): option to skip the last n samples
-        - flag_normalize_circle (BOOL, True): The circle can be a bit ellipsoid, which would bias the results. This will make the ellipsoid into a circle and prevents the bias.
-        - flag_scatter_plot (BOOL, True): will make a scatter plot (fringes by angle). If false, it will make a histogram. Note that the histogram will have different colors and orientation depending on 'k'. This is to compare the different runs (2 motors, moving forward and backward).
+        This function is for legacy purposes. 
         
-        
-        
-        IMPLICIT REQUIREMENTS:
-        In the data structure, the following variables should be set:
-        - self.x_channel, self.y_channel
-        
-        
-        
+
         """ 
         
-        l = len(m_axis)
-
-        # select the desired part of the data
-        m = m[:,skip_first:(l-skip_last)]
-        m_axis = m_axis[skip_first:(l-skip_last)]
-        l = len(m_axis)
-        
-        # determine the average of the data, select the data and subtract the average
-        x_max = numpy.nanmax(m[self.x_channel,:])
-        x_min = numpy.nanmin(m[self.x_channel,:]) 
-        x_ave = x_min + (x_max - x_min)/2
-        m_x = m[self.x_channel,:] - x_ave
-
-        # determine the average etc. and normalize it so that it is a true circle        
-        y_max = numpy.nanmax(m[self.y_channel,:])
-        y_min = numpy.nanmin(m[self.y_channel,:]) 
-        y_ave = y_min + (y_max - y_min)/2
-        if flag_normalize_circle:
-            m_y = (m[self.y_channel,:] - y_ave) * (x_max - x_min)/(y_max - y_min)
-        else:
-            m_y = (m[self.y_channel,:] - y_ave)
-        
-        # make the array where the angles will be written to
-        m_angle = numpy.zeros(numpy.shape(m_axis))
-        
-        # calculate the angle
-        for i in range(l):
-            if m_y[i] > 0:
-                m_angle[i] = numpy.arctan(m_x[i] / m_y[i]) * 180 /numpy.pi
-            elif m_y[i] < 0:
-                m_angle[i] = numpy.arctan(m_x[i] / m_y[i]) * 180 /numpy.pi + 180
-            else:
-                m_angle[i] = 0
-                print("Divide by zero")
-        
-        if flag_scatter_plot:
-        
-            if new_figure:
-                plt.figure()
-            
-            # make an - in effect - scatter plot
-            plt.plot(m_axis, m_angle, "b.")
-            plt.xlabel("Fringes")
-            plt.ylabel("Angle (deg)")
-            plt.title("Distribution of samples over the fringes (0 = top)")
-             
-        else:
-            
-            # decide on the bin size
-            if l <= 1000:
-                bin_size = 15 # in degrees
-                n_bins = 360 / bin_size  
-            elif l <= 1800:                        
-                bin_size = 10 # in degrees
-                n_bins = 360 / bin_size              
-            elif l <= 3600:                        
-                bin_size = 5 # in degrees
-                n_bins = 360 / bin_size
-            else:                
-                bin_size = 5 # in degrees
-                n_bins = 360 / bin_size
-            
-            # make the histogram       
-            h, b_e = numpy.histogram(m_angle, bins = n_bins)
-            
-            # make the axis
-            axis = b_e[:-1]
-            
-            if new_figure:
-                plt.figure()
-            
-            # plot it
-            if k == 0:
-                plt.plot(axis, h, "b")
-            elif k == 1:
-                plt.plot(axis, h, "g")
-            elif k == 2:
-                plt.plot(axis, -h, "b")
-            elif k == 3:
-                plt.plot(axis, -h, "g")    
-            
-            plt.xlabel("Angle")
-            plt.ylabel("Occurances")
-            plt.title("Histogram of angles (negative for non-rephasing)")
-            
-        plt.show()
-
+        PEF.angle_distribution(m = m, x_channel = self.x_channel, y_channel = y_channel, m_axis = m_axis, k = k, skip_first = skip_first, skip_last = skip_last, flag_normalize_circle = flag_normalize_circle, flag_scatter_plot = flag_scatter_plot, new_figure = new_figure)
 
         
 
