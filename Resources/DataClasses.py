@@ -231,7 +231,7 @@ def make_db(array_of_class_instances, path_and_filename):
 
 
 
-def import_db(path_and_filename):
+def import_db(path_and_filename, print_keys = False):
     """
     Imports a database. 
     The function checks for the existence of the database. It returns "False" 
@@ -249,6 +249,8 @@ def import_db(path_and_filename):
         array_of_class_instances = []
         
         for key in db:
+            if print_keys:
+                print(key)
             array_of_class_instances.append(db[key])
         
         db.close()

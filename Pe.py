@@ -85,6 +85,8 @@ def import_pickle(mess_date, mess_array = [], pickle_name = ""):
     
     return new_obj
 
+
+
 def save_pickle(obj, pickle_name):
     croc.Resources.DataClasses.make_db(obj, pickle_name)
 
@@ -96,21 +98,22 @@ def import_mess_array(mess_date, mess_array, n_scans, pickle_name, data_dir = ""
     croc.Pe.import_mess_array
     
     Imports a whole array with measurements without saving, closing and re-opening the pickle all the time. This significantly reduces time for long series of measurements. 
-    
-    
     """
+    
+    if type(n_scans) == int:
+        n_scans = [n_scans] * len(mess_array)
     
     if data_dir == "":
         data_dir = os.getcwd()[:-17] + "data/" + str(mess_date) + "/"   
     
     imp = [0] * len(mess_array)
-    
+
     for i in range(len(mess_array)):
         imp[i] = croc.Pe.pefs(mess_array[i][0], mess_array[i][1], mess_array[i][2], mess_array[i][3])
         imp[i].path = data_dir + imp[i].path
         
-        for j in range(n_scans):
-            imp[i].add_data(scan = j + 1)
+        for j in range(n_scans[i]):
+            imp[i].add_data(scan = j + 1, flag_construct_r = False)
         
         imp[i].construct_r()
     
@@ -429,6 +432,170 @@ class pe(croc.Resources.DataClasses.mess_data):
         
         else:
             P.linear(data[pixel,:], x_axis, x_range = [0, 0], y_range = [0, 0], x_label = "Time (fs)", y_label = "Absorbance", title = "Time", new_figure = new_figure)
+
+
+
+
+class pe_combine(pe):
+    """
+    croc.Pe.pe_combine(pe)
+    
+    Combines two classes, either adding or subtracting.
+    
+    """
+
+    def __init__(self, objectname, class_plus = [], class_min = []):
+        """
+        
+        Addition:
+        - the added spectra are normalized for the number of scans
+        
+        """
+        
+        croc.Pe.pe.__init__(self, objectname)
+        
+        self.b = [0] * 4  
+        self.b_axis = [0] * 4
+        self.b_count = [0] * 4
+        self.incorrect_count = [0] * 4
+        
+        print(len(class_plus), len(class_min))
+
+        flag_variables_set = False
+        
+        ### addition ###
+        
+        
+        # first run
+        self.n_scans = 0
+        flag_s = 0 
+        flag_b = 0
+        for i in range(len(class_plus)):
+            # determine the number of scans
+            self.n_scans += class_plus[i].n_scans
+            # determine if all objects have a spectrum
+            if numpy.shape(class_plus[i].s)[0] > 1:
+                flag_s += 1
+            else:
+                flag_s = -1
+            # determine if it is a fast scan
+            self.mess_type = class_plus[i].mess_type
+            
+            if self.mess_type == "FastScan":
+                # determine if b is present
+                try:
+                    if numpy.shape(class_plus[i].b)[0] > 0:
+                        flag_b += 1
+                except AttributeError:
+                    flag_b = -1
+                
+                    
+                
+        # second run
+        for i in range(len(class_plus)):
+            # s, will only be set if all objects have a spectrum
+            if flag_s/len(class_plus) == 1:
+                self.s += class_plus[i].s * class_plus[i].n_scans / self.n_scans
+            # r
+            for j in range(len(class_plus[i].r)):
+                self.r[j] += class_plus[i].r[j] * class_plus[i].n_scans / self.n_scans
+            # b, for fast scan
+            if flag_b / len(class_plus) == 1:   
+                for j in range(len(class_plus[i].b)):
+                        # b_count is used to normalize b
+                        self.b[j] += class_plus[i].b[j] 
+                        self.b_count[j] += class_plus[i].b_count[j]
+            
+            if self.mess_type == "FastScan":
+                try:
+                    for j in range(len(class_plus[i].incorrect_count)):
+                        self.incorrect_count[j] += class_plus[i].incorrect_count[j]
+                except AttributeError:
+                    pass
+                    
+            if flag_variables_set == False:
+                self.set_variables(class_plus[i])
+                flag_variables_set = True
+
+        ### subtraction ###
+        flag_s = 0 
+        flag_b = 0
+        for i in range(len(class_min)):
+            # determine if all objects have a spectrum
+            if numpy.shape(class_min[i].s)[0] > 1:
+                flag_s += 1
+            else:
+                flag_s = -1
+            # determine if it is a fast scan
+            self.mess_type = class_min[i].mess_type
+            # determine if b is present
+            if self.mess_type == "FastScan":
+                try:
+                    if numpy.shape(class_min[i].b)[0] > 0:
+                        flag_b += 1
+                except AttributeError:
+                    flag_b = -1
+        # second run
+        for i in range(len(class_min)):
+            # s, will only be set if all objects have a spectrum
+            if flag_s/len(class_min) == 1:
+                self.s -= class_min[i].s
+            # r
+            for j in range(len(class_min[i].r)):
+                self.r[j] -= class_min[i].r[j]
+            # b, for fast scan
+            if flag_b / len(class_min) == 1:   
+                for j in range(len(class_min[i].b)):
+                        self.b[j] -= class_min[i].b[j] 
+                        self.b_count[j] -= class_min[i].b_count[j]
+
+            if self.mess_type == "FastScan":
+                try:
+                    for j in range(len(class_plus[i].incorrect_count)):
+                        self.incorrect_count[j] += class_min[i].incorrect_count[j]
+                except AttributeError:
+                    pass
+
+            if flag_variables_set == False:
+                self.set_variables(class_min[i])
+                flag_variables_set = True
+
+
+
+    def set_variables(self, obj):   
+    
+        self.phase_degrees = obj.phase_degrees
+        
+        self.n_shots = obj.n_shots
+        self.n_steps = obj.n_steps
+        
+        self.r_axis = obj.r_axis
+        self.r_domain = obj.r_domain
+        self.r_resolution = obj.r_resolution
+        self.r_units = obj.r_units
+        self.r_correction = obj.r_correction
+        self.r_correction_applied = obj.r_correction_applied
+        
+        self.s_axis = obj.s_axis
+        self.s_domain = obj.s_domain
+        self.s_resolution = obj.s_resolution
+        self.s_units = obj.s_units
+
+        
+        if self.mess_type == "FastScan":
+            try:
+                self.chopper_channel = obj.chopper_channel
+                self.n_channels = obj.n_channels
+                self.n_fringes = obj.n_fringes
+                self.extra_fringes = obj.extra_fringes
+            except AttributeError:  
+                pass            
+            
+        
+
+
+
+
 
 
 
