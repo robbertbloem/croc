@@ -100,6 +100,12 @@ def import_mess_array(mess_date, mess_array, n_scans, pickle_name, data_dir = ""
     Imports a whole array with measurements without saving, closing and re-opening the pickle all the time. This significantly reduces time for long series of measurements. 
     """
     
+    for i in range(len(mess_array)):
+        for j in range(i+1, len(mess_array)):
+            if mess_array[i][0] == mess_array[j][0]:
+                print("ERROR (croc.Pe.import_mess_array): The objectnames have to be unique! This is not the case. Aborting.")
+                return False
+                
     if type(n_scans) == int:
         n_scans = [n_scans] * len(mess_array)
     
@@ -442,119 +448,169 @@ class pe_combine(pe):
     
     Combines two classes, either adding or subtracting.
     
+    CHANGELOG:
+    20120228 RB: made this function, replacing pe_sub and pe_add
+    
+  
+    
+    
+    
     """
 
     def __init__(self, objectname, class_plus = [], class_min = []):
         """
+        INPUT:
+        - objectname (string): unique name
+        - class_plus (array with class objects): these objects will be added together
+        - class_min (array with class objects): these objects will be subtracted
         
-        Addition:
-        - the added spectra are normalized for the number of scans
+        
+        NOTES:
+        Each measurement is normalized. For stepped scan, it is done in the computer, for fast scan we do bins/bin_count. If we have more scans, the bins are 'fuller' but the bin_count is correspondingly higher.
+        
+        When we add measurements
+        
+        4 measurements m[0] to m[3] have n[0] to n[3] n_scans. We add the first two and subtract the other two as follows:
+        {m[0]*n[0]/(n[0]+n[1]) + m[1]*n[1]/(n[0]+n[1])} - {m[2]*n[2]/(n[2]+n[3]) + m[3]*n[3]/(n[2]+n[3])}
+        
+        
+        USAGE:
+        - Add two objects: mess1+mess2
+        Use: Use: croc.Pe.pe_combine("object", class_plus = [mess1, mess2])
+        If mess1 has 10 scans and mess2 has 100 scans, the time and frequency domain spectrum will be added by weight: (10*mess1.spectrum + 100*mess2.spectrum)/(10+100). The same is for two spectra that are both subtracted.
+        
+        - Subtract one object from the other: mess1 - mess2
+        Use: croc.Pe.pe_combine("object", class_plus = [mess1], class_min = [mess2])
+        If mess1 has 10 scans and mess2 100 scans, the subtraction will not be weighed.
+        
+        - Add and subtract multiple objects: (mess1+mess2)-(mess3-mess4)
+        Use: croc.Pe.pe_combine("object", class_plus = [mess1, mess2], class_min = [mess3, mess4])    
+
         
         """
         
         croc.Pe.pe.__init__(self, objectname)
         
-        self.b = [0] * 4  
-        self.b_axis = [0] * 4
-        self.b_count = [0] * 4
-        self.incorrect_count = [0] * 4
-        
-        print(len(class_plus), len(class_min))
-
         flag_variables_set = False
+    
+        n_scans = 0
+        flag_s = 0.0
+        flag_r = 0.0
+        flag_b = 0.0
         
-        ### addition ###
-        
-        
-        # first run
-        self.n_scans = 0
-        flag_s = 0 
-        flag_b = 0
         for i in range(len(class_plus)):
-            # determine the number of scans
-            self.n_scans += class_plus[i].n_scans
-            # determine if all objects have a spectrum
-            if numpy.shape(class_plus[i].s)[0] > 1:
-                flag_s += 1
-            else:
-                flag_s = -1
-            # determine if it is a fast scan
+            n_scans += class_plus[i].n_scans
+            
             self.mess_type = class_plus[i].mess_type
             
-            if self.mess_type == "FastScan":
-                # determine if b is present
-                try:
-                    if numpy.shape(class_plus[i].b)[0] > 0:
-                        flag_b += 1
-                except AttributeError:
-                    flag_b = -1
-                
-                    
-                
-        # second run
-        for i in range(len(class_plus)):
-            # s, will only be set if all objects have a spectrum
-            if flag_s/len(class_plus) == 1:
-                self.s += class_plus[i].s * class_plus[i].n_scans / self.n_scans
-            # r
-            for j in range(len(class_plus[i].r)):
-                self.r[j] += class_plus[i].r[j] * class_plus[i].n_scans / self.n_scans
-            # b, for fast scan
-            if flag_b / len(class_plus) == 1:   
-                for j in range(len(class_plus[i].b)):
-                        # b_count is used to normalize b
-                        self.b[j] += class_plus[i].b[j] 
-                        self.b_count[j] += class_plus[i].b_count[j]
+            if self.mess_type == "FastScan":            
+                self.b = [0] * 4  
+                self.b_axis = [0] * 4
+                self.b_count = [0] * 4
+                self.incorrect_count = [0] * 4
             
-            if self.mess_type == "FastScan":
-                try:
-                    for j in range(len(class_plus[i].incorrect_count)):
-                        self.incorrect_count[j] += class_plus[i].incorrect_count[j]
-                except AttributeError:
-                    pass
-                    
+            try:
+                if numpy.shape(class_plus[i].s)[0] > 1:
+                    flag_s += 1
+                else:
+                    slag_s = -1
+            except AttributeError:
+                flag_s = -1
+
+            try:
+                if numpy.shape(class_plus[i].r[0])[0] > 1:
+                    flag_r += 1
+                else:
+                    slag_r = -1
+            except AttributeError:
+                flag_r = -1
+
+            try:
+                if numpy.shape(class_plus[i].b[0])[0] > 1:
+                    flag_b += 1
+                else:
+                    slag_b = -1
+            except AttributeError:
+                flag_b = -1
+        
+        print(flag_s, flag_r, flag_b)
+
+        for i in range(len(class_plus)):
+            if flag_s / len(class_plus) == 1:
+                self.s += class_plus[i].s * class_plus[i].n_scans / n_scans
+        
+            if flag_r / len(class_plus) == 1:
+                for j in range(len(class_plus[i].r)):
+                    self.r[j] += class_plus[i].r[j] * class_plus[i].n_scans / n_scans
+
+            if flag_b / len(class_plus) == 1:
+                for j in range(len(class_plus[i].b)):
+                    self.b[j] += class_plus[i].b[j]
+                    self.b_count[j] += class_plus[i].b_count[j]
+
             if flag_variables_set == False:
                 self.set_variables(class_plus[i])
                 flag_variables_set = True
 
+        self.n_scans = n_scans
+  
+    
         ### subtraction ###
-        flag_s = 0 
-        flag_b = 0
+        n_scans = 0
+        flag_s = 0.0
+        flag_r = 0.0
+        flag_b = 0.0
+                
         for i in range(len(class_min)):
-            # determine if all objects have a spectrum
-            if numpy.shape(class_min[i].s)[0] > 1:
-                flag_s += 1
-            else:
-                flag_s = -1
-            # determine if it is a fast scan
-            self.mess_type = class_min[i].mess_type
-            # determine if b is present
-            if self.mess_type == "FastScan":
-                try:
-                    if numpy.shape(class_min[i].b)[0] > 0:
-                        flag_b += 1
-                except AttributeError:
-                    flag_b = -1
-        # second run
-        for i in range(len(class_min)):
-            # s, will only be set if all objects have a spectrum
-            if flag_s/len(class_min) == 1:
-                self.s -= class_min[i].s
-            # r
-            for j in range(len(class_min[i].r)):
-                self.r[j] -= class_min[i].r[j]
-            # b, for fast scan
-            if flag_b / len(class_min) == 1:   
-                for j in range(len(class_min[i].b)):
-                        self.b[j] -= class_min[i].b[j] 
-                        self.b_count[j] -= class_min[i].b_count[j]
+            n_scans += class_min[i].n_scans
 
-            if self.mess_type == "FastScan":
-                try:
-                    for j in range(len(class_plus[i].incorrect_count)):
-                        self.incorrect_count[j] += class_min[i].incorrect_count[j]
-                except AttributeError:
-                    pass
+            self.mess_type = class_min[i].mess_type
+            
+            if self.mess_type == "FastScan":            
+                self.b = [0] * 4  
+                self.b_axis = [0] * 4
+                self.b_count = [0] * 4
+                self.incorrect_count = [0] * 4
+            
+            try:
+                if numpy.shape(class_min[i].s)[0] > 1:
+                    flag_s += 1
+                else:
+                    slag_s = -1
+            except AttributeError:
+                flag_s = -1
+
+            try:
+                if numpy.shape(class_min[i].r[0])[0] > 1:
+                    flag_r += 1
+                else:
+                    slag_r = -1
+            except AttributeError:
+                flag_r = -1
+
+            try:
+                if numpy.shape(class_min[i].b[0])[0] > 1:
+                    flag_b += 1
+                else:
+                    slag_b = -1
+            except AttributeError:
+                flag_b = -1
+        
+        print(flag_s, flag_r, flag_b)
+        
+        for i in range(len(class_min)):
+            
+            if flag_s / len(class_min) == 1:
+                self.s -= class_min[i].s * class_min[i].n_scans / n_scans
+        
+            if flag_r / len(class_min) == 1:
+                for j in range(len(class_min[i].r)):
+                    self.r[j] -= class_min[i].r[j] * class_min[i].n_scans / n_scans
+
+            if flag_b / len(class_min) == 1:
+                for j in range(len(class_min[i].b)):
+                    self.b[j] -= class_min[i].b[j]
+                    self.b_count[j] -= class_min[i].b_count[j]
 
             if flag_variables_set == False:
                 self.set_variables(class_min[i])
@@ -608,108 +664,27 @@ class pe_sub(pe):
     """
     croc.pe.pe_sub
     
-    This subclass of croc.pe.pe contains the specifics for when two measurements are subtracted from each other. 
-    
-    INPUT:
-    - objectname: a name
-    - class_plus: a class
-    - class_min: the class that will be subtracted
-    
-    CHANGELOG:
-    20110912 RB: split this of croc.pe.pe
+    Subtracts one class from the other. Use pe_combine instead. This class is only for legacy purposes.
     
     """
 
     def __init__(self, objectname, class_plus, class_min):
         
-        croc.Pe.pe.__init__(self, objectname)
-
-        self.s = class_plus.s - class_min.s
-        self.s_axis[0] = class_plus.s_axis[0]
-        self.s_axis[1] = class_plus.s_axis[1]
-        self.s_axis[2] = class_plus.s_axis[2]
-        self.comment = ("Subtraction of " + class_plus.objectname + " with " + class_min.objectname)
-        
-        self.phase_degrees = class_plus.phase_degrees
-        #self.zeropad_by = class_plus.zeropad_by
-        self.mess_type = class_plus.mess_type
-        #self.n_scans = class_plus.n_scans + class_min.n_scans
-        self.n_shots = class_plus.n_shots
-        self.n_steps = class_plus.n_steps
-        self.r = [0] * 2
-        for i in range(2):
-            self.r[i] = class_plus.r[i] - class_min.r[i]
-        self.r_axis = class_plus.r_axis
-        self.r_domain = class_plus.r_domain
-        self.r_units = class_plus.r_units
-        self.s = class_plus.s - class_min.s
-        self.s_axis = class_plus.s_axis
-        self.s_domain = class_plus.s_domain
-        self.s_resolution = class_plus.s_resolution
-        self.s_units = class_plus.s_units
-        self.undersampling = class_plus.undersampling
+        croc.Pe.pe_combine(objectname, class_plus = [class_plus], class_min = [class_min])
 
     
     
 class pe_add(pe):
+    """
+    croc.pe.pe_sub
     
+    Adds two classes. Use pe_combine instead. This class is only for legacy purposes.
+    
+    """    
     def __init__(self, objectname, class1, class2):
-        croc.Pe.pe.__init__(self, objectname)
         
-        if class1.phase_degrees != class2.phase_degrees:
-            print("WARNING (croc.Pe.pe_add.__init__): The phases of the two classes differ")
-        
-        if class1.mess_type == "FastScan":
-            
-#             if class1.b:
-#                 self.b = [0] * 4
-#                 for i in range(4):
-#                     self.b[i] = class1.b[i] + class2.b[i]
-#                 self.b_axis = class1.b_axis
-#                 self.b_count = [0] * 4
-#                 for i in range(4):
-#                     self.b_count[i] = class1.b_count[i] + class2.b_count[i]
-#             if class1.chopper_channel:
-                
-            
-            try:
-                self.chopper_channel = class1.chopper_channel
-                self.n_channels = class1.n_channels
-                #self.imported_scans = 
-                self.extra_fringes = class1.extra_fringes
-                self.reference = class1.reference
-                self.x_channel = class1.x_channel
-                self.y_channel = class1.y_channel
-                    
-                self.incorrect_count = [0] * 4
-                for i in range(4):
-                    self.incorrect_count[i] = class1.incorrect_count[i] + class2.incorrect_count[i]
+        croc.Pe.pe_combine(objectname, class_plus = [class1, class2])
 
-
-            except AttributeError:
-                # this will typically fail for the subtraction class
-                pass
-        
-        self.phase_degrees = class1.phase_degrees
-        #self.zeropad_by = class1.zeropad_by
-        self.mess_type = class1.mess_type
-        self.n_scans = class1.n_scans + class2.n_scans
-        self.n_shots = class1.n_shots
-        self.n_steps = class1.n_steps
-        self.r = [0] * 2
-        for i in range(2):
-            self.r[i] = class1.r[i] + class2.r[i]
-        self.r_axis = class1.r_axis
-        self.r_domain = class1.r_domain
-        self.r_units = class1.r_units
-        self.s = class1.s + class2.s
-        self.s_axis = class1.s_axis
-        self.s_domain = class1.s_domain
-        self.s_resolution = class1.s_resolution
-        self.s_units = class1.s_units
-        self.undersampling = class1.undersampling
-        
-        
         
         
         
