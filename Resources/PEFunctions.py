@@ -13,13 +13,15 @@ import numpy
 import matplotlib 
 import matplotlib.pyplot as plt
 
+import croc.Resources.Plotting as P
 
+reload(P)
 
 
 def find_z(s, s_axis, x_range = [0,0], y_range = [0, -1]):
     
     # determine the range to be plotted
-    x_min, x_max, y_min, y_max = P.find_axes(self.s_axis[2], self.s_axis[0], x_range, y_range)
+    x_min, x_max, y_min, y_max = P.find_axes(s_axis[2], s_axis[0], x_range, y_range)
     
     # make the contours
     # first find the area to be plotted

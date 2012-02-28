@@ -5,6 +5,8 @@ IOMethods is for importing/exporting of data outside the DataClass structure.
 from __future__ import print_function
 from __future__ import division
 
+import os
+
 import numpy
 import matplotlib 
 import matplotlib.pyplot as plt
