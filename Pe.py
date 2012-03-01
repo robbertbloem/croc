@@ -134,7 +134,7 @@ def import_data(mess_date, import_mess, import_from, import_to, mess_array,
         flag_overwrite_pickle = False
     ):
     """
-    croc.Resources.IOMethods.import_data
+    croc.Pe.import_data
     
     Imports data and saves it into a pickle. The method will import several scans from a measurement. This works best when you have fewer measurements with more scans. 
     """
