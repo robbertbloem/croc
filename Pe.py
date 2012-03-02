@@ -66,23 +66,52 @@ def make_path(base_filename, pop_time, time_stamp, path = ""):
 def check_pickle_exists(path_and_filename):
     return os.path.exists(path_and_filename)
 
-def import_pickle(mess_date, mess_array = [], pickle_name = ""):
+
+
+
+def import_pickle(mess_date, mess_array = [], pickle_name = "", flag_remove_objects = False):
+    """
+    This functions checks if a pickle file exists, it opens it and puts the objects in the pickle in the order of mess_array
+    """
 
     if pickle_name == "":
         pickle_name = str(mess_date) + "_fs.pickle"
     
+    if check_pickle_exists(pickle_name) == False:  
+        print("ERROR (croc.Pe.import_pickle): the pickle does not exist!")
+        return False
+    
     obj = croc.Resources.DataClasses.import_db(pickle_name)
 
-    new_obj = [0] * len(obj)
+#    for i in range(len(obj)):
+#        print(obj[i].objectname)
+    
+    new_obj = [0] * len(mess_array)
 
     if len(mess_array) == 0:
-        new_obj = obj
+        new_obj = obj   
     else:
+        # this will take the objects and orders them according to mess_array. If an objects is missing in mess_array, it will be discarded. If mess_array has more objects than the pickle, it will create a new one.
+        success_mess = [0]*len(mess_array)
+        success_obj = [0]*len(obj)
         for i in range(len(mess_array)):
             for j in range(len(obj)):
                 if mess_array[i][0] == obj[j].objectname:
                     new_obj[i] = obj[j]
-    
+                    success_mess[i] = 1
+                    success_obj[j] = 1
+                    print(new_obj[i].objectname)
+            if success_mess[i] == 0:
+                new_obj[i] = croc.Pe.pefs(mess_array[i][0], mess_array[i][1], mess_array[i][2], mess_array[i][3])
+                print(new_obj[i].objectname)
+        
+        # gives a warning when mess_array is shorter
+        if numpy.sum(success_obj) < len(obj): 
+            print("WARNING (croc.Pe.import_pickle): Object is missing in mess_array. It is not deleted from the HD.")
+        
+#        print("obj", success_obj)
+#        print("mess", success_mess)
+        
     return new_obj
 
 
@@ -95,41 +124,158 @@ def save_pickle(obj, pickle_name):
 
 # IMPORT METHODS
 
+def test_unique_object_id(mess_array, object_id = 0):
+    """
+    croc.Pe.test_unique_object_id
+    
+    Tests if the identifiers in mess_array are unique. If they are not unique it becomes a mess.
+    
+    CHANGELOG:
+    20120302 RB: started
+    
+    INPUT:
+    - mess_array (array): an array with measurements
+    - object_id (int): the place in the array where the object_id can be found.
+    
+    """
+    
+    for i in range(len(mess_array)):
+        for j in range(i+1, len(mess_array)):
+            if mess_array[i][object_id] == mess_array[j][object_id]:
+                print("ERROR (croc.Pe.import_mess_array): The objectnames have to be unique! This is not the case. Aborting.")
+                return False 
+    return True 
 
 
 
 
+def import_FS(mess_date, mess_array, scan_array, pickle_name = "", data_dir = "", anal_dir = "", flag_ignore_pickle = False, flag_intermediate_saving = 50):
+    
+    flag_change = False
+    
+    if test_unique_object_id(mess_array) == False:
+        return False
+        
+    if len(scan_array) != len(mess_array):
+        print("ERROR (croc.Pe.import_test): the length of the mess_array and scan_array should be the same.")
+        return False
+    
+    if anal_dir == "":
+        anal_dir = os.getcwd() + "/"
+    if anal_dir[-1] != "/":
+        anal_dir += "/"
+    
+    if data_dir == "":
+        # removes the '/analysis/20121212/'
+        data_dir = os.getcwd()[:-17] + "data/" + str(mess_date) + "/"
+    if data_dir[-1] != "/":
+        data_dir += "/"
+    
+    if pickle_name == "":
+        pickle_name = str(mess_date) + "_fs.pickle"
+    if pickle_name[-7:] != ".pickle":
+        pickle_name = pickle_name + ".pickle"
+        
+    if flag_ignore_pickle == False and check_pickle_exists(pickle_name) == True:
+        print("Importing objects from pickle")
+        obj = import_pickle(mess_date, mess_array = mess_array, pickle_name = anal_dir + pickle_name)
+        if obj == False:
+            return False
+    else:
+        if flag_ignore_pickle == True:
+            print("Creating new objects - ignoring possible old pickle")
+        if check_pickle_exists(pickle_name) == False:
+            print("Creating new objects - no older pickle found")
+        obj = [0] * len(mess_array)
+        for i in range(len(mess_array)):
+            obj[i] = croc.Pe.pefs(mess_array[i][0], mess_array[i][1], mess_array[i][2], mess_array[i][3])
+        flag_change = True
+        
+    # we now have the array with objects, either new or imported
+    # let's add some data
+    
+    for i in range(len(obj)):
+        print(obj[i].path)
+        obj[i].path = data_dir + obj[i].path
+    
+    counter = 0
+    for i in range(len(mess_array)):
+        for j in range(len(scan_array[i])):
+            result = obj[i].add_data(scan = scan_array[i][j], flag_construct_r = False)
+        
+            if result == True:  
+                flag_change = True
+                counter += 1
+            
+            if counter > flag_intermediate_saving and flag_change == True:
+                print("Intermediate saving of pickle!")
+                print(obj[i].base_filename, "scan:", scan_array[i][j])
+                croc.Resources.DataClasses.make_db(obj, pickle_name)
+                counter = 0
+                flag_change = False
+
+        obj[i].construct_r()
+
+    # now save it 
+    if flag_change == True:
+        croc.Resources.DataClasses.make_db(obj, pickle_name)
+    else: 
+        print("No changes to be pickled.")
+            
+        
+    
+    
 def import_mess_array(mess_date, mess_array, n_scans, pickle_name, data_dir = "", anal_dir = ""):
     """
     croc.Pe.import_mess_array
     
     Imports a whole array with measurements without saving, closing and re-opening the pickle all the time. This significantly reduces time for long series of measurements. 
+    
     """
-    
-    for i in range(len(mess_array)):
-        for j in range(i+1, len(mess_array)):
-            if mess_array[i][0] == mess_array[j][0]:
-                print("ERROR (croc.Pe.import_mess_array): The objectnames have to be unique! This is not the case. Aborting.")
-                return False
-                
-    if type(n_scans) == int:
-        n_scans = [n_scans] * len(mess_array)
-    
-    if data_dir == "":
-        data_dir = os.getcwd()[:-17] + "data/" + str(mess_date) + "/"   
-    
-    imp = [0] * len(mess_array)
 
-    for i in range(len(mess_array)):
-        imp[i] = croc.Pe.pefs(mess_array[i][0], mess_array[i][1], mess_array[i][2], mess_array[i][3])
-        imp[i].path = data_dir + imp[i].path
-        
-        for j in range(n_scans[i]):
-            imp[i].add_data(scan = j + 1, flag_construct_r = False)
-        
-        imp[i].construct_r()
+    if type(n_scans) == int:
+        n_scans = [n_scans] * len(mess_array)   
     
-    croc.Resources.DataClasses.make_db(imp, pickle_name)
+    scan_array = [0]*len(n_scans)
+    for i in range(len(scan_array)):
+        scan_array[i] = numpy.arange(1,n_scans[i]+1)
+    
+    import_FS(mess_date, mess_array, scan_array, pickle_name = pickle_name, data_dir = data_dir, anal_dir = anal_dir, flag_ignore_pickle = False, flag_intermediate_saving = 50)
+        
+
+
+
+#def import_mess_array(mess_date, mess_array, n_scans, pickle_name, data_dir = "", anal_dir = ""):
+#    """
+#    croc.Pe.import_mess_array
+#    
+#    Imports a whole array with measurements without saving, closing and re-opening the pickle all the time. This significantly reduces time for long series of measurements. 
+#    """
+#    
+#    for i in range(len(mess_array)):
+#        for j in range(i+1, len(mess_array)):
+#            if mess_array[i][0] == mess_array[j][0]:
+#                print("ERROR (croc.Pe.import_mess_array): The objectnames have to be unique! This is not the case. Aborting.")
+#                return False
+#                
+#    if type(n_scans) == int:
+#        n_scans = [n_scans] * len(mess_array)
+#    
+#    if data_dir == "":
+#        data_dir = os.getcwd()[:-17] + "data/" + str(mess_date) + "/"   
+#    
+#    imp = [0] * len(mess_array)
+#
+#    for i in range(len(mess_array)):
+#        imp[i] = croc.Pe.pefs(mess_array[i][0], mess_array[i][1], mess_array[i][2], mess_array[i][3])
+#        imp[i].path = data_dir + imp[i].path
+#        
+#        for j in range(n_scans[i]):
+#            imp[i].add_data(scan = j + 1, flag_construct_r = False)
+#        
+#        imp[i].construct_r()
+#    
+#    croc.Resources.DataClasses.make_db(imp, pickle_name)
 
 def import_data(mess_date, import_mess, import_from, import_to, mess_array, 
         data_dir = "", 
