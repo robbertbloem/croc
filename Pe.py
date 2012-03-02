@@ -23,6 +23,7 @@ from __future__ import absolute_import
 import fileinput
 import re
 import os.path
+import time
 
 import numpy
 import matplotlib 
@@ -77,7 +78,7 @@ def import_pickle(mess_date, mess_array = [], pickle_name = "", flag_remove_obje
     if check_pickle_exists(pickle_name) == False:  
         print("ERROR (croc.Pe.import_pickle): the pickle does not exist!")
         return False
-    
+        
     obj = croc.Resources.DataClasses.import_db(pickle_name)
 
     new_obj = [0] * len(mess_array)
@@ -219,7 +220,6 @@ def import_FS(mess_date, mess_array, scan_array, pickle_name = "", data_dir = ""
     # let's add some data
     
     for i in range(len(obj)):
-        print(obj[i].path)
         obj[i].path = data_dir + obj[i].base_filename + "_" + str(obj[i].time_stamp) + "_T" + str(obj[i].r_axis[1]) + "/"
     
     counter = 0

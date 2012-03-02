@@ -22,6 +22,7 @@ import os.path
 import shelve
 import sys
 
+
 ##############
 # CLASSTOOLS #
 ##############
@@ -162,44 +163,6 @@ class mess_data(ClassTools):
         self.zeropad_to = int(zp_by * numpy.shape(self.r[0])[0])
         #self._zeropad_by = zp_by 
        
-        
-#     def correct_freq_axes(self):
-#         """
-#         This function will correct a frequency axis by a few of wave numbers. It 
-#             will add the number, so 1600 cm-1 with a correction of 10 cm-1 
-#             becomes 1610 cm-1.
-#         After the correction has be done, the correction will be written into 
-#             r_correction_applied and r_correction will be set to zeros. You can 
-#             run this function as many times as you want, as it will not change 
-#             anything anymore. 
-#         If you change r_correction it will of course change the frequency axis 
-#             again. The extra amount will be added to r_correction_applied and 
-#             r_correction will be set to zeros. This way, you can always keep 
-#             track of the total amount of correction you have applied.  
-#         """
-#         for i in range(0, self.dimensions):
-#             if self.r_domain[i] == "f":
-#                 for j in range(0, len(self.r_axis[i])):
-#                     self.r_axis[i][j] += self.r_correction[i]
-#                 self.r_correction_applied[i] += self.r_correction[i]
-#                 self.r_correction[i] = 0
-#                 
-#     def undo_correct_freq_axes(self):
-#         """
-#         You might want to read the instructions of correct_freq_axes first.
-#         This function will remove all the corrections in one go.
-#         """
-#         for i in range(0, self.dimensions):
-#             if self.r_domain[i] == "f":
-#                 for j in range(0, len(self.r_axis[i])):
-#                     self.r_axis[i][j] -= self.r_correction_applied[i]
-#                 self.r_correction[i] += self.r_correction_applied[i]
-#                 self.r_correction_applied[i] = 0    
-
-
-
-
-
 
 
 
@@ -209,19 +172,23 @@ class mess_data(ClassTools):
 # SHELVE FUNCTIONS #
 ####################
 
-def make_db(array_of_class_instances, path_and_filename):
+def make_db(array_of_class_instances, path_and_filename, use_shelve = False, flag_debug = False):
     """
     Makes a database and writes all values.
-    The inumpyut should be an array with class instances, not a class 
-        instance itself!
-    If the database already exists, it will update the values. Make
-        sure that everything stored in the database has the same class.
+    The input should be an array with class instances, not a class instance itself! If the database already exists, it will update the values. Make sure that everything stored in the database has the same class.
+    
+    CHANGELOG:
+    20120302 RB: tried to implement the cPickle instead of shelve (which uses pickle, which should be slower than cPickle). However, there was no notable increase in speed and it was abandoned, because it would cause confusion.
+    
     """
+    
     if path_and_filename[-7:] != ".pickle":
         path_and_filename += ".pickle"
     
-    print(path_and_filename)
+    print(path_and_filename)    
     
+    if flag_debug:
+        print("Saving using shelve")
     db = shelve.open(path_and_filename)
     
     for object in array_of_class_instances:
@@ -241,9 +208,10 @@ def import_db(path_and_filename, print_keys = False):
 
     if path_and_filename[-7:] != ".pickle":
         path_and_filename += ".pickle"
-
+    
+    
     if os.path.isfile(path_and_filename) == True:
-        
+            
         db=shelve.open(path_and_filename)
         
         array_of_class_instances = []
@@ -256,6 +224,7 @@ def import_db(path_and_filename, print_keys = False):
         db.close()
         
         return array_of_class_instances
+
     
     else:
         print("classtools.import_db: The file doesn't exist!")
