@@ -66,9 +66,6 @@ def make_path(base_filename, pop_time, time_stamp, path = ""):
 def check_pickle_exists(path_and_filename):
     return os.path.exists(path_and_filename)
 
-
-
-
 def import_pickle(mess_date, mess_array = [], pickle_name = "", flag_remove_objects = False):
     """
     This functions checks if a pickle file exists, it opens it and puts the objects in the pickle in the order of mess_array
@@ -83,9 +80,6 @@ def import_pickle(mess_date, mess_array = [], pickle_name = "", flag_remove_obje
     
     obj = croc.Resources.DataClasses.import_db(pickle_name)
 
-#    for i in range(len(obj)):
-#        print(obj[i].objectname)
-    
     new_obj = [0] * len(mess_array)
 
     if len(mess_array) == 0:
@@ -108,9 +102,6 @@ def import_pickle(mess_date, mess_array = [], pickle_name = "", flag_remove_obje
         # gives a warning when mess_array is shorter
         if numpy.sum(success_obj) < len(obj): 
             print("WARNING (croc.Pe.import_pickle): Object is missing in mess_array. It is not deleted from the HD.")
-        
-#        print("obj", success_obj)
-#        print("mess", success_mess)
         
     return new_obj
 
@@ -151,12 +142,45 @@ def test_unique_object_id(mess_array, object_id = 0):
 
 def import_FS(mess_date, mess_array, scan_array, pickle_name = "", data_dir = "", anal_dir = "", flag_ignore_pickle = False, flag_intermediate_saving = 50):
     
+    """
+    croc.Pe.import_FS
+    
+    Method to import scans.
+    
+    CHANGELOG:
+    20120302 RB: started, replacing import_mess_array and import_data
+    
+    INPUT:
+    - mess_date (int): the date of the measurement as yyyymmdd
+    - mess_array (array): array with measurements. The following elements should be present, in this order: object_id as string, base_filename as string, population time as int, timestamp (hhmm) as int. Optional is n_scans, see scan_array input.
+    - scan_array (2d-array, 1d-array or int): scan_array determines which measurements will be imported. 
+        - 2d array: The most flexible version, you can indicate which scans - the numbers - you want to import. If scan_array = [[2,4,6],[1,3,5]] this means that from mess_array[0] scans 2, 4 and 6 will be imported and for mess_array[1] scans 1, 3, 5 will be imported. Usefull when you want to exclude specific scans.
+        - 1d array: For each object, you can indicate until which scan you want to import. For example, [2,4] will import scans 1 and 2 from mess_array[0] and 1, 2, 3, 4 from mess_array[1]. Usefull to import a whole set of scans. If a value is 0, it will not try to import anything.
+        - int: the number points to the column in mess_array, used to create (effectively) a situation similar to 1d-array.
+    - pickle_name (string, ""): If given, it will use this name for the pickle. If not given (default), it will use a default name: "yyyymmdd_fs.pickle"
+    - data_dir (string, ""): If given it will use this for the path to the data. If not given, it will assume you are currently in /analysis/yyyymmdd/ and will look for the data in /data/yyyymmdd/.
+    - anal_dir (string, ""): It will read/write the pickle here. If not given, it will read/write in the current directory.
+    - flag_ignore_pickle (BOOL, False): Will not try to import the data. When the pickle is saved it will add new objects to the current pickle, and overwrite objects that are already present. WARNING: this is a good way to ruin your data.
+    - flag_intermediate_saving (int, 50): the interval of successful imports with which the pickle is saved during the importing. 
+    
+    """
+
     flag_change = False
     
     if test_unique_object_id(mess_array) == False:
         return False
-        
-    if len(scan_array) != len(mess_array):
+    
+    if type(scan_array) == int:
+        scan_int = scan_array
+        scan_array = [0]*len(mess_array)
+        for i in range(len(mess_array)):
+            scan_array[i] = numpy.arange(1,mess_array[i][scan_int]+1) 
+    elif len(numpy.shape(scan_array)) == 1:
+        scan_array1d = scan_array
+        scan_array = [0]*len(mess_array)
+        for i in range(len(mess_array)):
+            scan_array[i] = numpy.arange(1,scan_array1d[i]+1)        
+    elif len(scan_array) != len(mess_array):
         print("ERROR (croc.Pe.import_test): the length of the mess_array and scan_array should be the same.")
         return False
     
@@ -196,7 +220,7 @@ def import_FS(mess_date, mess_array, scan_array, pickle_name = "", data_dir = ""
     
     for i in range(len(obj)):
         print(obj[i].path)
-        obj[i].path = data_dir + obj[i].path
+        obj[i].path = data_dir + obj[i].base_filename + "_" + str(obj[i].time_stamp) + "_T" + str(obj[i].r_axis[1]) + "/"
     
     counter = 0
     for i in range(len(mess_array)):
@@ -213,8 +237,8 @@ def import_FS(mess_date, mess_array, scan_array, pickle_name = "", data_dir = ""
                 croc.Resources.DataClasses.make_db(obj, pickle_name)
                 counter = 0
                 flag_change = False
-
-        obj[i].construct_r()
+        if type(obj[i].b_count[0]) != int:
+            obj[i].construct_r()
 
     # now save it 
     if flag_change == True:
@@ -228,8 +252,8 @@ def import_FS(mess_date, mess_array, scan_array, pickle_name = "", data_dir = ""
 def import_mess_array(mess_date, mess_array, n_scans, pickle_name, data_dir = "", anal_dir = ""):
     """
     croc.Pe.import_mess_array
-    
-    Imports a whole array with measurements without saving, closing and re-opening the pickle all the time. This significantly reduces time for long series of measurements. 
+    Depreciated.
+    Imports a whole mess_array in one go.
     
     """
 
@@ -243,137 +267,24 @@ def import_mess_array(mess_date, mess_array, n_scans, pickle_name, data_dir = ""
     import_FS(mess_date, mess_array, scan_array, pickle_name = pickle_name, data_dir = data_dir, anal_dir = anal_dir, flag_ignore_pickle = False, flag_intermediate_saving = 50)
         
 
-
-
-#def import_mess_array(mess_date, mess_array, n_scans, pickle_name, data_dir = "", anal_dir = ""):
-#    """
-#    croc.Pe.import_mess_array
-#    
-#    Imports a whole array with measurements without saving, closing and re-opening the pickle all the time. This significantly reduces time for long series of measurements. 
-#    """
-#    
-#    for i in range(len(mess_array)):
-#        for j in range(i+1, len(mess_array)):
-#            if mess_array[i][0] == mess_array[j][0]:
-#                print("ERROR (croc.Pe.import_mess_array): The objectnames have to be unique! This is not the case. Aborting.")
-#                return False
-#                
-#    if type(n_scans) == int:
-#        n_scans = [n_scans] * len(mess_array)
-#    
-#    if data_dir == "":
-#        data_dir = os.getcwd()[:-17] + "data/" + str(mess_date) + "/"   
-#    
-#    imp = [0] * len(mess_array)
-#
-#    for i in range(len(mess_array)):
-#        imp[i] = croc.Pe.pefs(mess_array[i][0], mess_array[i][1], mess_array[i][2], mess_array[i][3])
-#        imp[i].path = data_dir + imp[i].path
-#        
-#        for j in range(n_scans[i]):
-#            imp[i].add_data(scan = j + 1, flag_construct_r = False)
-#        
-#        imp[i].construct_r()
-#    
-#    croc.Resources.DataClasses.make_db(imp, pickle_name)
-
-def import_data(mess_date, import_mess, import_from, import_to, mess_array, 
-        data_dir = "", 
-        anal_dir = "",
-        pickle_name = "",
-        flag_calculate_noise = False,
-        flag_no_pickle = False,
-        flag_overwrite_pickle = False
-    ):
+def import_data(mess_date, import_mess, import_from, import_to, mess_array, data_dir = "", anal_dir = "", pickle_name = "", flag_calculate_noise = False, flag_no_pickle = False, flag_overwrite_pickle = False):
     """
     croc.Pe.import_data
+    Depreciated.
+    Imports a range of measurements of a single measurement in a mess_array.   
     
-    Imports data and saves it into a pickle. The method will import several scans from a measurement. This works best when you have fewer measurements with more scans. 
     """
-    if import_from == 0 or import_to == 0:
-        print("No import required...")
-        return 0
-    else:
+
     
-        # first check if mess_i actually exists
-        try:
-            mess_array[import_mess]
-            
-            if anal_dir == "":
-                anal_dir = os.getcwd() + "/"
-            
-            if data_dir == "":
-                # the 'root' is removes the '/analysis/20111111/'
-                data_dir = os.getcwd()[:-17] + "data/" + str(mess_date) + "/"
-                
-            # default name of the pickle
-            # use the _fs postfix to differentiate it from other pickles
-            if pickle_name == "":
-                pickle_name = str(mess_date) + "_fs.pickle"
-
-            # first, check if there is a pickle
-            if flag_overwrite_pickle == False and croc.Pe.check_pickle_exists(pickle_name): 
-                # found a pickle, now import it
-                print("Found pickle")
-                mess = croc.Resources.DataClasses.import_db(pickle_name)
-            else:
-                # there is no pickle, so make a new a new data structure
-                print("No pickle found")
-                mess = [0]
-                mess[0] = croc.Pe.pefs(mess_array[0][0], mess_array[0][1], mess_array[0][2], mess_array[0][3])
-                mess[0].path = data_dir + mess[0].path
-            
-            # see if we have to extend mess to fit with mess_array
-            if len(mess) < len(mess_array):
-                for i in range(len(mess_array)):
-                    try:
-                        # this works if mess[i] exists
-                        mess[i].objectname
-                    except IndexError:
-                        # it fails if it does not exists, so make a new one
-                        mess.append(croc.Pe.pefs(mess_array[i][0], mess_array[i][1], mess_array[i][2], mess_array[i][3]))    
-                        mess[-1].path = data_dir + mess[-1].path
-            
-                        
-            # pickle can confuse the order of measurements
-            # use the unique object names to find the correct one
-            for i in range(len(mess)):
-                if mess[i].objectname == mess_array[import_mess][0]:
-                    mess_i = i
-                
-            # construct the import range
-            import_range = range(import_from, import_to + 1)
-            
-            flag_change = False
-            
-            # import the data
-            for i in import_range:
-                print("Importing object: " + mess[mess_i].objectname + ", scan:", str(i))
-                result = mess[mess_i].add_data(scan = i, flag_construct_r = False, flag_calculate_noise = flag_calculate_noise)
-                
-                if result == True:  
-                    flag_change = True
-            
-            if flag_no_pickle == False:
-                if flag_change:
-                    print("Updating pickle...")
-                    croc.Resources.DataClasses.make_db(mess, pickle_name)
-                else:
-                    print("No need to update pickle...")
-            else:
-                print("flag_no_pickle == True")
+    if import_from == 0 or import_to == 0:
+        print("No need to import!")
+    else:
+        scan_array = [0]*len(mess_array)
+        scan_array[import_mess] = numpy.arange(import_from, import_to+1)
         
-        except IndexError:
-            # mess_i does not exist
-            print("ERROR (script_import.py): mess_i is outside of the range of mess_array")
-
-
-
-
-
-
-# def import_data(mess_date, import_mess, import_from, import_to, mess_array, data_dir = "", anal_dir = "", pickle_name = "", flag_calculate_noise = False, flag_no_pickle = False, flag_overwrite_pickle = False):
-#     IOM.import_data(mess_date, import_mess, import_from, import_to, mess_array, data_dir = data_dir, anal_dir = anal_dir, pickle_name = pickle_name, flag_calculate_noise = flag_calculate_noise, flag_no_pickle = flag_no_pickle, flag_overwrite_pickle = flag_overwrite_pickle)       
+        import_FS(mess_date, mess_array, scan_array, pickle_name = pickle_name, data_dir = data_dir, anal_dir = anal_dir, flag_ignore_pickle = flag_overwrite_pickle, flag_intermediate_saving = 50)
+    
+   
 
            
 def print_summary(object_array):
@@ -1099,6 +1010,10 @@ class pe_exp(pe):
         # scan the file
         try:
             for line in fileinput.input(filebase):
+            
+                if re.match("Start_time", line):
+                
+                    self.date = int(str(line[11:15]) + str(line[16:18]) + str(line[19:21]))
             
                 if re.match("Shots", line): 
                     self.n_shots = int((re.search(regex, line)).group())
