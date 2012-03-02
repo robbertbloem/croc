@@ -190,7 +190,7 @@ def make_contours_2d(data, zlimit = 0, contours = 21):
 
 
 
-def contourplot(data, x_axis, y_axis, x_range = [0, 0], y_range = [0, -1], zlimit = -1, contours = 12, filled = True, black_contour = True, x_label = "", y_label = "", title = "", diagonal_line = True, new_figure = True, invert_colors = False):
+def contourplot(data, x_axis, y_axis, x_range = [0, 0], y_range = [0, -1], zlimit = -1, contours = 12, filled = True, black_contour = True, x_label = "", y_label = "", title = "", diagonal_line = True, new_figure = True, invert_colors = False, flag_aspect_ratio = True):
 
     """
     croc.Plotting.contourplot
@@ -217,6 +217,7 @@ def contourplot(data, x_axis, y_axis, x_range = [0, 0], y_range = [0, -1], zlimi
     - diagonal_line (BOOL): plot a diagonal line
     - new_figure (BOOL): will make a new figure. To make subplots etc, set it to False
     - invert_colors (BOOL, False): will make the red blue and the other way around
+    - flag_aspect_ratio (BOOL, True): the aspect ratio will be corresponding to the range plotted
     
     """
     
@@ -237,7 +238,7 @@ def contourplot(data, x_axis, y_axis, x_range = [0, 0], y_range = [0, -1], zlimi
     
     if invert_colors:
         data = -data
-    
+
     # check if the lengths of the axes correspond to the shape of the data
     y, x = numpy.shape(data)
     try:
@@ -314,9 +315,14 @@ def contourplot(data, x_axis, y_axis, x_range = [0, 0], y_range = [0, -1], zlimi
             # this will make dashed lines for negative values
             plt.contour(x_axis, y_axis, data, V, colors = "k")            
 
+    if flag_aspect_ratio:
+        plt.axes().set_aspect("equal")
+
     # we only want to see a certain part of the spectrum   
     plt.xlim(x_min, x_max)
     plt.ylim(y_min, y_max)
+    
+
     
     # the diagonal line
     if diagonal_line:
