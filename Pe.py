@@ -134,7 +134,7 @@ def test_unique_object_id(mess_array, object_id = 0):
     for i in range(len(mess_array)):
         for j in range(i+1, len(mess_array)):
             if mess_array[i][object_id] == mess_array[j][object_id]:
-                print("ERROR (croc.Pe.import_mess_array): The objectnames have to be unique! This is not the case. Aborting.")
+                print("ERROR (croc.Pe.test_unique_object_id): The objectnames have to be unique! This is not the case. Aborting.")
                 return False 
     return True 
 
@@ -182,7 +182,7 @@ def import_FS(mess_date, mess_array, scan_array, pickle_name = "", data_dir = ""
         for i in range(len(mess_array)):
             scan_array[i] = numpy.arange(1,scan_array1d[i]+1)        
     elif len(scan_array) != len(mess_array):
-        print("ERROR (croc.Pe.import_test): the length of the mess_array and scan_array should be the same.")
+        print("ERROR (croc.Pe.import_FS): the length of the mess_array and scan_array should be the same.")
         return False
     
     if anal_dir == "":

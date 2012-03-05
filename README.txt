@@ -67,9 +67,25 @@ This is a subclass of croc.Pe.pe for experimental photon echo experiments. It sh
 
 This is a subclass of croc.Pe.pe_exp for fast scanning. It contains methods to import the data, reconstruct the fringes and bin the data. After the data is binned, the spectrum can be calculated. 
 
+3.2.2.1 Details
 
+The measurement produces 4 files: 2x rephasing, 2x non-rephasing. The function add_data() contains everything that is needed.
 
+One file at a time, they are imported. The two control-fringes at the end of the file are returned as "fringes", the data as the variable "m", which has the shape of n_channels x n_shots. It is large and has to be processed first.
 
+The function croc.Pe.pefs.reconstruct_counter will reproduce the fringe counting using self.x_channel and self.y_channel. Its output it "m_axis": the fringe for every shot, "counter": the last fringe and "correct_count": if beginning and end fringes are given (they are in "add_data") it will return whether the two counts are the same.
+
+If the count is correct, the data will be binned into "self.b". The count for every bin is recorded in "self.b_count". At the moment the shape of "b" is 4 x channels x (self.n_fringes + self.extra_fringes).
+- The 4 is for: rephasing diagram and pem (chopper) state low; rephasing and pem state high; non-rephasing and pem state low; non-rephasing and pem state high. If there are more chopper/pem states, this should be increased. The state of the PEM is read from "self.chopper_channel" in "m". (Note that the 4 here has nothing to do with the 4 files with measurements).
+- The variable "self.n_fringes" is determined from the meta file or the data. "self.extra_fringes" is to account for overshooting. 
+
+Finally "self.r" can be constructed. "r" is the time domain data (and will be Fourier Transformed to "self.s", the spectrum) and has the shape n_pixels x n_fringes. 
+- First it will divide the bins by their count. If a count is zero, the result is zero. The result is "temp" (shape: 4 x (self.n_fringes + self.extra_fringes) x self.n_channels)
+- Second it will select only the part we want: 4 x self.n_fringes x self.n_pixels. 
+- It will make self.r_axis[0] out of self.b_axis times the HeNe-wavelength.
+- It will calculate this:
+    self.r[diagram] = -log_10 { 1 + 2 * (temp[diagram][pem_state:high] - temp[diagram][pem_state:low]) / self.reference }
+- Note that construct_r can be run at any time. For large import-jobs it is usually better to run this function once at the end instead of hundreds of times during the importing. 
 
 
 
