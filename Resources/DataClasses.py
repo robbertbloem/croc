@@ -76,6 +76,7 @@ class mess_data(ClassTools):
         self.date = ""
         
         # organizational stuff
+        self.data_type_version = ""     # for different versions of data
         self.mess_type = ""             # "sim" or "exp" for 2dir
         self.dimensions = dimensions    # t1, t2, t3 etc. so 2D -> 3 dimensions
         self.measurements = measurements        # number of diagrams or measurements etc

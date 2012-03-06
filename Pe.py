@@ -1015,6 +1015,9 @@ class pe_exp(pe):
                 if re.match("Start_time", line):
                 
                     self.date = int(str(line[11:15]) + str(line[16:18]) + str(line[19:21]))
+                
+                if re.match("mess2Dheterodyne_meta_format", line): 
+                    self.data_type_version = str(line[-5:-2])               
             
                 if re.match("Shots", line): 
                     self.n_shots = int((re.search(regex, line)).group())
@@ -1210,7 +1213,11 @@ class pefs(pe_exp):
                 self.n_fringes = int(numpy.abs(fringes[1] - fringes[0]))
             
             # reconstruct the counter
-            m_axis, counter, correct_count = self.reconstruct_counter(m, fringes[0], fringes[1], flag_plot = False)
+            if self.data_type_version == "1.2":
+                m_axis, counter, correct_count = self.reconstruct_counter(m, fringes[0], fringes[1], flag_plot = False)
+            else:
+                print("ERROR (croc.Pe.pefs.add_data): unknown data type")
+                correct_count = False
             
             # check for consistency
             if correct_count == False:
