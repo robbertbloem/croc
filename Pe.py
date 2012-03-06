@@ -9,6 +9,7 @@ CHANGELOG
     RB 20091214 - first draft.
     RB 20110908 - combined some stuff together
     RB 20120227 - moved some functions to croc.Resources.PEFunctions
+    RB 20120302 - wrote new import method
 
 REMARKS
 - T3 is not imported. I didn't think about it too much, but I think that would need an extra dimension or so.
