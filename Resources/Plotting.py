@@ -56,22 +56,28 @@ def linear(data, axis, x_range = [0, 0], y_range = [0, 0], x_label = "", y_label
         y_min = y_range[0]
         y_max = y_range[1]
 
-    if new_figure:  
-        plt.figure()
+    try:
+        if new_figure:  
+            plt.figure()
+    
+        # the actual plot
+        plt.plot(axis, data)
+        
+        plt.xlim(x_min, x_max)
+        plt.ylim(y_min, y_max)
+        
+        plt.xlabel(x_label)
+        plt.ylabel(y_label)
+        
+        plt.title(title)
+        
+        plt.show()
 
-    # the actual plot
-    plt.plot(axis, data)
-    
-    plt.xlim(x_min, x_max)
-    plt.ylim(y_min, y_max)
-    
-    plt.xlabel(x_label)
-    plt.ylabel(y_label)
-    
-    plt.title(title)
-    
-    plt.show()
-
+    except:
+        if croc.Debug.FlagRunningOn == "server":
+            print("ERROR (croc.Resources.Plotting.linear): no plotting available on the server!")
+        else:
+            raise
 
 
 
@@ -300,47 +306,52 @@ def contourplot(data, x_axis, y_axis, x_range = [0, 0], y_range = [0, -1], zlimi
     print("Contours:")
     print(V)
     
-    # make the actual figure
-    if new_figure:
-        plt.figure()
-    if filled:
-                
-        plt.contourf(x_axis, y_axis, data, V, cmap = my_cmap)
-        if debug_flag:
-            plt.colorbar()
-    if black_contour:
+    try:
+        # make the actual figure
+        if new_figure:
+            plt.figure()
         if filled:
-            plt.contour(x_axis, y_axis, data, V, linewidths = 1, linestyles = "solid", colors = "k")
+                    
+            plt.contourf(x_axis, y_axis, data, V, cmap = my_cmap)
+            if debug_flag:
+                plt.colorbar()
+        if black_contour:
+            if filled:
+                plt.contour(x_axis, y_axis, data, V, linewidths = 1, linestyles = "solid", colors = "k")
+            else:
+                # this will make dashed lines for negative values
+                plt.contour(x_axis, y_axis, data, V, colors = "k")            
+    
+        if flag_aspect_ratio:
+            plt.axes().set_aspect("equal")
+    
+        # we only want to see a certain part of the spectrum   
+        plt.xlim(x_min, x_max)
+        plt.ylim(y_min, y_max)
+        
+    
+        
+        # the diagonal line
+        if diagonal_line:
+            plt.plot([0, 10000], [0, 10000], "k")
+        
+        # add some text
+        if x_label != "":
+            plt.xlabel(x_label)
+    
+        if y_label != "":
+            plt.ylabel(y_label)
+        
+        if title != "":
+            plt.title(title)    
+        
+        # show it!
+        plt.show()     
+    except:
+        if croc.Debug.FlagRunningOn == "server":
+            print("ERROR (croc.Resources.Plotting.contourplot): no plotting available on the server!")
         else:
-            # this will make dashed lines for negative values
-            plt.contour(x_axis, y_axis, data, V, colors = "k")            
-
-    if flag_aspect_ratio:
-        plt.axes().set_aspect("equal")
-
-    # we only want to see a certain part of the spectrum   
-    plt.xlim(x_min, x_max)
-    plt.ylim(y_min, y_max)
-    
-
-    
-    # the diagonal line
-    if diagonal_line:
-        plt.plot([0, 10000], [0, 10000], "k")
-    
-    # add some text
-    if x_label != "":
-        plt.xlabel(x_label)
-
-    if y_label != "":
-        plt.ylabel(y_label)
-    
-    if title != "":
-        plt.title(title)    
-    
-    # show it!
-    plt.show()     
-    
+            raise
     
  
     

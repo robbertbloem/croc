@@ -14,10 +14,12 @@ import matplotlib.pyplot as plt
 import Resources.Constants as C
 import Resources.Functions as F
 import Resources.GVD_Materials
+import croc.Debug
 
 reload(C)
 reload(F)
 reload(Resources.GVD_Materials)
+reload(croc.Debug)
 
 
 
@@ -119,6 +121,7 @@ def GVD(material, print_for_um = [], range_um = [1,10], material_path_mm = 0, pu
 
 if __name__ == "__main__": 
     GVD("caf2", range_um = [1,11], print_for_um = [2,5,8, 10.5, 12], pulse_length_fs = 0, material_path_mm = 2, flag_plot_n = False, flag_plot_gvd = False)
+
 
 
 
