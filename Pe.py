@@ -96,10 +96,8 @@ def import_pickle(mess_date, mess_array = [], pickle_name = "", flag_remove_obje
                     new_obj[i] = obj[j]
                     success_mess[i] = 1
                     success_obj[j] = 1
-                    print(new_obj[i].objectname)
             if success_mess[i] == 0:
                 new_obj[i] = croc.Pe.pefs(mess_array[i][0], mess_array[i][1], mess_array[i][2], mess_array[i][3])
-                print(new_obj[i].objectname)
         
         # gives a warning when mess_array is shorter
         if numpy.sum(success_obj) < len(obj): 
@@ -273,12 +271,22 @@ def import_FS(mess_date, mess_array, scan_array, pickle_name = "", data_dir = ""
 
 def rearrange_measurements(obj, mess_array, index):
     """
+    Use the numbers in column mess_array[index] to add or subtract measurements.
     
-    Prepare to add, subtract measurements
+    INPUT:
+    - obj (DataClasses.Pe object): the object with all the measurments
+    - mess_array (array): the array with all the measurements
+    - index (integer): the column where it is defined what should be done with the measurements.  
     
+    WORKING:
+
+
     """
-    
-    # first, find what the maximum number is
+
+    if len(mess_array) != len(obj):
+        print("ERROR (croc.Pe.rearrange_measurements): number of objects does not correspond to mess_array.")
+        return False, False, False    
+
     max_val = 0
     for i in range(len(mess_array)):
         if abs(mess_array[i][index]) > max_val:
@@ -774,8 +782,6 @@ class pe_combine(pe):
                 flag_b = -1
             except IndexError:
                 flag_b = -1
-        
-        print(flag_s, flag_r, flag_b)
 
         for i in range(len(class_plus)):
             if flag_s / len(class_plus) == 1:
@@ -839,8 +845,6 @@ class pe_combine(pe):
                 flag_b = -1
             except IndexError:
                 flag_b = -1
-        
-        print(flag_s, flag_r, flag_b)
         
         for i in range(len(class_min)):
             
