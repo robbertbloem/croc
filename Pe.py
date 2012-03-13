@@ -155,10 +155,19 @@ def import_FS(mess_date, mess_array, scan_array, pickle_name = "", data_dir = ""
     INPUT:
     - mess_date (int): the date of the measurement as yyyymmdd
     - mess_array (array): array with measurements. The following elements should be present, in this order: object_id as string, base_filename as string, population time as int, timestamp (hhmm) as int. Optional is n_scans, see scan_array input.
-    - scan_array (2d-array, 1d-array or int): scan_array determines which measurements will be imported. 
-        - 2d array: The most flexible version, you can indicate which scans - the numbers - you want to import. If scan_array = [[2,4,6],[1,3,5]] this means that from mess_array[0] scans 2, 4 and 6 will be imported and for mess_array[1] scans 1, 3, 5 will be imported. Usefull when you want to exclude specific scans.
-        - 1d array: For each object, you can indicate until which scan you want to import. For example, [2,4] will import scans 1 and 2 from mess_array[0] and 1, 2, 3, 4 from mess_array[1]. Usefull to import a whole set of scans. If a value is 0, it will not try to import anything.
-        - int: the number points to the column in mess_array, used to create (effectively) a situation similar to 1d-array.
+    - scan_array (integer or array): scan_array determines which measurements will be imported. 
+        - integer: the number points to the column in mess_array where the number of measurements are indicated. It will import all measurements.
+        - an array with, for every object in mess_array, an:
+            - integer: same as above, will import all measurements
+            - sub-array: will import the specific measurements
+        + examples:
+            mess_array = [
+                ['obj1', 'molecule', 300, 1000, 2],
+                ['obj2', 'molecule', 300, 1100, 3],
+            ]
+            scan_array = 4: will look at 5th column and import scans 1 and 2 for obj1 and scans 1, 2, 3 for obj2.
+            scan_array = [2, [2,4]]: will import scans 1 and 2 for obj1 and 2 and 4 for obj2.
+    
     - pickle_name (string, ""): If given, it will use this name for the pickle. If not given (default), it will use a default name: "yyyymmdd_fs.pickle"
     - data_dir (string, ""): If given it will use this for the path to the data. If not given, it will assume you are currently in /analysis/yyyymmdd/ and will look for the data in /data/yyyymmdd/.
     - anal_dir (string, ""): It will read/write the pickle here. If not given, it will read/write in the current directory.
@@ -175,16 +184,24 @@ def import_FS(mess_date, mess_array, scan_array, pickle_name = "", data_dir = ""
     if type(scan_array) == int:
         scan_int = scan_array
         scan_array = [0]*len(mess_array)
-        for i in range(len(mess_array)):
-            scan_array[i] = numpy.arange(1,mess_array[i][scan_int]+1) 
-    elif len(numpy.shape(scan_array)) == 1:
-        scan_array1d = scan_array
-        scan_array = [0]*len(mess_array)
-        for i in range(len(mess_array)):
-            scan_array[i] = numpy.arange(1,scan_array1d[i]+1)        
-    elif len(scan_array) != len(mess_array):
-        print("ERROR (croc.Pe.import_FS): the length of the mess_array and scan_array should be the same.")
-        return False
+        if scan_array == 0:
+            print("croc.Pe.import_FS: Nothing to import.")
+            return True
+        else:
+            for i in range(len(mess_array)):
+                scan_array[i] = numpy.arange(1,mess_array[i][scan_int]+1) 
+    else:
+        if len(scan_array) != len(mess_array):
+            print("ERROR (croc.Pe.import_FS): the length of the mess_array and scan_array should be the same.")
+            return False  
+        else:
+            for i in range(len(scan_array)):
+                if type(scan_array[i]) == int:
+                    if scan_array[i] == 0:
+                        scan_array[i] = [0]
+                    else:
+                        temp = scan_array[i]    
+                        scan_array[i] = numpy.arange(1,temp+1) 
     
     if anal_dir == "":
         anal_dir = os.getcwd() + "/"
@@ -226,18 +243,24 @@ def import_FS(mess_date, mess_array, scan_array, pickle_name = "", data_dir = ""
     counter = 0
     for i in range(len(mess_array)):
         for j in range(len(scan_array[i])):
-            result = obj[i].add_data(scan = scan_array[i][j], flag_construct_r = False)
-        
-            if result == True:  
-                flag_change = True
-                counter += 1
             
-            if counter > flag_intermediate_saving and flag_change == True:
-                print("Intermediate saving of pickle!")
-                print(obj[i].base_filename, "scan:", scan_array[i][j])
-                croc.Resources.DataClasses.make_db(obj, pickle_name)
-                counter = 0
-                flag_change = False
+            if scan_array[i][j] == 0:
+                print("Nothing to import for " + obj[i].objectname)
+            else:
+        
+                result = obj[i].add_data(scan = scan_array[i][j], flag_construct_r = False)
+            
+                if result == True:  
+                    flag_change = True
+                    counter += 1
+                
+                if counter > flag_intermediate_saving and flag_change == True:
+                    print("Intermediate saving of pickle!")
+                    print(obj[i].base_filename, "scan:", scan_array[i][j])
+                    croc.Resources.DataClasses.make_db(obj, pickle_name)
+                    counter = 0
+                    flag_change = False
+                    
         if type(obj[i].b_count[0]) != int:
             obj[i].construct_r()
 
@@ -247,7 +270,67 @@ def import_FS(mess_date, mess_array, scan_array, pickle_name = "", data_dir = ""
     else: 
         print("No changes to be pickled.")
             
-        
+
+def rearrange_measurements(obj, mess_array, index):
+    """
+    
+    Prepare to add, subtract measurements
+    
+    """
+    
+    # first, find what the maximum number is
+    max_val = 0
+    for i in range(len(mess_array)):
+        if abs(mess_array[i][index]) > max_val:
+            max_val = abs(mess_array[i][index])
+    
+    array = range(1,max_val+1)
+    new_array = []
+    for i in range(len(array)):
+        flag_exists = False
+        for j in range(len(mess_array)):
+            if mess_array[j][index] == array[i] or mess_array[j][index] == -array[i]:
+                flag_exists = True
+        if flag_exists:
+            new_array.append(i+1)
+            
+    plus_array = [0] * len(new_array)
+    min_array = [0] * len(new_array)
+    names = [""] * len(new_array)
+
+    for i in range(len(new_array)):
+        plus_array[i] = []
+        min_array[i] = []
+    
+    for i in range(len(obj)):
+        for j in range(len(new_array)):
+            j_val = new_array[j]
+            if mess_array[i][4] == -j_val:
+                min_array[j].append(obj[i])
+            elif mess_array[i][4] == j_val:  
+                plus_array[j].append(obj[i])
+            else:
+                pass     
+    
+    for i in range(len(new_array)):
+        if plus_array[i] != [] and min_array[i] != []:
+            names[i] = plus_array[i][0].objectname + " - " + min_array[i][0].objectname
+        elif plus_array[i] != [] and min_array[i] == []:
+            names[i] = plus_array[i][0].objectname
+        elif plus_array[i] == [] and min_array[i] != []:
+            names[i] = "-(" +  min_array[i][0].objectname + ")"
+    
+    return plus_array, min_array, names
+    
+    
+
+     
+
+
+
+
+
+       
     
     
 def import_mess_array(mess_date, mess_array, n_scans, pickle_name, data_dir = "", anal_dir = ""):
@@ -689,6 +772,8 @@ class pe_combine(pe):
                     slag_b = -1
             except AttributeError:
                 flag_b = -1
+            except IndexError:
+                flag_b = -1
         
         print(flag_s, flag_r, flag_b)
 
@@ -751,6 +836,8 @@ class pe_combine(pe):
                 else:
                     slag_b = -1
             except AttributeError:
+                flag_b = -1
+            except IndexError:
                 flag_b = -1
         
         print(flag_s, flag_r, flag_b)
