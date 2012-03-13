@@ -277,8 +277,11 @@ def rearrange_measurements(obj, mess_array, index):
     - obj (DataClasses.Pe object): the object with all the measurments
     - mess_array (array): the array with all the measurements
     - index (integer): the column where it is defined what should be done with the measurements.  
-    
-    WORKING:
+
+    USAGE:
+    In the column mess_array[index] there is a number (integer). If it is positive, it will be added, if negative, it will be subtracted, if it is zero, it will be ignored.
+    The integers also group the measurements. The measurement at -2 will be subtracted from +2. 
+    You can use arbitrary numbers. They don't have to be consecutive.
 
 
     """
