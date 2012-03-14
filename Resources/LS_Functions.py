@@ -11,8 +11,10 @@ import Equations as E
 reload(M)
 reload(E)
 
+global hene_fringe 
+hene_fringe = 632/299.792458 #fs
 
-def position(shots, speed_profile = "uniform", variables = [2, 0.05]):
+def position(n_shots, speed_profile = "uniform", variables = []):
     
     """
     calculates the time and the bin
@@ -26,42 +28,45 @@ def position(shots, speed_profile = "uniform", variables = [2, 0.05]):
     
     """
     
-
+    t_array = numpy.zeros(n_shots)
+    x_array = numpy.zeros(n_shots)
     
     if speed_profile == "sinsquare":
-        length = len(shots)
+        if variables == []:
+            variables = [4, 0.05]
         speed_max = variables[0] * (1-variables[1]*numpy.random.rand(1)) 
-        speed = speed_max * numpy.sin(numpy.pi*numpy.arange(length)/length)**2
-        shots[0][1] = 0
-        for i in range(length-1):
-            shots[i+1][0] = shots[i][0] + speed[i] 
-            shots[i+1][1] = numpy.floor((shots[i+1][0]+1.055)/hene_fringe)   
+        speed = speed_max * numpy.sin(numpy.pi*numpy.arange(n_shots)/n_shots)**2
+        for i in range(n_shots-1):
+            t_array[i+1] = t_array[i] + speed[i] 
+            x_array[i+1] = numpy.floor((t_array[i+1]+1.055)/hene_fringe)   
 
     
     elif speed_profile == "stepped":
-        
+    
+        if variables == []:
+            variables = [28, 12, 100]        
         n_steps = variables[0]
         stepsize = variables[1]
-        n_shots = variables[2]
+        n_shots_per_step = variables[2]
         
-        if len(shots) != n_steps * n_shots:
-            print("ERROR: position (speed_profile): array does not have the correct size")
-            return 0
+        t_array = numpy.zeros(n_shots_per_step * n_steps)
+        x_array = numpy.zeros(n_shots_per_step * n_steps)
         
         bin = 0
         for i in range(n_steps):
-            for j in range(n_shots):
-                shots[i*n_shots+j, 1] = bin
-                shots[i*n_shots+j, 0] = bin * hene_fringe
+            for j in range(n_shots_per_step):
+                t_array[i*n_shots_per_step+j] = bin
+                x_array[i*n_shots_per_step+j] = bin * hene_fringe
             bin = bin + variables[1]   
     
     elif speed_profile == "mostly_uniform":
-    
-        length = len(shots)
+        if variables == []:
+            variables = [1, 0.05, 0.1, 0.1]
+
         speed_max = variables[0] * (1-variables[1]*numpy.random.rand(1))
         acc = variables[2] * (1-variables[1]*numpy.random.rand(1))
         dec = variables[2] * (1-variables[1]*numpy.random.rand(1))
-        speed = numpy.ones(length) * speed_max
+        speed = numpy.ones(n_shots) * speed_max
         
         for i in range(speed_max//acc+1):
             speed[i] = 0 + acc*i
@@ -69,28 +74,31 @@ def position(shots, speed_profile = "uniform", variables = [2, 0.05]):
         for i in range(speed_max//dec+1):
             speed[-1-i] = 0 + dec*i
         
-        for i in range(length-1):
-            shots[i+1][0] = shots[i][0] + speed[i] 
-            shots[i+1][1] = numpy.floor((shots[i+1][0]+1.055)/hene_fringe)         
+        for i in range(n_shots-1):
+            t_array[i+1] = t_array[i] + speed[i] 
+            x_array[i+1] = numpy.floor((t_array[i+1]+1.055)/hene_fringe)         
            
     elif speed_profile == "uniform":   
-        
+        if variables == []:
+            variables = [2, 0.05]       
         speed = variables[0] * (1-variables[1]*numpy.random.rand(1))
-        for i in range(len(shots)):
-            shots[i][0] = i * speed
-            shots[i][1] = numpy.floor((shots[i][0]+1.055)/hene_fringe)    
+        for i in range(n_shots):
+            t_array[i] = i * speed
+            x_array[i] = numpy.floor((t_array[i]+1.055)/hene_fringe)    
     
     else:
         print("Speed profile not recognized, using uniform")
+        if variables == []:
+            variables = [2, 0.05] 
         speed = variables[0] * (1-variables[1]*numpy.random.rand(1))
-        for i in range(len(shots)):
-            shots[i][0] = i * speed
-            shots[i][1] = numpy.floor((shots[i][0]+hene_fringe/2)/hene_fringe) 
+        for i in range(n_shots):
+            t_array[i] = i * speed
+            x_array[i] = numpy.floor((t_array[i]+hene_fringe/2)/hene_fringe) 
         
-    return shots
+    return t_array, x_array
 
 
-def laser_intensity(n_shots, k, I0 = 0):
+def laser_intensity(n_shots, k, I0 = 10):
     """
     Calculates the noise per shot
     
@@ -107,72 +115,167 @@ def laser_intensity(n_shots, k, I0 = 0):
     I = numpy.zeros(n_shots)
     
     sigma = 2/numpy.sqrt(2*k)
-    I[0] = I0 + 10 * numpy.random.randn(1) * sigma * k
+    I[0] = 10 * numpy.random.randn(1) * sigma * k
     for i in range(n_shots-1):
         I[i+1] = I[i] * (1-k) + numpy.random.randn(1) * sigma * k
     
-    return I
+    return I + I0
 
-def laser_intensity_2(n_shots, a, t1, b, t2, I0 = 0):
+
+
+def signal(time_array, w_cm, tau_fs, amplitude):
     """
-    Calculates the noise per shot
-    
-    CHANGELOG:
-    201201xx/RB: started function as separate script
-    20120224/RB: integrated it into croc
-    
-    INPUT:
-    - k: 1/correlation time, in shots
-    - I0: start intensity (a bit of randomness is added)
-    
+    Where t is an array with the time steps that need to be calculated.
     """
+    array = numpy.zeros(len(time_array))
     
-    I = numpy.zeros(n_shots)
+    w_fs = 1e13 / (w_cm * 3e8)
     
-    k1 = 1/t1
-    k2 = 1/t2
+    for i in range(len(time_array)):
+        array[i] = amplitude * numpy.cos(2*numpy.pi * time_array[i] / w_fs) * numpy.exp(-time_array[i]/tau_fs)
+        
+    return array
+
+
+def add_noise_to_signal(signal, laser_intensity):
+    return signal * laser_intensity
+
+
+
+
+def add_phase_modulation(signal_array, phase_mod_profile = "none"):
     
-    sig1 = 2/numpy.sqrt(2*k1)
-    sig2 = 2/numpy.sqrt(2*k2)
-    I[0] = I0 + 10 * a * numpy.random.randn(1) * sig1 * k1 + 10 * b * numpy.random.randn(1) * sig2 * k2 
-    for i in range(n_shots-1):
-        I[i+1] = I[i] * (1 - a*k1 - b*k2) + numpy.random.randn(1) * sig1 * k1 + numpy.random.randn(1) * sig2 * k2 
     
-    return I
+    if phase_mod_profile == "chopper":
+        temp = [0,1]
+  
+    elif phase_mod_profile == "pem":
+        temp = [-1,1]
+    
+    elif phase_mod_profile == "zero":
+        temp = [0]
+    
+    else:
+        print("phase_mod_profile not recognized, using no modulation")
+        temp = [1]
+
+    if numpy.random.rand(1) < 0.5:
+        if len(temp) > 1:
+            temp = [temp[1], temp[0]]
+
+    temp = numpy.array(temp)
+    
+    chopper_array = numpy.resize(temp, len(signal_array))      
+
+    modulated_signal_array = chopper_array * signal_array
+
+    return modulated_signal_array, chopper_array
+
+
+
+def binning(signal_array, bin_array, chopper_array, speed_profile = "uniform", speed_variables = []):
+    
+    if speed_profile == "stepped":
+        if speed_variables == []:
+            speed_variables = [28, 12, 100] 
+        n_bins = speed_variables[0]
+        stepsize_bins = speed_variables[1]
+    else:
+        n_bins = bin_array[-1] + 1
+        stepsize_bins = 1
+    
+    states = numpy.unique(chopper_array)
+    n_states = len(states) 
+    
+    b = numpy.reshape(numpy.zeros(n_states*n_bins), (n_bins, n_states))
+    b_count = numpy.reshape(numpy.zeros(n_states*n_bins), (n_bins, n_states))
+    b_axis = numpy.arange(0, stepsize_bins * n_bins, stepsize_bins)
+    
+    for i in range(len(signal_array)):
+        b[bin_array[i], numpy.where(states == chopper_array[i])] += signal_array[i]
+        b_count[bin_array[i], numpy.where(states == chopper_array[i])] += 1
+    
+    return b, b_count, b_axis
+    
+
+def average_runs(b, b_count, b_axis, n_runs):
+    
+    max_b_axis = 0
+    
+    for i in range(n_runs):
+        if b_axis[i][-1] > max_b_axis:
+            max_b_axis = b_axis[i][-1]
+
+    n_bins, n_states = numpy.shape(b[0])
+    
+    
+    
+        
+          
+    
+    
+
 
 
 if __name__ == "__main__": 
     
-    n_shots = 5000
-    k = 1/500
-    I0 = 1
+    n_shots = 2500
+    k = 1/100
+    speed_profile = "sinsquare" # "uniform" # "mostly_uniform"  # "stepped" # 
+    variables = [2, 0.05]
     
-    a = 0.98
-    t1 = 1000
-    b = 0.02
-    t2 = 5
+    n_runs = 5
     
-    i = laser_intensity_2(n_shots, a, t1, b, t2, I0)
+    b = [0]*n_runs
+    b_count = [0]*n_runs
+    b_axis = [0]*n_runs
     
-    c = M.correlation_fft(i)
+    for i in range(n_runs):
+        out_t, out_b = position(n_shots, speed_profile)
+        out_I = laser_intensity(n_shots, k)
+        
+        out_s = signal(out_t, 1600, 900, 1) + signal(out_t, 1700, 1000, 0.3)
+        
+        out_sn = add_noise_to_signal(out_s, out_I)
+        
+        out_snm, out_c = add_phase_modulation(out_sn, phase_mod_profile = "pem")
+        
+        b[i], b_count[i], b_axis[i] = binning(out_snm, out_b, out_c, speed_profile)
+        
+        
     
-    n_cut = 500
-    c = c[:n_cut]
+    out_r = average_runs(b, b_count, b_axis, n_runs, 200)
     
-    x = numpy.arange(n_cut)
-    A = [1, 1000, 0.1, 5]
-    A_final = M.fit(x, c, E.double_exp, A)
+
     
-    print(A_final)
-
-    plt.figure()
-    plt.plot(i)
-    plt.show()
+#    plt.figure()
+#    plt.plot(out_b[0])
+#    plt.plot(signal_with_noise)
+#    plt.plot(10*signal)
+#    plt.plot(out_x)
+#    plt.show()
+        
     
-    plt.figure()
-    plt.plot(c)
-    plt.plot(E.double_exp(A_final, x))
-    plt.show()
+    
+    
+#    corr_I = M.correlation_fft(out_laser_intensity)
+#    
+#    A_start = [0.9,50,0.1,1000]
+#    
+#    t = numpy.arange(n_shots)
+#    
+#    t_short = t[:500]
+#    corr_I_short = corr_I[:500]
+#    
+#    A_out = M.fit(t_short, corr_I_short, E.double_exp, A_start)
+#    
+#    print(A_out)
+#    
+#    
+#    plt.figure()
+#    plt.plot(t, corr_I)
+#    plt.plot(t_short, E.double_exp(A_out, t_short))
+#    plt.show()
 
 
 
@@ -185,8 +288,55 @@ if __name__ == "__main__":
 
 
 
-
-
+#def laser_intensity(n_shots, k, I0 = 0):
+#    """
+#    Calculates the noise per shot
+#    
+#    CHANGELOG:
+#    201201xx/RB: started function as separate script
+#    20120224/RB: integrated it into croc
+#    
+#    INPUT:
+#    - k: 1/correlation time, in shots
+#    - I0: start intensity (a bit of randomness is added)
+#    
+#    """
+#    
+#    I = numpy.zeros(n_shots)
+#    
+#    sigma = 2/numpy.sqrt(2*k)
+#    I[0] = I0 + 10 * numpy.random.randn(1) * sigma * k
+#    for i in range(n_shots-1):
+#        I[i+1] = I[i] * (1-k) + numpy.random.randn(1) * sigma * k
+#    
+#    return I
+#
+#def laser_intensity_2(n_shots, a, t1, b, t2, I0 = 0):
+#    """
+#    Calculates the noise per shot
+#    
+#    CHANGELOG:
+#    201201xx/RB: started function as separate script
+#    20120224/RB: integrated it into croc
+#    
+#    INPUT:
+#    - k: 1/correlation time, in shots
+#    - I0: start intensity (a bit of randomness is added)
+#    
+#    """
+#    
+#    I = numpy.zeros(n_shots)
+#    
+#    k1 = 1/t1
+#    k2 = 1/t2
+#    
+#    sig1 = 2/numpy.sqrt(2*k1)
+#    sig2 = 2/numpy.sqrt(2*k2)
+#    I[0] = I0 + 10 * a * numpy.random.randn(1) * sig1 * k1 + 10 * b * numpy.random.randn(1) * sig2 * k2 
+#    for i in range(n_shots-1):
+#        I[i+1] = I[i] * (1 - a*k1 - b*k2) + numpy.random.randn(1) * sig1 * k1 + numpy.random.randn(1) * sig2 * k2 
+#    
+#    return I
 
 
 

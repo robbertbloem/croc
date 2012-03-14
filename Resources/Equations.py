@@ -39,3 +39,6 @@ def Sellmeier(A, t):
 
 def double_exp(A,t):
     return A[0]*numpy.exp(-t/A[1]) + A[2]*numpy.exp(-t/A[3])
+    
+def rb_exp(A,t):
+    return A[0]*numpy.exp(-t/A[1]) 
