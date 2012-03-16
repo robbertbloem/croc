@@ -10,7 +10,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 import croc
-#import croc.DataClasses
+#import croc.Resources.DataClasses
 import croc.Ftir
 import croc.Pe
 import croc.Resources.Mathematics as M
@@ -23,6 +23,7 @@ import croc.Debug
 reload(croc.Debug)
 
 if croc.Debug.reload_flag:
+    print("reloading")
     reload(croc)
     reload(P)
     reload(croc.Ftir)

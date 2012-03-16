@@ -16,7 +16,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 import croc
-from croc.DataClasses import mess_data
+from croc.Resources.DataClasses import mess_data
 import croc.Resources.Plotting as P
 import croc.Debug
 
@@ -28,7 +28,7 @@ if croc.Debug.reload_flag:
 
 
 
-class ftir(croc.DataClasses.mess_data):
+class ftir(croc.Resources.DataClasses.mess_data):
     
     
     def __init__(self, object_name, abs_diff = False):

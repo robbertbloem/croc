@@ -310,6 +310,7 @@ def contourplot(data, x_axis, y_axis, x_range = [0, 0], y_range = [0, -1], zlimi
         # make the actual figure
         if new_figure:
             plt.figure()
+    
         if filled:
                     
             plt.contourf(x_axis, y_axis, data, V, cmap = my_cmap)
