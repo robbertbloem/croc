@@ -1119,8 +1119,11 @@ class pe_exp(pe):
                 if re.match("Fringes", line): 
                     self.n_fringes = int((re.search(regex, line)).group())            
                 
-                if re.match("Phase", line):
-                    self.phase_degrees = float((re.search(regex, line)).group())
+                try:
+                    if re.match("Phase", line):
+                        self.phase_degrees = float((re.search(regex, line)).group())
+                except AttributeError:
+                    print("ERROR (croc.Pe.import_meta): no or invalid phase")
                 
                 if re.match("Comments", line):
                     self.comment = line[9:]
@@ -1276,7 +1279,7 @@ class pefs(pe_exp):
             self.import_reference()
             # set phase, shots, 
             self.import_meta()
-    
+
         # see if we already imported this file
         if self.imported_scans.count(scan) != 0:
             if flag_import_override == False: 
@@ -1298,7 +1301,12 @@ class pefs(pe_exp):
             
             # import the data
             try:
-                [m, fringes] = self.import_raw_data(filename[k])
+                if self.data_type_version == "1.2":
+                    [m, fringes] = self.import_raw_data(filename[k])
+                elif self.data_type_version == "1.3":
+                    [m, c, fringes] = self.import_raw_data(filename[k], flag_counter = True)
+                else:
+                    return False
             except IOError:
                 return False
                                     
@@ -1309,6 +1317,31 @@ class pefs(pe_exp):
             # reconstruct the counter
             if self.data_type_version == "1.2":
                 m_axis, counter, correct_count = self.reconstruct_counter(m, fringes[0], fringes[1], flag_plot = False)
+                
+            elif self.data_type_version == "1.3":   
+                m_axis, counter2, correct_count2 = self.reconstruct_counter(m, fringes[0], fringes[1], flag_plot = False)
+              
+                c = c + fringes[0]
+                
+                if fringes[1] == c[-2]:
+                    print("yay")
+                else:  
+                    print("boo")
+                print("end", c[-2], fringes[1], m_axis[-1])
+                print("start", c[0], fringes[0], m_axis[0])
+                    
+                
+                
+                difference = c - m_axis
+                
+                if k == 0:
+                    plt.plot(c)
+                    plt.plot(m_axis)
+                
+                
+
+                correct_count = False
+                
             else:
                 print("ERROR (croc.Pe.pefs.add_data): unknown data type")
                 correct_count = False
@@ -1529,11 +1562,11 @@ class pefs(pe_exp):
         """ 
         PEF.angle_distribution(m = m, x_channel = self.x_channel, y_channel = y_channel, m_axis = m_axis, k = k, skip_first = skip_first, skip_last = skip_last, flag_normalize_circle = flag_normalize_circle, flag_scatter_plot = flag_scatter_plot, new_figure = new_figure)
 
-    def import_raw_data(self, path_and_filename):
+    def import_raw_data(self, path_and_filename, flag_counter = False):
         """
         See croc.Resources.IOMethods.import_data_FS for instructions. This function is for legacy purposes.
-        """
-        return IOM.import_data_FS(path_and_filename, n_shots = self.n_shots, n_channels = self.n_channels)
+        """        
+        return IOM.import_data_FS(path_and_filename, n_shots = self.n_shots, n_channels = self.n_channels, flag_counter = flag_counter)
 
     def bin_info(self):   
         """

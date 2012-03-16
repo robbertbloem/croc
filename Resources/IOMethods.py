@@ -15,7 +15,7 @@ import croc
 #import croc.Pe
 from croc.Resources.DataClasses import mess_data
 
-def import_data_FS(path_and_filename, n_shots = 30000, n_channels = 37):
+def import_data_FS(path_and_filename, n_shots = 30000, n_channels = 37, flag_counter = False):
     """
     This method is a derivative of croc.Pe.PeFS.import_raw_data, but without the reliance on the class structure.
     
@@ -32,7 +32,7 @@ def import_data_FS(path_and_filename, n_shots = 30000, n_channels = 37):
     - 201110xx RB: wrote function
     - 201202xx RB: rewrote the function for wider purpose, moved it to IOMethods
     
-    """
+    """    
     try:
         data = numpy.fromfile(path_and_filename)
         
@@ -43,12 +43,19 @@ def import_data_FS(path_and_filename, n_shots = 30000, n_channels = 37):
         # construct m
         m = numpy.zeros((n_channels, n_shots), dtype = "cfloat")
         
+        if flag_counter:
+            c = data[-n_shots:]
+            data = data[:-n_shots]
+        
         # order the data in a 2d array
         for i in range(n_shots):
             for j in range(n_channels):
                 m[j, i] = data[j + i * n_channels] 
-        
-        return m, fringes
+                
+        if flag_counter:
+            return m, c, fringes
+        else:
+            return m, fringes
     except IOError:
         print("ERROR (croc.Resources.IOMethods.import_data_FS): Unable to import data from file " + path_and_filename)
         raise
