@@ -323,7 +323,8 @@ def contourplot(data, x_axis, y_axis, x_range = [0, 0], y_range = [0, -1], zlimi
                 # this will make dashed lines for negative values
                 plt.contour(x_axis, y_axis, data, V, colors = "k")            
     
-        if flag_aspect_ratio:
+        if flag_aspect_ratio and new_figure:
+            # setting the aspect ration will break the subplots
             plt.axes().set_aspect("equal")
     
         # we only want to see a certain part of the spectrum   

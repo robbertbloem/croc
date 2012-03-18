@@ -35,6 +35,24 @@ if croc.Debug.reload_flag:
 #    reload(croc.Plotting)
 
 
+def SubPlotTest():
+    
+    print("=== TEST ===\nTest of subplots\n")
+    
+    mess = [0]
+    mess[0] = croc.Pe.pe_exp("PE1", "AHA", 300, undersampling = 3, time_stamp = 1337)
+    
+    mess[0].path = os.path.join(os.path.dirname(__file__), "TestData/AHA_1337_T300/")
+    mess[0].import_data()  
+    mess[0].absorptive()
+    plt.figure()
+    for i in range(3):
+        plt.subplot(1,3,i+1)
+        mess[0].plot(pixel = -1, new_figure = False)
+    plt.show()
+    print(mess[0])
+
+
 
 
 def PE1():
