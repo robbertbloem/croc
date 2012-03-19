@@ -1319,28 +1319,16 @@ class pefs(pe_exp):
                 m_axis, counter, correct_count = self.reconstruct_counter(m, fringes[0], fringes[1], flag_plot = False)
                 
             elif self.data_type_version == "1.3":   
-                m_axis, counter2, correct_count2 = self.reconstruct_counter(m, fringes[0], fringes[1], flag_plot = False)
-              
-                c = c + fringes[0]
-                
-                if fringes[1] == c[-2]:
-                    print("yay")
-                else:  
-                    print("boo")
-                print("end", c[-2], fringes[1], m_axis[-1])
-                print("start", c[0], fringes[0], m_axis[0])
-                    
-                
-                
-                difference = c - m_axis
-                
-                if k == 0:
-                    plt.plot(c)
-                    plt.plot(m_axis)
-                
-                
 
-                correct_count = False
+                # very ugly correction 
+                c[-1] = c[-2]
+
+                m_axis = c + fringes[0]
+
+                if m_axis[-1] == fringes[1]:
+                    correct_count = True
+                else:
+                    correct_count = False
                 
             else:
                 print("ERROR (croc.Pe.pefs.add_data): unknown data type")
