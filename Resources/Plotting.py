@@ -336,17 +336,18 @@ def contourplot(data, x_axis, y_axis, x_range = [0, 0], y_range = [0, -1], zlimi
         plt.ylim(y_min, y_max)
         
         # add some text
-        if x_label != "":
+        if x_label != "" and x_label != "no_label":
             plt.xlabel(x_label)
     
-        if y_label != "":
+        if y_label != "" and y_label != "no_label":
             plt.ylabel(y_label)
         
         if title != "":
             plt.title(title)    
         
         # show it!
-        plt.show()     
+        if new_figure:
+            plt.show()     
     except:
         if croc.Debug.FlagRunningOn == "server":
             print("ERROR (croc.Resources.Plotting.contourplot): no plotting available on the server!")

@@ -586,7 +586,7 @@ class pe(croc.Resources.DataClasses.mess_data):
             return 0
         
         if pixel < 0:
-        
+            
             if flag_no_units:
                 x_axis = numpy.arange(len(self.s_axis[2]))
                 y_axis = numpy.arange(len(self.s_axis[0]))
