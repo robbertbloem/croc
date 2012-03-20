@@ -326,16 +326,14 @@ def contourplot(data, x_axis, y_axis, x_range = [0, 0], y_range = [0, -1], zlimi
         if flag_aspect_ratio and new_figure:
             # setting the aspect ration will break the subplots
             plt.axes().set_aspect("equal")
+
+        # the diagonal line
+        if diagonal_line:
+            plt.plot([0, 10000], [0, 10000], "k")
     
         # we only want to see a certain part of the spectrum   
         plt.xlim(x_min, x_max)
         plt.ylim(y_min, y_max)
-        
-    
-        
-        # the diagonal line
-        if diagonal_line:
-            plt.plot([0, 10000], [0, 10000], "k")
         
         # add some text
         if x_label != "":
