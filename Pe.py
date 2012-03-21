@@ -25,6 +25,7 @@ import fileinput
 import re
 import os.path
 import time
+import inspect
 
 import numpy
 import matplotlib 
@@ -40,11 +41,11 @@ import croc.Resources.Plotting as P
 import croc.Resources.Constants as C
 import croc.Resources.PEFunctions as PEF
 import croc.Resources.IOMethods as IOM
-import croc.Debug
+import croc.Debug as D
 
-reload(croc.Debug)
+reload(D)
 
-if croc.Debug.reload_flag:
+if D.reload_flag:
     reload(croc)
     reload(croc.Resources.DataClasses)
     reload(M)
@@ -58,6 +59,10 @@ if croc.Debug.reload_flag:
 debug_flag = croc.Debug.debug_flag
 
 ### METHODS TO WORK WITH PICKLES ###
+def test():
+    D.printError("test", inspect.stack()[0][3])
+    D.printWarning("test")
+    print(inspect.stack()[0][3])
 
 def make_pickle_name(base_filename, pop_time, time_stamp, path = ""):
     return path + base_filename + "_" + str(time_stamp) + "_T" + str(pop_time) + ".pickle"
@@ -72,12 +77,11 @@ def import_pickle(mess_date, mess_array = [], pickle_name = "", flag_remove_obje
     """
     This functions checks if a pickle file exists, it opens it and puts the objects in the pickle in the order of mess_array
     """
-
     if pickle_name == "":
         pickle_name = str(mess_date) + "_fs.pickle"
     
     if check_pickle_exists(pickle_name) == False:  
-        print("ERROR (croc.Pe.import_pickle): the pickle does not exist!")
+        D.printError("the pickle does not exist!", inspect.stack()[0][1] + ":" + inspect.stack()[0][3])
         return False
         
     obj = croc.Resources.DataClasses.import_db(pickle_name)
@@ -101,7 +105,7 @@ def import_pickle(mess_date, mess_array = [], pickle_name = "", flag_remove_obje
         
         # gives a warning when mess_array is shorter
         if numpy.sum(success_obj) < len(obj): 
-            print("WARNING (croc.Pe.import_pickle): Object is missing in mess_array. It is not deleted from the HD.")
+            D.printWarning("Object is missing in mess_array. It is not deleted from the HD.", inspect.stack()[0][1] + ":" + inspect.stack()[0][3])
         
     return new_obj
 
@@ -133,7 +137,7 @@ def test_unique_object_id(mess_array, object_id = 0):
     for i in range(len(mess_array)):
         for j in range(i+1, len(mess_array)):
             if mess_array[i][object_id] == mess_array[j][object_id]:
-                print("ERROR (croc.Pe.test_unique_object_id): The objectnames have to be unique! This is not the case. Aborting.")
+                D.printError("The objectnames have to be unique! This is not the case. Aborting.", inspect.stack()[0][1] + ":" + inspect.stack()[0][3])
                 return False 
     return True 
 
@@ -291,17 +295,26 @@ def rearrange_measurements(obj, mess_array, index):
         return False, False, False    
 
     max_val = 0
-    for i in range(len(mess_array)):
-        if abs(mess_array[i][index]) > max_val:
-            max_val = abs(mess_array[i][index])
+    if type(index) == int:
+        for i in range(len(mess_array)):
+            if abs(mess_array[i][index]) > max_val:
+                max_val = abs(mess_array[i][index])
+    elif type(index) == list:
+        for i in range(len(index)):
+            if abs(index[i]) > max_val:
+                max_val = abs(index[i])
     
     array = range(1,max_val+1)
     new_array = []
     for i in range(len(array)):
         flag_exists = False
         for j in range(len(mess_array)):
-            if mess_array[j][index] == array[i] or mess_array[j][index] == -array[i]:
-                flag_exists = True
+            if type(index) == int:
+                if mess_array[j][index] == array[i] or mess_array[j][index] == -array[i]:
+                    flag_exists = True
+            elif type(index) == list:
+                if index[j] == array[i] or index[j] == -array[i]:
+                    flag_exists = True
         if flag_exists:
             new_array.append(i+1)
             
@@ -314,14 +327,24 @@ def rearrange_measurements(obj, mess_array, index):
         min_array[i] = []
     
     for i in range(len(obj)):
-        for j in range(len(new_array)):
-            j_val = new_array[j]
-            if mess_array[i][4] == -j_val:
-                min_array[j].append(obj[i])
-            elif mess_array[i][4] == j_val:  
-                plus_array[j].append(obj[i])
-            else:
-                pass     
+        if type(index) == int:
+            for j in range(len(new_array)):
+                j_val = new_array[j]
+                if mess_array[i][4] == -j_val:
+                    min_array[j].append(obj[i])
+                elif mess_array[i][4] == j_val:  
+                    plus_array[j].append(obj[i])
+                else:
+                    pass 
+        elif type(index) == list:  
+            for j in range(len(new_array)):
+                j_val = new_array[j]
+                if index[i] == -j_val:
+                    min_array[j].append(obj[i])
+                elif index[i] == j_val:  
+                    plus_array[j].append(obj[i])
+                else:
+                    pass                 
     
     for i in range(len(new_array)):
         if plus_array[i] != [] and min_array[i] != []:
@@ -436,7 +459,7 @@ class pe(croc.Resources.DataClasses.mess_data):
         time_stamp (number): as hhmm, use 0000 for old-style
         """
         
-        print("=== CROCODILE PHOTON ECHO ===")
+        D.printBlue("=== CROCODILE PHOTON ECHO ===")
         
         if debug_flag:
             print(">>> DEBUG MODE <<<")
@@ -564,7 +587,7 @@ class pe(croc.Resources.DataClasses.mess_data):
 
 
     # plot the spectrum
-    def plot(self, plot_type = "S", x_range = [0, 0], y_range = [0, -1], zlimit = -1, contours = 12, filled = True, black_contour = True, title = "", x_label = "", y_label = "", diagonal_line = True, new_figure = True, flag_no_units = False, pixel = -1, invert_colors = True, flag_aspect_ratio = True):
+    def plot(self, plot_type = "S", x_range = [0, 0], y_range = [0, -1], zlimit = -1, contours = 12, filled = True, black_contour = True, title = "", x_label = "", y_label = "", diagonal_line = True, new_figure = True, flag_no_units = False, pixel = -1, invert_colors = False, flag_aspect_ratio = True):
         """
         croc.pe.plot
         

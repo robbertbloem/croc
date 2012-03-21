@@ -226,22 +226,8 @@ def contourplot(data, x_axis, y_axis, x_range = [0, 0], y_range = [0, -1], zlimi
     - flag_aspect_ratio (BOOL, True): the aspect ratio will be corresponding to the range plotted
     
     """
-    
-#     if debug_flag:
-#         print("x_range:", x_range)
-#         print("y_range:", y_range)
-#         print("zlimit:", zlimit)
-#         print("contours:", contours)
-#         print("filled:", filled)
-#         print("black_contour:", black_contour)
-#         print("x_label:", x_label)
-#         print("y_label:", y_label)
-#         print("title:", title)
-#         print("diagonal_line:", diagonal_line)
-#         print("new_figure:", new_figure)
             
     # CHECKS
-    
     if invert_colors:
         data = -data
 
@@ -303,8 +289,8 @@ def contourplot(data, x_axis, y_axis, x_range = [0, 0], y_range = [0, -1], zlimi
         print("Indices of plotted range (x_min_i, x_max_i, y_min_i, y_max_i):")
         print(x_min_i, x_max_i, y_min_i, y_max_i)
         
-    print("Contours:")
-    print(V)
+    if zlimit == -1:
+        print("zlimit: " + str(V[-1]))
     
     try:
         # make the actual figure
