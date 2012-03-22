@@ -1,16 +1,18 @@
 from __future__ import print_function
 from __future__ import division
 
+import inspect
+
 import numpy
 import pylab 
 import matplotlib 
 import matplotlib.pyplot as plt
 
-import croc.Debug
+import croc.Debug as D
 
-reload(croc.Debug)
+reload(D)
 
-debug_flag = croc.Debug.debug_flag
+debug_flag = D.debug_flag
 
 
 # make the colormap
@@ -74,8 +76,8 @@ def linear(data, axis, x_range = [0, 0], y_range = [0, 0], x_label = "", y_label
         plt.show()
 
     except:
-        if croc.Debug.FlagRunningOn == "server":
-            print("ERROR (croc.Resources.Plotting.linear): no plotting available on the server!")
+        if D.FlagRunningOn == "server":
+            D.printError("Is the server correctly configured to show plots?", inspect.stack())
         else:
             raise
 
@@ -239,13 +241,13 @@ def contourplot(data, x_axis, y_axis, x_range = [0, 0], y_range = [0, -1], zlimi
             
             # see if they are switched
             if len(x_axis) == y and len(y_axis) == x:
-                print("\nWARNING (croc.Plotting.contourplot): the shape of the data seems to be flipped. The data will be transposed.\n")
+                D.printWarning("The shape of the data seems to be flipped. The data will be transposed.", inspect.stack())
                 data = data.T
             else:
-                print("\nERROR (croc.Plotting.contourplot): the shape of the data does not correspond with the axes. ")
+                D.printError("The shape of the data does not correspond with the axes.", inspect.stack())
                 return 0
     except TypeError:
-        print("\nERROR (croc.Plotting.contourplot): The x or y axis seems to have no length. It should be an array, not an integer.")
+        D.printError("The x or y axis seems to have no length. It should be an array, not an integer.", inspect.stack())
         print("x-axis:", x_axis)
         print("y-axis:", y_axis)
         return 0
@@ -335,8 +337,8 @@ def contourplot(data, x_axis, y_axis, x_range = [0, 0], y_range = [0, -1], zlimi
         if new_figure:
             plt.show()     
     except:
-        if croc.Debug.FlagRunningOn == "server":
-            print("ERROR (croc.Resources.Plotting.contourplot): no plotting available on the server!")
+        if D.FlagRunningOn == "server":
+            D.printError("Is the server correctly configured to show plots?", inspect.stack())
         else:
             raise
     

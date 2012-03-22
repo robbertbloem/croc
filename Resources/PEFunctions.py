@@ -14,8 +14,12 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 import croc.Resources.Plotting as P
+import croc.Debug as D
 
-reload(P)
+reload(D)
+
+if D.reload_flag:
+    reload(P)
 
 
 def find_z(s, s_axis, x_range = [0,0], y_range = [0, -1]):

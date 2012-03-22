@@ -60,7 +60,7 @@ debug_flag = croc.Debug.debug_flag
 
 ### METHODS TO WORK WITH PICKLES ###
 def test():
-    D.printError("test", inspect.stack()[0][3])
+    D.printError("test", inspect.stack())
     D.printWarning("test")
     print(inspect.stack()[0][3])
 
@@ -81,7 +81,7 @@ def import_pickle(mess_date, mess_array = [], pickle_name = "", flag_remove_obje
         pickle_name = str(mess_date) + "_fs.pickle"
     
     if check_pickle_exists(pickle_name) == False:  
-        D.printError("the pickle does not exist!", inspect.stack()[0][1] + ":" + inspect.stack()[0][3])
+        D.printError("the pickle does not exist!", inspect.stack())
         return False
         
     obj = croc.Resources.DataClasses.import_db(pickle_name)
@@ -105,7 +105,7 @@ def import_pickle(mess_date, mess_array = [], pickle_name = "", flag_remove_obje
         
         # gives a warning when mess_array is shorter
         if numpy.sum(success_obj) < len(obj): 
-            D.printWarning("Object is missing in mess_array. It is not deleted from the HD.", inspect.stack()[0][1] + ":" + inspect.stack()[0][3])
+            D.printWarning("Object is missing in mess_array. It is not deleted from the HD.", inspect.stack())
         
     return new_obj
 
@@ -137,7 +137,7 @@ def test_unique_object_id(mess_array, object_id = 0):
     for i in range(len(mess_array)):
         for j in range(i+1, len(mess_array)):
             if mess_array[i][object_id] == mess_array[j][object_id]:
-                D.printError("The objectnames have to be unique! This is not the case. Aborting.", inspect.stack()[0][1] + ":" + inspect.stack()[0][3])
+                D.printError("The objectnames have to be unique! This is not the case. Aborting.", inspect.stack())
                 return False 
     return True 
 
@@ -194,7 +194,7 @@ def import_FS(mess_date, mess_array, scan_array, pickle_name = "", data_dir = ""
                 scan_array[i] = numpy.arange(1,mess_array[i][scan_int]+1) 
     else:
         if len(scan_array) != len(mess_array):
-            print("ERROR (croc.Pe.import_FS): the length of the mess_array and scan_array should be the same.")
+            D.printError("The length of the mess_array and scan_array should be the same.", inspect.stack())
             return False  
         else:
             for i in range(len(scan_array)):
@@ -291,7 +291,7 @@ def rearrange_measurements(obj, mess_array, index):
     """
 
     if len(mess_array) != len(obj):
-        print("ERROR (croc.Pe.rearrange_measurements): number of objects does not correspond to mess_array.")
+        D.printError("Number of objects does not correspond to mess_array.", inspect.stack())
         return False, False, False    
 
     max_val = 0
@@ -536,7 +536,7 @@ class pe(croc.Resources.DataClasses.mess_data):
             self.f[0] = self.fourier_helper(numpy.copy(self.r[0]), window_function = window_function, window_length = window_length, flag_plot = flag_plot)
             self.f[1] = self.fourier_helper(numpy.copy(self.r[1]), window_function = window_function, window_length = window_length, flag_plot = flag_plot)
         except ValueError:
-            print("\nERROR (croc.pe.pe_exp.absorptive): Problem with the Fourier Transforms. Are r[0] and r[1] assigned?")
+            D.printError("Problem with the Fourier Transforms. Are r[0] and r[1] assigned?", inspect.stack())
             return 0
         
         # phase the spectrum
@@ -556,7 +556,7 @@ class pe(croc.Resources.DataClasses.mess_data):
         try:
             self.s_axis[0] = M.make_ft_axis(length = 2*numpy.shape(self.s)[0], dt = self.r_axis[0][1]-self.r_axis[0][0], undersampling = self.undersampling)
         except TypeError:
-            print("\nERROR (croc.pe.pe_exp.absorptive): Problem with making the Fourier Transformed axis. Is r_axis[0] assigned?")
+            D.printError("Problem with making the Fourier Transformed axis. Is r_axis[0] assigned?", inspect.stack())
             return 0
             
         self.s_axis[0] = self.s_axis[0][0:len(self.s_axis[0])/2]
@@ -567,7 +567,7 @@ class pe(croc.Resources.DataClasses.mess_data):
         try:
             self.s_resolution = [(self.s_axis[0][1] - self.s_axis[0][0]), 0, (self.s_axis[2][1] - self.s_axis[2][0])]
         except TypeError:
-            print("\nERROR (croc.pe.pe_exp.absorptive): The resolution of the spectrum can not be determined. This can mean that the original axes (r_axis) or the spectral axes (s_axis) contains an error.")
+            D.printError("The resolution of the spectrum can not be determined. This can mean that the original axes (r_axis) or the spectral axes (s_axis) contains an error.", inspect.stack())
             print("r_axis[0]:", self.r_axis[0])
             print("r_axis[2]:", self.r_axis[2])
             print("s_axis[0]:", self.s_axis[0])
@@ -605,7 +605,7 @@ class pe(croc.Resources.DataClasses.mess_data):
         elif plot_type == "non-rephasing" or plot_type == "NR":
             data = numpy.real(numpy.exp(1j * self.phase_rad) * self.f[1])  
         else:
-            print("ERROR (croc.pe.plot): invalid plot type. ")
+            D.printError("Invalid plot type.", inspect.stack())
             return 0
         
         if pixel < 0:
@@ -1014,7 +1014,7 @@ class pe_exp(pe):
         
         # determine old-style or new-style
         if self.time_stamp == 0000:
-            print("not implemented yet")
+            D.printError("Old style not implemented yet", inspect.stack())
         
         # new-style
         else:  
@@ -1046,7 +1046,7 @@ class pe_exp(pe):
                 try:
                     temp = numpy.loadtxt(file_R)
                 except IOError:
-                    print("ERROR (croc.pe.import_data): unable to load file:", file_R)
+                    D.printError(("Unable to load file: " + file_R), inspect.stack())
                     raise
                     return 0   
                 self.r_axis[0] = temp[1:,0]
@@ -1056,7 +1056,7 @@ class pe_exp(pe):
                 try:
                     temp = numpy.loadtxt(file_NR)
                 except IOError:
-                    print("ERROR (croc.pe.import_data): unable to load file:", file_NR)
+                    D.printError(("Unable to load file: " + file_NR), inspect.stack())
                     raise
                     return 0
                 self.r[1] = temp[1:,1:self.n_pixels+1]               
@@ -1065,7 +1065,7 @@ class pe_exp(pe):
                     try:
                         temp = numpy.loadtxt(file_R_noise)
                     except IOError:
-                        print("ERROR (croc.pe.import_data): unable to load file:", file_R_noise)
+                        D.printError(("Unable to load file: " + file_R_noise), inspect.stack())
                         raise
                         return 0
                     self.r_noise[0] = temp[1:,1:self.n_pixels+1]                   
@@ -1073,7 +1073,7 @@ class pe_exp(pe):
                     try:
                         temp = numpy.loadtxt(file_NR_noise)
                     except IOError:
-                        print("ERROR (croc.pe.import_data): unable to load file:", file_NR_noise)
+                        D.printError(("Unable to load file: " + file_NR_noise), inspect.stack())
                         raise
                         return 0
                     self.r_noise[1] = temp[1:,1:self.n_pixels+1]     
@@ -1086,7 +1086,7 @@ class pe_exp(pe):
             
             # import multiple scans and average them
             else:
-                print("ERROR (croc.pe.import_data): The ability to import specific scans is not yet implemented.")
+                D.printError("The ability to import specific scans is not yet implemented.", inspect.stack())
                 return 0
             
             # import the meta data
@@ -1146,7 +1146,7 @@ class pe_exp(pe):
                     if re.match("Phase", line):
                         self.phase_degrees = float((re.search(regex, line)).group())
                 except AttributeError:
-                    print("ERROR (croc.Pe.import_meta): no or invalid phase")
+                    D.printWarning("no or invalid phase", inspect.stack())
                 
                 if re.match("Comments", line):
                     self.comment = line[9:]
@@ -1154,7 +1154,7 @@ class pe_exp(pe):
                 if re.match("Scan", line):
                     temp_scans = int((re.search(regex, line[4:7])).group())
         except IOError:
-            print("ERROR (croc.pe.import_meta): unable to load file:", filebase)
+            D.printError(("Unable to load file: " + filebase), inspect.stack())
             raise
             return 0            
   
@@ -1306,10 +1306,10 @@ class pefs(pe_exp):
         # see if we already imported this file
         if self.imported_scans.count(scan) != 0:
             if flag_import_override == False: 
-                print("ERROR (croc.Pe.pefs.add_data): Scan is already imported.")  
+                D.printError("Scan is already imported.")  
                 return 0
             else:
-                print("WARNING (croc.Pe.pefs.add_data): Scan is already imported, but will be imported anyway because flag_import_override is set to True.")
+                D.printWarning("Scan is already imported, but will be imported anyway because flag_import_override is set to True.", inspect.stack())
             
         filename = self.make_filenames(scan)
 
@@ -1354,7 +1354,7 @@ class pefs(pe_exp):
                     correct_count = False
                 
             else:
-                print("ERROR (croc.Pe.pefs.add_data): unknown data type")
+                D.printError("Unknown data type", inspect.stack())
                 correct_count = False
             
             # check for consistency
