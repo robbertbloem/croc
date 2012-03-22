@@ -23,12 +23,14 @@ elif os.uname()[1] == "rbmbp.local":
     FlagRunningOn = "robbert"
 else:
     FlagRunningOn = "generic" 
-    
+
+
 def printError(string, location = []):
     if location == []:
         print("\033[1;31mERROR: " + string + "\033[1;m")
     else:
         print("\033[1;31mERROR (" + location[0][1] + ":" + location[0][3] + "): " + string + "\033[1;m")
+
 
 def printWarning(string, location = ""):
     if location == "":
@@ -36,8 +38,10 @@ def printWarning(string, location = ""):
     else:
         print("\033[1;35mWARNING (" + location + "): " + string + "\033[1;m")
 
+
 def printGreen(string):
     print("\033[1;32m" + string + "\033[1;m")
+
 
 def printBlue(string):
     print("\033[1;34m" + string + "\033[1;m")
