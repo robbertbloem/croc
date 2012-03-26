@@ -1,3 +1,7 @@
 *.pyc
 .DS_Store
 Tests/TestData/*
+Docs/*.aux
+Docs/*.bbl
+Docs/*.blg
+Docs/*.log

@@ -93,7 +93,7 @@ def concentration_vs_percentage_bound(kd, concentration_ratio = [0,5], print_for
 
 
 if __name__ == "__main__": 
-
-    concentration_vs_percentage_bound([0.02,0.01], print_for = 1)
+    kd = 15.0e-6
+    concentration_vs_percentage_bound(kd)#, [0.02,0.01], print_for = 1)
 
     

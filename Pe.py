@@ -613,12 +613,14 @@ class pe(croc.Resources.DataClasses.mess_data):
             if flag_no_units:
                 x_axis = numpy.arange(len(self.s_axis[2]))
                 y_axis = numpy.arange(len(self.s_axis[0]))
+                x_range = [0,0]
                 y_range = [0,0]
                 if x_label == "":
                     x_label = "spectrometer (pixels)"
                 if y_label == "":
                     y_label = "FT (steps)"
                 diagonal_line = False
+                flag_aspect_ratio = False
 
             else:
                 x_axis = self.s_axis[2]
@@ -631,7 +633,6 @@ class pe(croc.Resources.DataClasses.mess_data):
             if title == "":
                 title = self.objectname + ", t2: " + str(self.r_axis[1]) + "\n scans x shots: " + str(self.n_scans) + "x" + str(self.n_shots)
             
-                   
             P.contourplot(data, x_axis, y_axis, x_range = x_range, y_range = y_range, zlimit = zlimit, contours = contours, filled = filled, black_contour = black_contour, title = title, x_label = x_label, y_label = y_label, diagonal_line = diagonal_line, new_figure = new_figure, invert_colors = invert_colors, flag_aspect_ratio = flag_aspect_ratio) 
         
         else:
