@@ -1,0 +1,37 @@
+\documentclass[11pt, fleqn]{report}
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{amsbsy}
+\usepackage{amsmath}
+
+
+
+\begin{document}
+
+For the reaction
+\begin{eqnarray}
+A+B \stackrel{k_a}{\rightleftharpoons} AB
+\end{eqnarray}
+we can calculate $k_d$ as follows:
+\begin{eqnarray}
+\frac{[A][B]}{[AB]} = \frac{1}{k_a} = k_d \label{eq:kd}
+\end{eqnarray}
+Using
+\begin{eqnarray}
+\lbrack A_0\rbrack = [A] + [AB] \\
+\lbrack B_0\rbrack = [B] + [AB] 
+\end{eqnarray}
+we rewrite eqn \ref{eq:kd} so that it can be solved with the square (ABC) formula:
+\begin{eqnarray}
+\frac{([A_0]-[AB])([B_0]-[AB])}{[AB]} = k_d \\
+\lbrack A_0 \rbrack[B_0]-[AB]([A_0]+[B_0])+[AB]^2= k_d [AB] \\
+\lbrack AB \rbrack^2 - [AB]([A_0]+[B_0]+k_d) + [A_0][B_0] = 0
+\end{eqnarray}
+Percentage bound is:
+\begin{eqnarray}
+\frac{[AB]}{[A_0]}\cdot 100\%
+\end{eqnarray}
+
+\end{document}
+
