@@ -597,7 +597,7 @@ class pe(croc.Resources.DataClasses.mess_data):
         This function will plot the purely absorptive spectrum. It is a wrapper function for P.contourplot. It will put the data in the right format, adds some labels etc. This should do for 99% of the cases. 
         For details about the options, see P.contourplot.    
         """
-        
+
         if plot_type == "spectrum" or plot_type == "S":
             data = self.s
         elif plot_type == "rephasing" or plot_type == "R":

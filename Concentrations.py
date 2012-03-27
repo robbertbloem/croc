@@ -13,87 +13,109 @@ import matplotlib.pyplot as plt
 
 import Resources.Mathematics as M
 
+def concentration_vs_percentage_bound(kd, concentration_A, concentration_B_range, n_steps = 100, print_for = []):
 
-def concentration_vs_percentage_bound(kd, concentration_ratio = [0,5], print_for = [], n_steps = 100):
-    """
-    Calculates the percentage bound as a function of concentration (ratio) for a given Kd for: A+B <=> AB.
-    The concentration of A is fixed to 1, the 'concentration_ratio' gives the range of concentrations of B.
-    
-    CHANGELOG:
-    201111??/RB: Wrote original function. 
-    20120222/RB: Integrated it into croc.
-    
-    INPUT:
-    - kd (int or array): the dissociation constant. Kd = 1/Ka
-    - concentration_ratio (array with two elements): the minimum and maximum of the range over which it should be calculated
-    - print_for (array or int): print the values for these concentrations.
-    - n_steps (int): number of steps for the calculation
-    
-    OUTPUT:
-    - a graph.
-    - if print_for is given, a list with percentage bound for different concentrations for B for different values of Kd.
-    
-    
-    """
-    
     if type(kd) == float or type(kd) == int:
-        kd = [kd]
-    
-    if type(print_for) == float or type(print_for) == int:
-        print_for = [print_for]
+        kd = [kd]   
 
-    x0 = 1
-    y0 = numpy.arange(1, n_steps + 1) * (concentration_ratio[1] - concentration_ratio[0])/n_steps
+    if type(concentration_A) == float or type(concentration_A) == int:
+        concentration_A = [concentration_A] 
+    
+    step = (concentration_B_range[1] - concentration_B_range[0])/(n_steps-1)
+    
+    if concentration_B_range[0] == 0:
+        start = step
+    else:
+        start = concentration_B_range[0]
+    
+    stop = concentration_B_range[1] + step/2
+
+    concentration_B = numpy.arange(start, stop, step)
+    
+    print(len(concentration_B))
+    #(1, n_steps + 1) * (concentration_B_range[1] - concentration_B_range[0])/n_steps
     
     xy = [0,0]
-    x = [0,0]
-    y = [0,0]
-    
-    r = numpy.zeros(n_steps)
     
     plt.figure()
     
-    for k in range(len(kd)):
-    
-        for i in range(n_steps):
-            a = 1
-            b = -(x0 + y0[i] + kd[k])
-            c = x0 * y0[i]
-            
-            xy[0], xy[1] = M.square_formula(a, b, c)
-            
-            for j in range(2):
-                x[j] = x0 - xy[j]
-                y[j] = y0[i] - xy[j]
+    for i in range(len(kd)):
+        for j in range(len(concentration_A)):
+            r = numpy.zeros(len(concentration_B))
+            for k in range(len(concentration_B)):
+                a = 1
+                b = -(concentration_A[j] + concentration_B[k] + kd[i])
+                c = concentration_A[j] * concentration_B[k]
                 
-                if x[j] < 0 or y[j] < 0:
-                    pass
-                else:
-                    r[i] = 100 - 100*y[j]/y0[i]
+                xy[0], xy[1] = M.square_formula(a, b, c)
+                
+                for m in range(2):
+                    if xy[m] > concentration_A[j] or xy[m] > concentration_B[k]:
+                        pass
+                    else:
+                        r[k] = 100*xy[m]/concentration_B[k]
 
-        plt.plot(y0/x0, r, label = str(kd[k]))
-
-        if len(print_for) != 0:
-            print("For Kd: " + str(kd[k]))
-            for i in range(len(print_for)):
-                index = numpy.where(y0/x0 >= print_for[i])
-                print(str((y0/x0)[index[0][0]]) + ": " + str(numpy.round(r[index[0][0]],1)) + "%")
-
-        
+            if len(print_for) != 0:
+                print("Kd: " + str(kd[i]) + " M, [A]: " + str(1000*concentration_A[j]) + " mM") 
+                for k in range(len(print_for)):
+                    index = numpy.where(concentration_B >= print_for[k])
+                    print("    [B]: " + str(numpy.round(1000*concentration_B[index[0][0]],1)) + " mM: " + str(numpy.round(r[index[0][0]],1)) + "%")
+            
+            c = ["b", "g", "r"]
+            
+            plt.plot(1000*concentration_B, r, label = "kd: " + str(1000*kd[i]) + " mM, [A]: " + str(1000*concentration_A[j]) + " mM", color = c[j])
     plt.title("Percentage bound as a function of concentration and Kd\nA+B <=> AB")
-    plt.ylim(0,100)
-    plt.xlabel("Concentration B/A")
+    plt.ylim(80,100)
+    plt.xlim(1000*start, 1000*stop)
+    plt.xlabel("[B] (mM)")
     plt.ylabel("Percentage bound (%)")
-    plt.legend()
-    plt.show()
+    plt.legend(loc="lower left")  
+    plt.grid(b=True, which="both")  
+    plt.show()  
     
+    
+
+
+
 
     
 
 
 
 if __name__ == "__main__": 
-    kd = 15.0e-6
-    concentration_vs_percentage_bound(kd)#, [0.02,0.01], print_for = 1)
+    kd = [5e-6, 15.0e-6, 25.0e-6] # 10.0e-6, 20.0e-6, , 30.0e-6
+    a0 = [2.0e-3, 2.2e-3, 2.4e-3]
+    b0_min = 0#0.5e-3
+    b0_max = 2.5e-3
+    concentration_vs_percentage_bound(kd, a0, [b0_min, b0_max], print_for = [1e-3, 2e-3])
+    
+    
+    #kd, concentration_ratio = [0,2], n_steps = 4, print_for = [0.5,1,2])
+    
+#    A0 = 1e-3
+#    B0 = 1e-3
+#    kd = 15.0e-6
+#    
+#    a = 1.0
+#    b = -(A0+B0+kd)
+#    c = A0*B0
+#    
+#    print((-b - numpy.sqrt(b**2 - 4*a*c))/(2*a))
+    
+#    print(M.square_formula(a, b, c))
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
     
