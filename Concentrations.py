@@ -63,7 +63,7 @@ def concentration_vs_percentage_bound(kd, concentration_A, concentration_B_range
             
             c = ["b", "g", "r"]
             
-            plt.plot(1000*concentration_B, r, label = "kd: " + str(1000*kd[i]) + " mM, [A]: " + str(1000*concentration_A[j]) + " mM", color = c[j])
+            plt.plot(1000*concentration_B, r, label = "kd: " + str(1000*kd[i]) + " mM, [A]: " + str(1000*concentration_A[j]) + " mM")#, color = c[j])
     plt.title("Percentage bound as a function of concentration and Kd\nA+B <=> AB")
     plt.ylim(80,100)
     plt.xlim(1000*start, 1000*stop)
@@ -84,8 +84,8 @@ def concentration_vs_percentage_bound(kd, concentration_A, concentration_B_range
 
 if __name__ == "__main__": 
     kd = [5e-6, 15.0e-6, 25.0e-6] # 10.0e-6, 20.0e-6, , 30.0e-6
-    a0 = [2.0e-3, 2.2e-3, 2.4e-3]
-    b0_min = 0#0.5e-3
+    a0 = [1.9e-3]
+    b0_min = 0.5e-3
     b0_max = 2.5e-3
     concentration_vs_percentage_bound(kd, a0, [b0_min, b0_max], print_for = [1e-3, 2e-3])
     

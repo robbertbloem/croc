@@ -7,9 +7,10 @@ This software comes without warranty.
 
 
 1. INSTALLATION/SETUP:
-- make sure you have Numpy, Scipy, Matplotlib and ipython installed. This is done most conveniently using the "Enthought Python Distribution" (Google it). There is an academic license. 
+- make sure you have Numpy, Scipy, Matplotlib and ipython installed. This is done most conveniently using the "Enthought Python Distribution" (Google it). There is an academic license and versions for Windows, Mac and Linux. 
 - copy everything to a convenient place
-- add that place to the PATH
+- add that place to the PYTHONPATH in for example .bash_profile: 
+export PYTHONPATH=$HOME/Developer:$HOME/Developer/croc:$PYTHONPATH 
 - run the following commands from ipython:
 >> import croc
 >> import croc.Tests.Tests
