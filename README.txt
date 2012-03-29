@@ -15,7 +15,7 @@ export PYTHONPATH=$HOME/Developer:$HOME/Developer/croc:$PYTHONPATH
 >> import croc
 >> import croc.Tests.Tests
 >> croc.Tests.Tests.PE1()
-This should result in a 2D spectrum.
+This should result in a (rather crappy) 2D spectrum.
 
 
 2. STRUCTURE:
