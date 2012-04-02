@@ -1529,8 +1529,9 @@ class pefs(pe_exp):
         temp = numpy.zeros((4, b_fringes, self.n_channels), dtype = "cfloat")
         
         # average the data for the two diagrams
+        i_range = range(b_fringes)
         for j in range(4):
-            for i in range(b_fringes):
+            for i in i_range:
                 if self.b_count[j][i] != 0:
                     temp[j,i,:] = self.b[j][i,:] / self.b_count[j,i]    
                 else:    
