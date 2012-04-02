@@ -154,7 +154,8 @@ def reconstruct_counter(data, x_channel, y_channel, start_counter = 0, end_count
         change_array = numpy.zeros(length)
     
     # do the loop
-    for i in range(1, length - 1):
+    i_range = range(1, length - 1)
+    for i in i_range:
         # count can only change when y > 0
         if y[i] > med_y:
             if c_lock == False:

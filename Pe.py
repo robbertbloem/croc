@@ -1476,8 +1476,8 @@ class pefs(pe_exp):
 
 
     def bin_data_helper(self, m, m_axis, diagram, b, b_count):
-
-        for i in range(self.n_shots):            
+        i_range = range(self.n_shots)
+        for i in i_range:            
             # find the fringe
             j = (-1)**diagram * int(m_axis[i]) + self.extra_fringes - (-1)**diagram * 4000
 

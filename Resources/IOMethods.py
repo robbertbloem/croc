@@ -48,8 +48,10 @@ def import_data_FS(path_and_filename, n_shots = 30000, n_channels = 37, flag_cou
             data = data[:-n_shots]
         
         # order the data in a 2d array
-        for i in range(n_shots):
-            for j in range(n_channels):
+        i_range = range(n_shots)
+        j_range = range(n_channels)
+        for i in i_range:
+            for j in j_range:
                 m[j, i] = data[j + i * n_channels] 
                 
         if flag_counter:
