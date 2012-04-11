@@ -587,7 +587,7 @@ class pe(croc.Resources.DataClasses.mess_data):
 
 
     # plot the spectrum
-    def plot(self, plot_type = "S", x_range = [0, 0], y_range = [0, -1], zlimit = -1, contours = 12, filled = True, black_contour = True, title = "", x_label = "", y_label = "", diagonal_line = True, new_figure = True, flag_no_units = False, pixel = -1, invert_colors = False, flag_aspect_ratio = True):
+    def plot(self, plot_type = "S", x_range = [0, 0], y_range = [0, -1], zlimit = -1, contours = 12, filled = True, black_contour = True, title = "", x_label = "", y_label = "", diagonal_line = True, new_figure = True, flag_no_units = False, pixel = -1, invert_colors = False, flag_aspect_ratio = True, linewidth = -1):
         """
         croc.pe.plot
         
@@ -633,7 +633,7 @@ class pe(croc.Resources.DataClasses.mess_data):
             if title == "":
                 title = self.objectname + ", t2: " + str(self.r_axis[1]) + "\n scans x shots: " + str(self.n_scans) + "x" + str(self.n_shots)
             
-            P.contourplot(data, x_axis, y_axis, x_range = x_range, y_range = y_range, zlimit = zlimit, contours = contours, filled = filled, black_contour = black_contour, title = title, x_label = x_label, y_label = y_label, diagonal_line = diagonal_line, new_figure = new_figure, invert_colors = invert_colors, flag_aspect_ratio = flag_aspect_ratio) 
+            P.contourplot(data, x_axis, y_axis, x_range = x_range, y_range = y_range, zlimit = zlimit, contours = contours, filled = filled, black_contour = black_contour, title = title, x_label = x_label, y_label = y_label, diagonal_line = diagonal_line, new_figure = new_figure, invert_colors = invert_colors, flag_aspect_ratio = flag_aspect_ratio, linewidth = linewidth) 
         
         else:
             data = data.T

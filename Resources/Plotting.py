@@ -198,7 +198,7 @@ def make_contours_2d(data, zlimit = 0, contours = 21):
 
 
 
-def contourplot(data, x_axis, y_axis, x_range = [0, 0], y_range = [0, -1], zlimit = -1, contours = 12, filled = True, black_contour = True, x_label = "", y_label = "", title = "", diagonal_line = True, new_figure = True, invert_colors = False, flag_aspect_ratio = True):
+def contourplot(data, x_axis, y_axis, x_range = [0, 0], y_range = [0, -1], zlimit = -1, contours = 12, filled = True, black_contour = True, x_label = "", y_label = "", title = "", diagonal_line = True, new_figure = True, invert_colors = False, flag_aspect_ratio = True, linewidth = 1):
 
     """
     croc.Plotting.contourplot
@@ -306,10 +306,10 @@ def contourplot(data, x_axis, y_axis, x_range = [0, 0], y_range = [0, -1], zlimi
                 plt.colorbar()
         if black_contour:
             if filled:
-                plt.contour(x_axis, y_axis, data, V, linewidths = 1, linestyles = "solid", colors = "k")
+                plt.contour(x_axis, y_axis, data, V, linewidths = linewidth, linestyles = "solid", colors = "k")
             else:
                 # this will make dashed lines for negative values
-                plt.contour(x_axis, y_axis, data, V, colors = "k")            
+                plt.contour(x_axis, y_axis, data, V, colors = "k", linewidths = linewidth)            
     
         if flag_aspect_ratio and new_figure:
             # setting the aspect ration will break the subplots
@@ -317,7 +317,7 @@ def contourplot(data, x_axis, y_axis, x_range = [0, 0], y_range = [0, -1], zlimi
 
         # the diagonal line
         if diagonal_line:
-            plt.plot([0, 10000], [0, 10000], "k")
+            plt.plot([0, 10000], [0, 10000], "k", linewidth = linewidth)
     
         # we only want to see a certain part of the spectrum   
         plt.xlim(x_min, x_max)
