@@ -142,8 +142,8 @@ def signal(time_array, w_cm, tau_fs, amplitude):
 	return array
 
 
-def add_noise_to_signal(signal, laser_intensity):
-	return signal * laser_intensity
+def signal_and_laser(signal, laser_intensity):
+	return signal * laser_intensity**4
 
 
 
@@ -197,42 +197,51 @@ def binning(signal_array, bin_array, chopper_array, last_bin):
 	b_count = numpy.reshape(numpy.zeros(n_states * last_bin), (last_bin, n_states))
 	b_axis = numpy.arange(last_bin)
 	
+	if bin_array[-1] > last_bin:
+		signal_array = signal_array[numpy.where(bin_array < last_bin)]
+		print("The bins scanned are beyond last_bin. Will cut off signal_array.")
+	
 	for i in range(len(signal_array)):
-		b[bin_array[i], numpy.where(states == chopper_array[i])] += signal_array[i]
+		b[bin_array[i], numpy.where(states == chopper_array[i])] += signal_array[i] 
 		b_count[bin_array[i], numpy.where(states == chopper_array[i])] += 1
 	
 	return b, b_count, b_axis	
 	
 
-
-
-
-
-
-
-
-
-def binning(signal_array, bin_array, chopper_array, max_bins, speed_profile = "uniform", speed_variables = []):
+def construct_r(b, b_count, b_axis, chopper_array):
 	
-	if speed_profile == "stepped":
-		if speed_variables == []:
-			speed_variables = [28, 12, 100] 
-		stepsize_bins = speed_variables[1]
-	else:
-		stepsize_bins = 1
+	last_bin = b_axis[-1]
 	
+	#print(last_bin)
+
 	states = numpy.unique(chopper_array)
 	n_states = len(states) 
+
+	r = numpy.zeros(last_bin)
+	r_axis = numpy.arange(last_bin)
 	
-	b = numpy.reshape(numpy.zeros(n_states * max_bins), (max_bins, n_states))
-	b_count = numpy.reshape(numpy.zeros(n_states * max_bins), (max_bins, n_states))
-	b_axis = numpy.arange(0, stepsize_bins * max_bins, stepsize_bins)
+	for i in range(last_bin):
+		for j in range(n_states):
+			if b_count[i,j] != 0:
+				r[i] += states[j] * b[i,j] / b_count[i,j]
+			else:
+				r[i] += 0
+				
+	non_zero = numpy.where(r)	
 	
-	for i in range(len(signal_array)):
-		b[bin_array[i], numpy.where(states == chopper_array[i])] += signal_array[i]
-		b_count[bin_array[i], numpy.where(states == chopper_array[i])] += 1
+	r = r[non_zero]
+	r_axis = r_axis[non_zero]
 	
-	return b, b_count, b_axis
+	return r, r_axis
+				
+	
+	
+	
+				
+
+
+
+
 	
 
 
