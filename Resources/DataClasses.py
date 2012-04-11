@@ -173,7 +173,7 @@ class mess_data(ClassTools):
 # SHELVE FUNCTIONS #
 ####################
 
-def make_db(array_of_class_instances, path_and_filename, use_shelve = False, flag_debug = False):
+def make_db(array_of_class_instances, path_and_filename, use_shelve = False, flag_debug = False, flag_overwrite = False):
     """
     Makes a database and writes all values.
     The input should be an array with class instances, not a class instance itself! If the database already exists, it will update the values. Make sure that everything stored in the database has the same class.
@@ -186,11 +186,18 @@ def make_db(array_of_class_instances, path_and_filename, use_shelve = False, fla
     if path_and_filename[-7:] != ".pickle":
         path_and_filename += ".pickle"
     
+    if flag_overwrite:
+    	print("make_db: overwrite flag is True")
+        flag = "n"
+    else:
+        flag = "c"
+    
     print(path_and_filename)    
     
     if flag_debug:
         print("Saving using shelve")
-    db = shelve.open(path_and_filename)
+
+    db = shelve.open(path_and_filename, flag = flag)
     
     for object in array_of_class_instances:
         db[object.objectname] = object

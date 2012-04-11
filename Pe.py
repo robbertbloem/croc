@@ -111,8 +111,8 @@ def import_pickle(mess_date, mess_array = [], pickle_name = "", flag_remove_obje
 
 
 
-def save_pickle(obj, pickle_name):
-    croc.Resources.DataClasses.make_db(obj, pickle_name)
+def save_pickle(obj, pickle_name, flag_overwrite = False):
+    croc.Resources.DataClasses.make_db(obj, pickle_name, flag_overwrite = flag_overwrite)
 
 
 
