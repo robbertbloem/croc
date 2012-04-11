@@ -158,7 +158,7 @@ def signal(time_array, w_cm, tau_fs, amplitude):
 
 
 def signal_and_laser(signal, laser_intensity):
-	return signal * laser_intensity**4
+	return signal * laser_intensity + laser_intensity
 
 
 
@@ -208,6 +208,8 @@ def binning(signal_array, bin_array, chopper_array, last_bin):
 	last_bin: the maximum number of bins
 	"""
 	
+	print("  binning")
+	
 	states = numpy.unique(chopper_array)
 	n_states = len(states) 
 	
@@ -217,7 +219,7 @@ def binning(signal_array, bin_array, chopper_array, last_bin):
 	
 	if bin_array[-1] > last_bin:
 		signal_array = signal_array[numpy.where(bin_array < last_bin)]
-		print("The bins scanned are beyond last_bin. Will cut off signal_array.")
+		print("    cut off " + str(bin_array[-1] - last_bin) + " bins")
 	
 	for i in range(len(signal_array)):
 		b[bin_array[i], numpy.where(states == chopper_array[i])] += signal_array[i] 
@@ -228,14 +230,12 @@ def binning(signal_array, bin_array, chopper_array, last_bin):
 
 def construct_r(b, b_count, b_axis, chopper_array):
 	
+	print("  construct r")
+	
 	last_bin = b_axis[-1]
 	
-	#print(last_bin)
-
 	states = numpy.unique(chopper_array)
 	n_states = len(states) 
-
-	print(states, n_states)
 
 	r = numpy.zeros(last_bin)
 	r_axis = numpy.arange(last_bin)
@@ -248,16 +248,9 @@ def construct_r(b, b_count, b_axis, chopper_array):
 				r[i] += states[j] * b[i,j] / b_count[i,j]
 			else:
 				r[i] += 0
-#				if j == 0 and b_count[i,1] == 0:
-#					zero_bin_count += 1
-				
-	print("zero_bin_count:", zero_bin_count)
 	
 	non_zero = numpy.where(r)	
-	
-#	r = r[non_zero]
-#	r_axis = r_axis[non_zero]
-	
+
 	return r, r_axis
 				
 	

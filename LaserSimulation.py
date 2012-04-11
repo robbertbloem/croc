@@ -31,7 +31,7 @@ def import_laser(n):
 # S_M: signal with modulation
 # M: modulation
 
-def check_speed_profile(laser_file_n, vibrations, n_runs, speed_profile, speed_variables, n_shots, last_bin, phase_mod_profile, n_shots_slow = 0, n_slow_runs = 0, speed_variables_slow = [], flag_plot = False):
+def check_speed_profile(laser_file_n, vibrations, n_runs, speed_profile, speed_variables, n_shots, last_bin, phase_mod_profile, n_shots_slow = 0, n_slow_runs = 0, speed_variables_slow = [], flag_plot = False, title = ""):
 
 	B_exists = False
 	
@@ -66,27 +66,23 @@ def check_speed_profile(laser_file_n, vibrations, n_runs, speed_profile, speed_v
 		plt.ylabel("Time change per shot (fs)")
 		plt.show()		
 
-def make_run(laser_file_n, vibrations, n_runs, speed_profile, speed_variables, n_shots, last_bin, phase_mod_profile, n_shots_slow = 0, n_slow_runs = 0, speed_variables_slow = [], flag_plot = False):
+def make_run(laser_file_n, vibrations, n_runs, speed_profile, speed_variables, n_shots, last_bin, phase_mod_profile, n_shots_slow = 0, n_slow_runs = 0, speed_variables_slow = [], flag_plot = False, title = ""):
 
 	B_exists = False
 	
 	for i in range(n_runs):
 		
 		if i >= n_runs - n_slow_runs:
-			print("slow run!")
+			print("  slow run!")
 			n_shots = n_shots_slow
 			speed_var = speed_variables_slow
 		else:
 			speed_var = speed_variables
 			
-		if i > 0:
-			sum_bins = numpy.sum(B_count, axis=1)			
-			print(len(sum_bins) - len(sum_bins[numpy.where(sum_bins)]), "unfilled bins")
-
 		# determine the position
 		T_fs, T_bin = LS.position(n_shots, speed_profile = speed_profile, variables = speed_var)	
 
-		print("last bin:", T_bin[-1])
+#		print("last bin:", T_bin[-1])
 	
 		# import the laser
 		I = import_laser(n = laser_file_n + i)
@@ -111,12 +107,17 @@ def make_run(laser_file_n, vibrations, n_runs, speed_profile, speed_variables, n
 			B_count = temp_b_count
 			B_axis = temp_b_axis	
 			B_exists = True
+
+	sum_bins = numpy.sum(B_count, axis=1)			
+	print("  " + str(len(sum_bins) - len(sum_bins[numpy.where(sum_bins)])) + " unfilled bins")
 		
 	R, R_axis = LS.construct_r(B, B_count, B_axis, M) 
 	
-#	plt.figure()
-#	plt.plot(R_axis, R)
-#	plt.show()
+	plt.figure()
+	plt.plot(R_axis, R)
+	plt.show()
+	
+	R -= numpy.mean(R)
 	
 	F = croc.Resources.Mathematics.fourier(R, zero_in_middle = False, first_correction = True, zeropad_to = last_bin * zeropad_by, window_function = "none", window_length = 0, flag_plot = False)
 		
@@ -130,6 +131,7 @@ def make_run(laser_file_n, vibrations, n_runs, speed_profile, speed_variables, n
 	if flag_plot:
 		plt.figure()
 		plt.plot(F_axis, F)
+		plt.title(title)
 #		plt.xlim(1500, 1800)
 		plt.show()
 
@@ -145,8 +147,11 @@ def medium_PEM(laser_file_n, vibrations):
 	n_slow_runs = 0
 	speed_variables_slow = []
 	flag_plot = True
+	
+	title = "Top speed: " + str(speed_variables[0]) + " fs/shot, with PEM"
+	print(title)
 
-	make_run(laser_file_n, vibrations, n_runs, speed_profile, speed_variables, n_shots, last_bin, phase_mod_profile, n_shots_slow, n_slow_runs, speed_variables_slow, flag_plot)	
+	make_run(laser_file_n, vibrations, n_runs, speed_profile, speed_variables, n_shots, last_bin, phase_mod_profile, n_shots_slow, n_slow_runs, speed_variables_slow, flag_plot, title)	
 
 
 def fast_10_PEM(laser_file_n, vibrations):
@@ -161,7 +166,10 @@ def fast_10_PEM(laser_file_n, vibrations):
 	speed_variables_slow = [0.45, 0.05, 0.0002, 0.0001]
 	flag_plot = True
 
-	make_run(laser_file_n, vibrations, n_runs, speed_profile, speed_variables, n_shots, last_bin, phase_mod_profile, n_shots_slow, n_slow_runs, speed_variables_slow, flag_plot)	
+	title = "Top speed: " + str(speed_variables[0]) + " fs/shot, with PEM"
+	print(title)
+
+	make_run(laser_file_n, vibrations, n_runs, speed_profile, speed_variables, n_shots, last_bin, phase_mod_profile, n_shots_slow, n_slow_runs, speed_variables_slow, flag_plot, title)	
 
 def fast_10_none(laser_file_n, vibrations):
 	n_runs = 5
@@ -175,7 +183,10 @@ def fast_10_none(laser_file_n, vibrations):
 	speed_variables_slow = [0.45, 0.05, 0.0002, 0.0001]
 	flag_plot = True
 
-	make_run(laser_file_n, vibrations, n_runs, speed_profile, speed_variables, n_shots, last_bin, phase_mod_profile, n_shots_slow, n_slow_runs, speed_variables_slow, flag_plot)
+	title = "Top speed: " + str(speed_variables[0]) + " fs/shot, without PEM"
+	print(title)
+
+	make_run(laser_file_n, vibrations, n_runs, speed_profile, speed_variables, n_shots, last_bin, phase_mod_profile, n_shots_slow, n_slow_runs, speed_variables_slow, flag_plot, title)
 
 
 def fast_5_PEM(laser_file_n, vibrations):
@@ -190,7 +201,10 @@ def fast_5_PEM(laser_file_n, vibrations):
 	speed_variables_slow = [0.45, 0.05, 0.0002, 0.0001]
 	flag_plot = True
 
-	make_run(laser_file_n, vibrations, n_runs, speed_profile, speed_variables, n_shots, last_bin, phase_mod_profile, n_shots_slow, n_slow_runs, speed_variables_slow, flag_plot)	
+	title = "Top speed: " + str(speed_variables[0]) + " fs/shot, with PEM"
+	print(title)
+
+	make_run(laser_file_n, vibrations, n_runs, speed_profile, speed_variables, n_shots, last_bin, phase_mod_profile, n_shots_slow, n_slow_runs, speed_variables_slow, flag_plot, title)	
 
 def fast_5_none(laser_file_n, vibrations):
 	n_runs = 5
@@ -203,8 +217,11 @@ def fast_5_none(laser_file_n, vibrations):
 	n_slow_runs = 1
 	speed_variables_slow = [0.45, 0.05, 0.0002, 0.0001]
 	flag_plot = True
+	
+	title = "Top speed: " + str(speed_variables[0]) + " fs/shot, without PEM"
+	print(title)
 
-	make_run(laser_file_n, vibrations, n_runs, speed_profile, speed_variables, n_shots, last_bin, phase_mod_profile, n_shots_slow, n_slow_runs, speed_variables_slow, flag_plot)
+	make_run(laser_file_n, vibrations, n_runs, speed_profile, speed_variables, n_shots, last_bin, phase_mod_profile, n_shots_slow, n_slow_runs, speed_variables_slow, flag_plot, title)
 
 
 if __name__ == "__main__": 
@@ -221,9 +238,9 @@ if __name__ == "__main__":
 	
 #	medium_PEM(laser_file_n, vibrations)
 	fast_10_PEM(laser_file_n, vibrations)
-	fast_10_none(laser_file_n, vibrations)
-	fast_5_PEM(laser_file_n, vibrations)
-	fast_5_none(laser_file_n, vibrations)
+#	fast_10_none(laser_file_n, vibrations)
+#	fast_5_PEM(laser_file_n, vibrations)
+#	fast_5_none(laser_file_n, vibrations)
 
 	
 
