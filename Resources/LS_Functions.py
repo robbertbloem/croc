@@ -14,6 +14,15 @@ reload(E)
 global hene_fringe 
 hene_fringe = 632/299.792458 #fs
 
+
+
+
+
+
+
+
+
+
 def position(n_shots, speed_profile = "uniform", variables = []):
 	
 	"""
@@ -70,14 +79,20 @@ def position(n_shots, speed_profile = "uniform", variables = []):
 
 		speed_max = variables[0] * (1-variables[1]*numpy.random.rand(1))
 		acc = variables[2] * (1-variables[1]*numpy.random.rand(1))
-		dec = variables[2] * (1-variables[1]*numpy.random.rand(1))
-		speed = numpy.ones(n_shots) * speed_max
+		dec = variables[3] * (1-variables[1]*numpy.random.rand(1))
 		
+		if speed_max//acc + speed_max//dec + 2 > n_shots:
+			acc_del_len = speed_max//acc + speed_max//dec + 10
+			speed_max = speed_max * n_shots / acc_del_len
+			print("oops, too short, reduce speed_max to:", speed_max, "fs/shot")
+			
+		speed = numpy.ones(n_shots) * speed_max
+
 		for i in range(speed_max//acc+1):
-			speed[i] = 0 + acc*i
+			speed[i] = 0 + acc * i
 		
 		for i in range(speed_max//dec+1):
-			speed[-1-i] = 0 + dec*i
+			speed[-1-i] = 0 + dec * i
 		
 		for i in range(n_shots-1):
 			t_array[i+1] = t_array[i] + speed[i] 
@@ -160,6 +175,9 @@ def add_phase_modulation(signal_array, phase_mod_profile = "none"):
 	elif phase_mod_profile == "zero":
 		temp = [0]
 	
+	elif phase_mod_profile == "ones":
+		temp = [1]
+		
 	else:
 		print("phase_mod_profile not recognized, using no modulation")
 		temp = [1]
@@ -217,8 +235,12 @@ def construct_r(b, b_count, b_axis, chopper_array):
 	states = numpy.unique(chopper_array)
 	n_states = len(states) 
 
+	print(states, n_states)
+
 	r = numpy.zeros(last_bin)
 	r_axis = numpy.arange(last_bin)
+	
+	zero_bin_count = 0
 	
 	for i in range(last_bin):
 		for j in range(n_states):
@@ -226,11 +248,15 @@ def construct_r(b, b_count, b_axis, chopper_array):
 				r[i] += states[j] * b[i,j] / b_count[i,j]
 			else:
 				r[i] += 0
+#				if j == 0 and b_count[i,1] == 0:
+#					zero_bin_count += 1
 				
+	print("zero_bin_count:", zero_bin_count)
+	
 	non_zero = numpy.where(r)	
 	
-	r = r[non_zero]
-	r_axis = r_axis[non_zero]
+#	r = r[non_zero]
+#	r_axis = r_axis[non_zero]
 	
 	return r, r_axis
 				
