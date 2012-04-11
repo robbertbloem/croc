@@ -178,23 +178,55 @@ def add_phase_modulation(signal_array, phase_mod_profile = "none"):
 
 
 
-def binning(signal_array, bin_array, chopper_array, speed_profile = "uniform", speed_variables = []):
+
+
+
+
+def binning(signal_array, bin_array, chopper_array, last_bin):
+	"""
+	signal_array: the signal, modified and with noise etc
+	bin_array: the bin for each element in signal_array
+	chopper_array: the state of the chopper for each element in signal_array
+	last_bin: the maximum number of bins
+	"""
+	
+	states = numpy.unique(chopper_array)
+	n_states = len(states) 
+	
+	b = numpy.reshape(numpy.zeros(n_states * last_bin), (last_bin, n_states))
+	b_count = numpy.reshape(numpy.zeros(n_states * last_bin), (last_bin, n_states))
+	b_axis = numpy.arange(last_bin)
+	
+	for i in range(len(signal_array)):
+		b[bin_array[i], numpy.where(states == chopper_array[i])] += signal_array[i]
+		b_count[bin_array[i], numpy.where(states == chopper_array[i])] += 1
+	
+	return b, b_count, b_axis	
+	
+
+
+
+
+
+
+
+
+
+def binning(signal_array, bin_array, chopper_array, max_bins, speed_profile = "uniform", speed_variables = []):
 	
 	if speed_profile == "stepped":
 		if speed_variables == []:
 			speed_variables = [28, 12, 100] 
-		n_bins = speed_variables[0]
 		stepsize_bins = speed_variables[1]
 	else:
-		n_bins = bin_array[-1] + 1
 		stepsize_bins = 1
 	
 	states = numpy.unique(chopper_array)
 	n_states = len(states) 
 	
-	b = numpy.reshape(numpy.zeros(n_states*n_bins), (n_bins, n_states))
-	b_count = numpy.reshape(numpy.zeros(n_states*n_bins), (n_bins, n_states))
-	b_axis = numpy.arange(0, stepsize_bins * n_bins, stepsize_bins)
+	b = numpy.reshape(numpy.zeros(n_states * max_bins), (max_bins, n_states))
+	b_count = numpy.reshape(numpy.zeros(n_states * max_bins), (max_bins, n_states))
+	b_axis = numpy.arange(0, stepsize_bins * max_bins, stepsize_bins)
 	
 	for i in range(len(signal_array)):
 		b[bin_array[i], numpy.where(states == chopper_array[i])] += signal_array[i]
@@ -203,17 +235,52 @@ def binning(signal_array, bin_array, chopper_array, speed_profile = "uniform", s
 	return b, b_count, b_axis
 	
 
-def average_runs(b, b_count, b_axis, n_runs):
-	
-	max_b_axis = 0
-	
-	for i in range(n_runs):
-		if b_axis[i][-1] > max_b_axis:
-			max_b_axis = b_axis[i][-1]
 
-	n_bins, n_states = numpy.shape(b[0])
-	
-	
+def average_runs(b, max_bins):
+    
+    flag_bins_filled = False
+    
+    states, n_bins, width = numpy.shape(b[0])
+    
+    data = numpy.reshape(numpy.zeros(states * max_bins * width), (states, max_bins, width))
+    
+    max_bins_too_long_flag = True
+    
+    for i in range(runs):
+        states, n_bins, temp = numpy.shape(b[i])
+        if n_bins < max_bins:
+            length = n_bins
+        else:
+            length = max_bins
+            max_bins_too_long_flag = False
+            
+        for j in range(length):
+            data[:,j,:] = data[:,j,:] + b[i][:,j,:]
+    
+    no_count = 0 
+    
+    for i in range(states): 
+        for j in range(max_bins): 
+            if data[i,j,1] != 0:
+                data[i,j,2] = data[i,j,0] / data[i,j,1] 
+            else: 
+                data[i,j,2] = 0
+                no_count += 1
+    
+    if no_count == 0:   
+        flag_bins_filled = True
+
+    if max_bins_too_long_flag:
+        print("End of range not reached")
+    else:
+        print("The whole range has been scanned")
+
+    if no_count:
+        print(no_count, "bins unfilled")
+    else:
+        print("All bins filled")
+        
+    return data	
 	
 		
 		  
