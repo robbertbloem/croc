@@ -20,7 +20,7 @@ reload(E)
 def import_and_process(path_input, path_output, mess_array, scan_array, mess_date, pixel = 16, maxtau = 2000, debug = False):
     """
     croc.LaserCorrelation.import_and_process
-    
+
     This method imports a file, calculates the correlation using two methods for a single pixel and exports it to a new file.
     
     CHANGELOG:

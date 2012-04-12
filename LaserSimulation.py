@@ -74,6 +74,8 @@ def make_run(laser_file_n, vibrations, n_runs, speed_profile, speed_variables, n
 		
 		if i >= n_runs - n_slow_runs:
 			print("  slow run!")
+			sum_bins = numpy.sum(B_count, axis=1)			
+			print("  " + str(len(sum_bins) - len(sum_bins[numpy.where(sum_bins)])) + " unfilled bins not yet filled")
 			n_shots = n_shots_slow
 			speed_var = speed_variables_slow
 		else:
@@ -91,10 +93,10 @@ def make_run(laser_file_n, vibrations, n_runs, speed_profile, speed_variables, n
 		S = numpy.zeros(n_shots)
 		for j in range(len(vibrations)):
 			S += LS.signal(T_fs, vibrations[j][0], vibrations[j][1], vibrations[j][2])
-			
-		S = LS.signal_and_laser(S, I)
 		
-		S, M = LS.add_phase_modulation(S, phase_mod_profile = phase_mod_profile)
+		I, M = LS.add_phase_modulation(I, phase_mod_profile = phase_mod_profile)
+		
+		S = LS.signal_and_laser(S, I)
 		
 		temp_b, temp_b_count, temp_b_axis = LS.binning(S, T_bin, M, last_bin)
 				
@@ -137,7 +139,7 @@ def make_run(laser_file_n, vibrations, n_runs, speed_profile, speed_variables, n
 
 
 def medium_PEM(laser_file_n, vibrations):
-	n_runs = 2
+	n_runs = 7
 	speed_profile = "mostly_uniform"
 	speed_variables = [0.45, 0.05, 0.0002, 0.0001]
 	n_shots = 8500
@@ -237,9 +239,9 @@ if __name__ == "__main__":
 	laser_file_n = 2
 	
 #	medium_PEM(laser_file_n, vibrations)
-	fast_10_PEM(laser_file_n, vibrations)
-#	fast_10_none(laser_file_n, vibrations)
-#	fast_5_PEM(laser_file_n, vibrations)
+#	fast_10_PEM(laser_file_n, vibrations)
+	fast_10_none(laser_file_n, vibrations)
+	fast_5_PEM(laser_file_n, vibrations)
 #	fast_5_none(laser_file_n, vibrations)
 
 	
