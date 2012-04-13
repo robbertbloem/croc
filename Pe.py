@@ -656,7 +656,7 @@ class pe(croc.Resources.DataClasses.mess_data):
             if title == "":
                 title = "Spectrum for pixel " + str(pixel) + " - " + self.objectname + ", t2: " + str(self.r_axis[1]) + "\n scans x shots: " + str(self.n_scans) + "x" + str(self.n_shots)            
         
-            P.linear(data[pixel,:], x_axis, x_range = [0, 0], y_range = [0, 0], x_label = x_label, y_label = y_label, title = title, new_figure = new_figure)
+            P.linear(data[pixel,:], x_axis, x_range = x_range, y_range = y_range, x_label = x_label, y_label = y_label, title = title, new_figure = new_figure)
             
 
 
@@ -712,7 +712,7 @@ class pe(croc.Resources.DataClasses.mess_data):
             P.contourplot(data, x_axis, y_axis, x_range = x_range, y_range = y_range, zlimit = zlimit, contours = contours, filled = filled, black_contour = black_contour, title = title, x_label = x_label, y_label = y_label, new_figure = new_figure, diagonal_line = False, flag_aspect_ratio = False)  
         
         else:
-            P.linear(data[pixel,:], x_axis, x_range = [0, 0], y_range = [0, 0], x_label = "Time (fs)", y_label = "Absorbance", title = "Time", new_figure = new_figure)
+            P.linear(data[pixel,:], x_axis, x_range = x_range, y_range = y_range, x_label = "Time (fs)", y_label = "Absorbance", title = title, new_figure = new_figure)
 
 
 
