@@ -16,8 +16,52 @@ hene_fringe = 632/299.792458 #fs
 
 
 
-
-
+#
+#def position_bin(n_shots, n_bins, speed_profile = "mostly_uniform", variables = []):
+#	
+#	t_array = numpy.zeros(n_shots)
+#	c_array = numpy.zeros(n_shots)
+#	
+#	if speed_profile == "mostly_uniform":
+#		
+#		speed_max = variables[0]
+#		
+#		flag_finished = False
+#		
+#		while flag_finished == False:
+#		
+#			# number of shots needed for acceleration and deceleration
+#			n_shots_acc = speed_max // variables[2] + 1
+#			n_shots_dec = speed_max // variables[3] + 1
+#			
+#			if n_shots_acc * 
+#			
+#			
+#			bins = 0
+#			
+#			for i in range(n_acc):
+#				bins += variables[2] * i
+#			
+#			for i in range(n_dec):
+#				bins += variables[3] * i
+#			
+#			if bins > n_bins:
+#				
+#				
+#				
+#			else:
+#				remaining = n_bins - bins
+#				shots_needed = remaining // speed_max
+#				flag_finished = True
+#			
+			
+			
+		
+	
+		
+	
+	
+	
 
 
 
