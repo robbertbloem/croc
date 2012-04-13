@@ -16,44 +16,52 @@ hene_fringe = 632/299.792458 #fs
 
 
 
-#
-#def position_bin(n_shots, n_bins, speed_profile = "mostly_uniform", variables = []):
-#	
-#	t_array = numpy.zeros(n_shots)
-#	c_array = numpy.zeros(n_shots)
-#	
-#	if speed_profile == "mostly_uniform":
-#		
-#		speed_max = variables[0]
-#		
-#		flag_finished = False
-#		
-#		while flag_finished == False:
-#		
-#			# number of shots needed for acceleration and deceleration
-#			n_shots_acc = speed_max // variables[2] + 1
-#			n_shots_dec = speed_max // variables[3] + 1
-#			
-#			if n_shots_acc * 
-#			
-#			
-#			bins = 0
-#			
-#			for i in range(n_acc):
-#				bins += variables[2] * i
-#			
-#			for i in range(n_dec):
-#				bins += variables[3] * i
-#			
-#			if bins > n_bins:
-#				
-#				
-#				
-#			else:
-#				remaining = n_bins - bins
-#				shots_needed = remaining // speed_max
-#				flag_finished = True
-#			
+
+def shots_for_n_bins(n_bins, speed_profile = "mostly_uniform", variables = []):
+
+	if speed_profile == "mostly_uniform":
+		
+		v_max = variables[0] #fs
+		
+		t_max = n_bins * hene_fringe #fs
+		
+		# calculate number shots accelerating/decelerating
+		n_s_a = v_max / variables[2]
+		n_s_d = v_max / variables[3]
+		
+		# calculate time moved (ie bins)
+		n_t_a = n_s_a * v_max / 2.0
+		n_t_d = n_s_d * v_max / 2.0
+		
+		# sum
+		shots_sum = n_s_a + n_s_d
+		t_sum = n_t_a + n_t_d
+		
+		# just accelerating gives to many bins, reduce max speed
+		if t_sum >= t_max:
+			v_max = numpy.sqrt((2 * t_max * variables[2] * variables[3])/(variables[2] + variables[3]))
+			
+			n_s_a = v_max / variables[2]
+			n_s_d = v_max / variables[3]
+			
+			n_shots = n_s_a + n_s_d
+			
+		# we need some more bins, run at full speed
+		else:
+			
+			t_at_vmax = t_max - t_sum
+			n_s_vmax = t_at_vmax / v_max
+	
+			n_shots =  shots_sum + n_s_vmax
+		
+		return int(n_shots * 1.02)
+	else:
+		return False
+			
+				
+			
+			
+			
 			
 			
 		
@@ -128,7 +136,7 @@ def position(n_shots, speed_profile = "uniform", variables = []):
 		if speed_max//acc + speed_max//dec + 2 > n_shots:
 			acc_del_len = speed_max//acc + speed_max//dec + 10
 			speed_max = speed_max * n_shots / acc_del_len
-			print("oops, too short, reduce speed_max to:", speed_max, "fs/shot")
+#			print("oops, too short, reduce speed_max to:", speed_max, "fs/shot")
 			
 		speed = numpy.ones(n_shots) * speed_max
 
@@ -263,7 +271,9 @@ def binning(signal_array, bin_array, chopper_array, last_bin):
 	
 	if bin_array[-1] > last_bin:
 		signal_array = signal_array[numpy.where(bin_array < last_bin)]
-		print("    cut off " + str(bin_array[-1] - last_bin) + " bins")
+		print("    " + str(int(bin_array[-1] - last_bin)) + " bins extra")
+	else:
+		print("    " + str(int(last_bin - bin_array[-1])) + " bins missing")
 	
 	for i in range(len(signal_array)):
 		b[bin_array[i], numpy.where(states == chopper_array[i])] += signal_array[i] 
@@ -299,195 +309,17 @@ def construct_r(b, b_count, b_axis, chopper_array):
 				
 	
 	
-	
-				
 
-
-
-
-	
-
-
-def average_runs(b, max_bins):
-    
-    flag_bins_filled = False
-    
-    states, n_bins, width = numpy.shape(b[0])
-    
-    data = numpy.reshape(numpy.zeros(states * max_bins * width), (states, max_bins, width))
-    
-    max_bins_too_long_flag = True
-    
-    for i in range(runs):
-        states, n_bins, temp = numpy.shape(b[i])
-        if n_bins < max_bins:
-            length = n_bins
-        else:
-            length = max_bins
-            max_bins_too_long_flag = False
-            
-        for j in range(length):
-            data[:,j,:] = data[:,j,:] + b[i][:,j,:]
-    
-    no_count = 0 
-    
-    for i in range(states): 
-        for j in range(max_bins): 
-            if data[i,j,1] != 0:
-                data[i,j,2] = data[i,j,0] / data[i,j,1] 
-            else: 
-                data[i,j,2] = 0
-                no_count += 1
-    
-    if no_count == 0:   
-        flag_bins_filled = True
-
-    if max_bins_too_long_flag:
-        print("End of range not reached")
-    else:
-        print("The whole range has been scanned")
-
-    if no_count:
-        print(no_count, "bins unfilled")
-    else:
-        print("All bins filled")
-        
-    return data	
-	
-		
-		  
-	
-	
 
 
 
 if __name__ == "__main__": 
-	
-	n_shots = 2500
-	k = 1/100
-	speed_profile = "sinsquare" # "uniform" # "mostly_uniform"	# "stepped" # 
-	variables = [2, 0.05]
-	
-	n_runs = 5
-	
-	b = [0]*n_runs
-	b_count = [0]*n_runs
-	b_axis = [0]*n_runs
-	
-	for i in range(n_runs):
-		out_t, out_b = position(n_shots, speed_profile)
-		out_I = laser_intensity(n_shots, k)
-		
-		out_s = signal(out_t, 1600, 900, 1) + signal(out_t, 1700, 1000, 0.3)
-		
-		out_sn = add_noise_to_signal(out_s, out_I)
-		
-		out_snm, out_c = add_phase_modulation(out_sn, phase_mod_profile = "pem")
-		
-		b[i], b_count[i], b_axis[i] = binning(out_snm, out_b, out_c, speed_profile)
-		
-		
-	
-	out_r = average_runs(b, b_count, b_axis, n_runs, 200)
-	
 
-	
-#	 plt.figure()
-#	 plt.plot(out_b[0])
-#	 plt.plot(signal_with_noise)
-#	 plt.plot(10*signal)
-#	 plt.plot(out_x)
-#	 plt.show()
-		
-	
-	
-	
-#	 corr_I = M.correlation_fft(out_laser_intensity)
-#	 
-#	 A_start = [0.9,50,0.1,1000]
-#	 
-#	 t = numpy.arange(n_shots)
-#	 
-#	 t_short = t[:500]
-#	 corr_I_short = corr_I[:500]
-#	 
-#	 A_out = M.fit(t_short, corr_I_short, E.double_exp, A_start)
-#	 
-#	 print(A_out)
-#	 
-#	 
-#	 plt.figure()
-#	 plt.plot(t, corr_I)
-#	 plt.plot(t_short, E.double_exp(A_out, t_short))
-#	 plt.show()
+	n_shots = 8000
+	speed_profile = "mostly_uniform"
+	speed_variables = [0.45, 0.05, 0.0002, 0.0001]
+	n_bins = 1000
 
-
-
-
-
-
-
-
-
-
-
-
-#def laser_intensity(n_shots, k, I0 = 0):
-#	 """
-#	 Calculates the noise per shot
-#	 
-#	 CHANGELOG:
-#	 201201xx/RB: started function as separate script
-#	 20120224/RB: integrated it into croc
-#	 
-#	 INPUT:
-#	 - k: 1/correlation time, in shots
-#	 - I0: start intensity (a bit of randomness is added)
-#	 
-#	 """
-#	 
-#	 I = numpy.zeros(n_shots)
-#	 
-#	 sigma = 2/numpy.sqrt(2*k)
-#	 I[0] = I0 + 10 * numpy.random.randn(1) * sigma * k
-#	 for i in range(n_shots-1):
-#		 I[i+1] = I[i] * (1-k) + numpy.random.randn(1) * sigma * k
-#	 
-#	 return I
-#
-#def laser_intensity_2(n_shots, a, t1, b, t2, I0 = 0):
-#	 """
-#	 Calculates the noise per shot
-#	 
-#	 CHANGELOG:
-#	 201201xx/RB: started function as separate script
-#	 20120224/RB: integrated it into croc
-#	 
-#	 INPUT:
-#	 - k: 1/correlation time, in shots
-#	 - I0: start intensity (a bit of randomness is added)
-#	 
-#	 """
-#	 
-#	 I = numpy.zeros(n_shots)
-#	 
-#	 k1 = 1/t1
-#	 k2 = 1/t2
-#	 
-#	 sig1 = 2/numpy.sqrt(2*k1)
-#	 sig2 = 2/numpy.sqrt(2*k2)
-#	 I[0] = I0 + 10 * a * numpy.random.randn(1) * sig1 * k1 + 10 * b * numpy.random.randn(1) * sig2 * k2 
-#	 for i in range(n_shots-1):
-#		 I[i+1] = I[i] * (1 - a*k1 - b*k2) + numpy.random.randn(1) * sig1 * k1 + numpy.random.randn(1) * sig2 * k2 
-#	 
-#	 return I
-
-
-
-
-
-
-
-
+	shots_for_n_bins(n_bins, speed_profile = "mostly_uniform", variables = speed_variables)
 
 
