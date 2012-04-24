@@ -1345,7 +1345,8 @@ class pefs(pe_exp):
             elif self.data_type_version == "1.3":   
 
                 # very ugly correction 
-                c[-1] = c[-2]
+                # this was a bug in VB6. The array was too long, the last element remained 0.
+#                c[-1] = c[-2]
 
                 m_axis = c + fringes[0]
 

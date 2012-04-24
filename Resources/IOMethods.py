@@ -45,6 +45,10 @@ def import_data_FS(path_and_filename, n_shots = 30000, n_channels = 37, flag_cou
         
         if flag_counter:
             c = data[-n_shots:]
+            if c[-1] == 0:
+                # this is to repair a (now fixed) bug from VB6. 
+                c = data[-n_shots-1:-1]
+            
             data = data[:-n_shots]
         
         # order the data in a 2d array
