@@ -80,11 +80,13 @@ def import_binned_data(path_and_filename, n_pixels, diagram):
         b_axis = numpy.arange(fringes[0], fringes[1] + 1)
         n_fringes = len(b_axis)
         
+        # without the two fringes at the end, the number of elements should be equal to (2*n_pixels + 1), for each chopper state the pixels and the count
+        
         if ((len(data)-2)/n_fringes) == (2 * n_pixels + 2):
-                    
+            
             b_count = [0]*2
-            b_count[0] = data[-2 - n_fringes:-2]
-            b_count[1] = data[-2 - 2*n_fringes:-2 - n_fringes]
+            b_count[0] = data[-2 - 2*n_fringes:-2 - n_fringes]
+            b_count[1] = data[-2 - n_fringes:-2]
             
             data = data[:2*n_pixels*n_fringes]         
     
