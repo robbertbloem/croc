@@ -1415,8 +1415,6 @@ class pefs(pe_exp):
         else:
             error_flag = True
 
-        print(self.r[0])
-
         # now append that we imported this scan
         self.imported_scans.append(scan)
         
