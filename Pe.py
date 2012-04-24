@@ -1317,6 +1317,8 @@ class pefs(pe_exp):
         # for the 4 files
         for k in range(4):
         
+            flag_skip_binning = False
+        
             # to distuinguish between the two diagrams
             if k < 2:
                 diagram = 0
@@ -1329,8 +1331,18 @@ class pefs(pe_exp):
                     [m, fringes] = self.import_raw_data(filename[k])
                 elif self.data_type_version == "1.3":
                     [m, c, fringes] = self.import_raw_data(filename[k], flag_counter = True)
-                else:
-                    return False
+                elif self.data_type_version == "1.4":
+
+                    result = self.import_binned_data(filename[k], diagram)
+                    flag_skip_binning = True
+
+                    if result == False:
+                        try:
+                            [m, c, fringes] = self.import_raw_data(filename[k], flag_counter = True)
+                            flag_skip_binning = False
+                        except IOError:
+                            return False
+                            
             except IOError:
                 return False
                                     
@@ -1344,16 +1356,24 @@ class pefs(pe_exp):
                 
             elif self.data_type_version == "1.3":   
 
-                # very ugly correction 
-                # this was a bug in VB6. The array was too long, the last element remained 0.
-#                c[-1] = c[-2]
-
                 m_axis = c + fringes[0]
 
                 if m_axis[-1] == fringes[1]:
                     correct_count = True
                 else:
                     correct_count = False
+            
+            elif self.data_type_version == "1.4": 
+                # the case where the binning failed and VB6 reverts to data version 1.3
+                if flag_skip_binning == False:
+                    m_axis = c + fringes[0]
+    
+                    if m_axis[-1] == fringes[1]:
+                        correct_count = True
+                    else:
+                        correct_count = False   
+                else:
+                    correct_count = True
                 
             else:
                 D.printError("Unknown data type", inspect.stack())
@@ -1365,8 +1385,8 @@ class pefs(pe_exp):
                 
                 self.incorrect_count[k] += 1
 
-            # if it is consistent, continue
-            else:
+            # if it is consistent, continue to bin the data
+            elif flag_skip_binning == False:
                 print("Scan: " + str(scan) + ", File: " + str(k) + ": Count is correct!")
                           
                 # make b the correct size, if it isn't already
@@ -1380,6 +1400,10 @@ class pefs(pe_exp):
                 if flag_calculate_noise:
 #                    print("This function does not exist anymore.")
                     self.bin_for_noise(m, m_axis, diagram, flag_noise_time_domain)
+            
+            else:
+                print("Scan: " + str(scan) + ", File: " + str(k) + ": Scan imported")
+                
 
                 # all the data is now written into self.b* 
 
@@ -1390,6 +1414,8 @@ class pefs(pe_exp):
                 self.construct_r()
         else:
             error_flag = True
+
+        print(self.r[0])
 
         # now append that we imported this scan
         self.imported_scans.append(scan)
@@ -1453,14 +1479,40 @@ class pefs(pe_exp):
         """
     
         self.b = [numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels), dtype = "cfloat"),numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels), dtype = "cfloat"),numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels), dtype = "cfloat"),numpy.zeros((self.n_fringes + 2 * self.extra_fringes, self.n_channels), dtype = "cfloat")] 
+        # from -20 to 920
         self.b_axis[0] = numpy.arange(- self.extra_fringes, self.n_fringes + self.extra_fringes)
+        # from -20 to 920
         self.b_axis[1] = numpy.arange(- self.extra_fringes, self.n_fringes + self.extra_fringes)
         self.b_count = numpy.zeros((4, self.n_fringes + 2 * self.extra_fringes))
         self.r = [numpy.zeros((self.n_fringes, 32), dtype = "cfloat"),numpy.zeros((self.n_fringes, 32), dtype = "cfloat")] 
 
 
 
+    def import_binned_data(self, path_and_filename, diagram):
+    
+        b, b_count, b_axis = IOM.import_binned_data(path_and_filename, self.n_pixels, diagram)
+        
+        # if b etc are integers, the importing went wrong
+        if type(b) == int:
+            return False
+        
+        if numpy.shape(self.b_axis)[-1] == 2:
+            self.make_arrays()        
 
+        if diagram == 0:
+            short = -int(self.b_axis[0][0] - b_axis[0] + 4000)
+            long = -int(self.b_axis[0][-1] - b_axis[-1] + 4000)
+        else:
+            short = int(self.b_axis[1][-1] + b_axis[0] - 4000)
+            long = int(self.b_axis[1][0] - b_axis[-1] + 4000)
+
+        # work around since self.b[list][2D-numpy.array]
+        self.b[diagram*2][short:long, :self.n_pixels] += b[diagram*2,:,:]
+        self.b[diagram*2+1][short:long, :self.n_pixels] += b[diagram*2+1,:,:]
+        
+        self.b_count[diagram*2:diagram*2+2, short:long] += b_count[:][:]
+
+        return True
 
 
 
