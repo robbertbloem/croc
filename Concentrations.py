@@ -36,8 +36,6 @@ def protein_ligand_kinetics(kd, cA, cX, X_steps = 100, print_for_X = [], A_name 
     - flag_plot: If True, it will make a plot. If cX is an integer, it will not make a plot.
     - y_range: the plot will show the percentages in this range. Set to [0,0] to use the automatic range.
     
-    
-    
     """
     
     print("This routine calculates the percentage of " + X_name + " that is bound to " + A_name + ".")
@@ -66,14 +64,11 @@ def protein_ligand_kinetics(kd, cA, cX, X_steps = 100, print_for_X = [], A_name 
         cX = numpy.arange(start, stop, step)
     
     xy = [0,0]
-    
-    if flag_plot:
-        plt.figure()
-        x_plot_prop = value_to_string(cX[-1], "M")
+
+    r = numpy.zeros( (len(kd),len(cA),len(cX)) )
     
     for i in range(len(kd)):
         for j in range(len(cA)):
-            r = numpy.zeros(len(cX))
             for k in range(len(cX)):
                 a = 1
                 b = -(cA[j] + cX[k] + kd[i])
@@ -84,27 +79,43 @@ def protein_ligand_kinetics(kd, cA, cX, X_steps = 100, print_for_X = [], A_name 
                 for m in range(2):
                     if xy[m] > cA[j] or xy[m] > cX[k]:
                         pass
-                    else:
-                        r[k] = 100*xy[m]/cX[k]  
-                        
-            temp = value_to_string(kd[i], "M")
-            kd_str = str(temp[0]) + " " + temp[1]
-    
-            temp = value_to_string(cA[j], "M")
-            cA_str = str(temp[0]) + " " + temp[1]
+                    else:   
+                        # percentage!
+                        r[i, j, k] = 100*xy[m]/cX[k]  
 
-            if len(print_for_X) != 0:
+    if len(print_for_X) != 0:
+
+        for i in range(len(kd)):
+            for j in range(len(cA)):
+    
+                temp = value_to_string(kd[i], "M")
+                kd_str = str(temp[0]) + " " + temp[1]
+        
+                temp = value_to_string(cA[j], "M")
+                cA_str = str(temp[0]) + " " + temp[1]
+            
                 print("Kd: " + kd_str + ", [" + A_letter + "]: " + cA_str) 
                 for k in range(len(print_for_X)):
                     index = numpy.where(cX >= print_for_X[k])
                     temp = value_to_string(cX[index[0][0]], "M", flag_round = True)
                     cX_str = str(temp[0]) + " " + temp[1]
-                    print("    [" + X_letter + "]: " + cX_str + ": " + str(numpy.round(r[index[0][0]],1)) + "%")
+                    print("    [" + X_letter + "]: " + cX_str + ": " + str(numpy.round(r[i, j, index[0][0]],1)) + "%")
 
-            if flag_plot:
-                plt.plot(x_plot_prop[2]*cX, r, label = "kd: " + kd_str + ", [" + A_letter + "]: " + cA_str)
-    
     if flag_plot:
+
+        plt.figure()
+        x_plot_prop = value_to_string(cX[-1], "M")
+
+        for i in range(len(kd)):
+            for j in range(len(cA)):
+    
+                temp = value_to_string(kd[i], "M")
+                kd_str = str(temp[0]) + " " + temp[1]
+        
+                temp = value_to_string(cA[j], "M")
+                cA_str = str(temp[0]) + " " + temp[1]
+
+                plt.plot(x_plot_prop[2]*cX, r[i,j,:], label = "kd: " + kd_str + ", [" + A_letter + "]: " + cA_str)
     
         plt.title("Percentage " + X_letter + " bound to " + A_letter + " a function of concentration and Kd\n" + A_letter + "+" + X_letter + " <=> " + A_letter + X_letter)
         
@@ -120,6 +131,8 @@ def protein_ligand_kinetics(kd, cA, cX, X_steps = 100, print_for_X = [], A_name 
         plt.grid(b=True, which="both")  
             
         plt.show()
+
+    return r, kd, cA, cX
 
 
 def value_to_string(val, unit, flag_round = False, flag_debug = False):
@@ -211,6 +224,7 @@ def concentration_vs_percentage_bound(kd, concentration_A, concentration_B_range
     
 
 
+    
 
 
     
