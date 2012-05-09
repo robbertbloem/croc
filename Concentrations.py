@@ -15,7 +15,7 @@ import Resources.Mathematics as M
 
 
 
-def protein_ligand_kinetics(kd, cA, cX, X_steps = 100, print_for_X = [], A_name = "A", X_name = "X", flag_plot = True, y_range = [0,0]):
+def protein_ligand_kinetics(kd, cA, cX, X_steps = 100, print_for_X = [], A_name = "A", X_name = "X", flag_plot = True, y_range = [0,0], verbose = True):
     """
     For the equilibrium A + X <-> AX, with dissociation constant kd and with concentrations for A and X, calculate the percentage of how much of X is bound to A. 
     In general, A is the protein at a known concentration and X is a range of ligand concentrations. The plot can be used to find the best concentration of the ligand for a given protein concentration.
@@ -38,18 +38,19 @@ def protein_ligand_kinetics(kd, cA, cX, X_steps = 100, print_for_X = [], A_name 
     
     """
     
-    print("This routine calculates the percentage of " + X_name + " that is bound to " + A_name + ".")
+    if verbose:
+        print("This routine calculates the percentage of " + X_name + " that is bound to " + A_name + ".")
     
     X_letter = X_name[0]
     A_letter = A_name[0]
 
-    if type(kd) == float or type(kd) == int:
+    if type(kd) == float or type(kd) == int or type(kd) == numpy.float64:
         kd = [kd]   
     
-    if type(cA) == float or type(cA) == int:
+    if type(cA) == float or type(cA) == int or type(cA) == numpy.float64:
         cA = [cA]
     
-    if type(cX) == float or type(cX) == int:
+    if type(cX) == float or type(cX) == int or type(cX) == numpy.float64:
         cX = [cX]
         flag_plot = False
     elif type(cX) == list and X_steps <= 1:
@@ -222,7 +223,69 @@ def concentration_vs_percentage_bound(kd, concentration_A, concentration_B_range
     plt.show()  
     
     
+def ITC_sim():
+    
+    # in Steves plot, it takes 10 injections of ligand to reach molar ratio 1
+    # the concentration of ligand is ~10x higher than of protein
+    # this means that the volume ligand added is ~100x smaller volume of protein 
+    
+    kd = 50e-7
+    
+    volume_cell = 1e-3
+    volume_added = 0.5e-5
+    
+    mol_A = 0.5e-3 * volume_cell
+    mol_X_add = 5e-3 * volume_added
+    
+    n_steps = 40
+    
+    # kcal per mol injectant or whatever
+    binding_energy = -1e8
 
+    perc_X_bound = numpy.zeros(n_steps)
+    mol_X_bound = numpy.zeros(n_steps)
+    mol_X = numpy.zeros(n_steps)
+    volume_AX = numpy.zeros(n_steps)
+    cA = numpy.zeros(n_steps)
+    cX = numpy.zeros(n_steps)
+    
+    binding_events = numpy.zeros(n_steps)
+    
+    for i in range(0, n_steps):
+        
+        mol_X[i] = (i+1) * mol_X_add
+        volume_AX[i] = volume_cell + (i+1) * volume_added
+        
+        cA[i] = mol_A / volume_AX[i]
+        cX[i] = mol_X[i] / volume_AX[i]
+        
+        temp = protein_ligand_kinetics(kd, cA[i], cX[i], verbose = False)
+        
+        perc_X_bound[i] = temp[0]
+        mol_X_bound[i] = mol_X[i] * perc_X_bound[i] / 100
+    
+    for i in range(n_steps):
+        
+        if i == 0:
+            binding_events[i] = mol_X_bound[i]
+        else:
+            binding_events[i] = mol_X_bound[i] - mol_X_bound[i-1]
+            
+
+
+
+
+        
+
+    plt.figure()
+#    plt.plot(mol_X/mol_A, mol_X_bound)
+    plt.plot(mol_X/mol_A, binding_events * binding_energy)
+    plt.grid(b=True, which="both")  
+    plt.xlabel("Molar ratio X/A")
+    plt.ylabel("Energy (au)")
+    plt.show()
+    
+    
 
     
 
@@ -238,11 +301,21 @@ if __name__ == "__main__":
     cX = [0, 3e-3]
     print_for_X = [1.3e-3]
     
-    protein_ligand_kinetics(kd, cA, cX, X_steps = 100, print_for_X = print_for_X, flag_plot = True, A_name = "Protein", X_name = "Ligand", y_range = [80,100])  
+    #protein_ligand_kinetics(kd, cA, cX, X_steps = 100, print_for_X = print_for_X, flag_plot = True, A_name = "Protein", X_name = "Ligand", y_range = [80,100])  
     
+    #ITC_sim()
 
+    l = numpy.arange(0,10,0.1)
+    k = 1
+    q = (k*l)/(1+k*l)
+
+    d = numpy.zeros(len(q)-1)
+    for i in range(len(q)-1):
+        d[i] = (q[i+1]-q[i])
     
-    
+    plt.figure()
+    plt.plot(d)
+    plt.show()
     
     
     
