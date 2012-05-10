@@ -5,7 +5,14 @@
 \usepackage{amsbsy}
 \usepackage{amsmath}
 
-
+\newcommand{\pc}{[P]}
+\newcommand{\lc}{[L]}
+\newcommand{\plc}{[PL]}
+\newcommand{\kd}{k_d}
+\newcommand{\ka}{k_a}
+\newcommand{\pcz}{\lbrack P_T\rbrack}
+\newcommand{\lcz}{\lbrack L_T\rbrack}
+\newcommand{\xr}{X_r}
 
 \begin{document}
 
@@ -33,5 +40,144 @@ Percentage bound is:
 \frac{[AB]}{[A_0]}\cdot 100\%
 \end{eqnarray}
 
+
+\section*{Determine $k_a$}
+
+According to paper Indyk (1998).
+
+Protein, $M_T$ is now $P_0$. Ligand, $L_T$ is now $L_0$. The binding constant $k_b$ is now $k_a$. 
+
+Reaction
+\begin{eqnarray}
+P+L \stackrel{k_a}{\rightleftharpoons} PL
+\end{eqnarray}
+with binding constant $k_a$
+\begin{eqnarray}
+\frac{\plc}{\pc \lc} = \frac{1}{k_d} = k_a \label{eq:ka}
+\end{eqnarray}
+
+\begin{eqnarray}
+\pcz = \pc + \plc \\
+\lcz = \lc + \plc \\
+\plc = \pc \lc \ka \\
+\pcz = \pc + \pc \ka \lc = \pc(1+\ka\lc)\\
+\lcz = \lc + \lc \ka \pc \\
+\frac{\pcz}{1+\ka\lc} = \pc = \frac{\lcz-\lc}{\ka\lc} \\
+\ka\pcz\lc = (\lcz-\lc)(1+\ka\lc)
+\end{eqnarray}
+This yields
+\begin{eqnarray}
+\ka\pcz\lc - \lcz - \lcz\ka\lc + \lc + \ka\lc^2 = 0 \\
+\ka\lc^2 + \ka\pcz\lc - \lcz\ka\lc + \lc - \lcz = 0 
+\end{eqnarray}
+
+\subsection*{Following the paper}
+Am I stupid? In the paper, from eq 9 to 10 doesn't work. Anyway, to continue with eq. 10.
+\begin{eqnarray}
+\lc^2 + \lc ( \pcz - \lcz + 1/\ka) - \lcz = 0 
+\end{eqnarray}
+We fill this in the quadratic equation:
+\begin{eqnarray}
+a=1\\
+b=\pcz - \lcz + 1/\ka\\
+c=-\lcz\\
+\end{eqnarray}
+Huh?
+\begin{eqnarray}
+\lc=\frac{-(\lcz-\pcz-1/\ka)\pm\sqrt{(\pcz-\lcz-1/\ka)^2+4\lcz)}}{2}
+\end{eqnarray}
+We divide by $\pcz$ and define $\xr=\lcz/\pcz$ and $r=1/(\ka\pcz)$
+\begin{eqnarray}
+\frac{\lc}{\pcz} = \frac{\frac{\lcz}{\pcz}-\frac{\pcz}{\pcz}-\frac{1}{\ka\pcz} \pm \sqrt{(\frac{\pcz}{\pcz}-\frac{\lcz}{\pcz}+\frac{1}{\ka\pcz})^2+4\frac{\lcz}{\pcz}}}{2}\\
+\frac{\lc}{\pcz} = \frac{\xr - 1 - r \pm \sqrt{(1 - \xr + r)^2 + 4\xr}}{2}
+\end{eqnarray}
+This again deviates from the paper, where the signs of $X_r$ are the other way around.
+
+The calorimeter measures $d q / d \lcz$, where $q$ is heat.
+
+Since
+\begin{eqnarray}
+\frac{d\lc}{d\lcz}=\frac{d\lc}{d\xr}\frac{d\xr}{d\lcz}\\
+\frac{d\xr}{d\lcz}=\frac{1}{\pcz}
+\end{eqnarray}
+the derivative is
+\begin{eqnarray}
+\frac{d\lc}{d\xr} = \left( \frac{1}{2} + \frac{\xr+r-1}{\sqrt{(\xr+r+1)^2-4\xr}} \right) \pcz \\
+\frac{d\lc}{d\lcz} = \left( \frac{1}{2} + \frac{\xr+r-1}{\sqrt{(\xr+r+1)^2-4\xr}} \right) 
+\end{eqnarray}
+
+
+\subsection*{My own derivation}
+\begin{eqnarray}
+\lc^2 + \lc ( \pcz - \lcz + 1/\ka) - \lcz/\ka = 0 
+\end{eqnarray}
+We fill this in the quadratic equation:
+\begin{eqnarray}
+a=1\\
+b=\pcz - \lcz + 1/\ka\\
+c=-\lcz/\ka\\
+\lc=\frac{-\left( \pcz-\lcz+1/\ka \right)\pm \sqrt{(\pcz-\lcz+1/\ka)^2+4\lcz/\ka)}}{2}
+\end{eqnarray}
+We divide by $\pcz$ and define $\xr=\lcz/\pcz$ and $r=1/(\ka\pcz)$
+\begin{eqnarray}
+\frac{\lc}{\pcz} = \frac{ -\frac{\pcz}{\pcz} + \frac{\lcz}{\pcz} - \frac{1}{\ka\pcz} \pm  \sqrt{\left( \frac{\pcz}{\pcz}-\frac{\lcz}{\pcz}+\frac{1}{\ka\pcz} \right)^2+4\frac{\lcz}{\ka\pcz}}}{2}\\
+\frac{\lc}{\pcz} = \frac{-1 + \xr -r \pm \sqrt{(1 - \xr + r)^2+4\xr/\ka}}{2}
+\end{eqnarray}
+the derivative is
+\begin{eqnarray}
+\frac{d\lc}{d\xr} = \left( \frac{1}{2} + \frac{\ka(\xr-r-1)+2}{ 2\ka\sqrt{(-\xr+r+1)^2 + 4\xr/\ka} } \right) \pcz\\
+\frac{d\lc}{d\lcz} = \left( \frac{1}{2} + \frac{\ka(\xr-r-1)+2}{ 2\ka\sqrt{(-\xr+r+1)^2 + 4\xr/\ka} } \right)
+\end{eqnarray}
+
+For one reason or the other, they took $X_r=-X_r$. 
+
+
+\subsection*{Calculating the heat}
+
+The expression for the total heat that has been released is
+\begin{eqnarray}
+q=\plc \Delta H V
+\end{eqnarray}
+The machine measures $d q /d \lcz$:
+\begin{eqnarray}
+\frac{d q}{d\lcz} = \Delta H V \frac{d\plc}{d\lcz} \\
+\frac{d\plc}{d\lcz} = \frac{d\lcz}{d\lcz} - \frac{d\lc}{d\lcz} 
+\end{eqnarray}
+Which is what we calculated above.
+
+We should take the positive part of the quadratic function.
+
+Plugging things into each other:
+\begin{eqnarray}
+\frac{d q}{d\lcz} = \Delta H V \left( \frac{1}{2} + \frac{\ka(-\xr-r-1)+2}{ 2\ka\sqrt{(\xr+r+1)^2 - 4\xr/\ka} } \right)
+\end{eqnarray}
+
+
 \end{document}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
