@@ -264,9 +264,9 @@ def contourplot(data, x_axis, y_axis, x_range = [0, 0], y_range = [0, -1], zlimi
         y_min_i = 0
     
     try:
-        y_max_i = numpy.where(y_axis > y_max)[0][0]
+        y_max_i = numpy.where(y_axis > y_max)[0][0] + 1
     except: 
-        y_max_i = len(y_axis)
+        y_max_i = len(y_axis) + 1
 
     try:
         x_min_i = numpy.where(x_axis < x_min)[0][-1]
@@ -274,14 +274,20 @@ def contourplot(data, x_axis, y_axis, x_range = [0, 0], y_range = [0, -1], zlimi
         x_min_i = 0
     
     try:
-        x_max_i = numpy.where(x_axis > x_max)[0][0]
+        x_max_i = numpy.where(x_axis > x_max)[0][0] + 1
     except: 
-        x_max_i = len(x_axis)
+        x_max_i = len(x_axis) + 1
     
+    print(x_axis[x_max_i], x_max)
     
+    # truncate the data, this speeds up the plotting
+    data = data[y_min_i:y_max_i,x_min_i:x_max_i]
+    x_axis = x_axis[x_min_i:x_max_i]
+    y_axis = y_axis[y_min_i:y_max_i]
     
     # now make the actual contours   
-    V = make_contours_2d(data[y_min_i:y_max_i, x_min_i:x_max_i], zlimit, contours)
+    #V = make_contours_2d(data[y_min_i:y_max_i, x_min_i:x_max_i], zlimit, contours)
+    V = make_contours_2d(data, zlimit, contours)
     
     # print some extra stuff if the debug flag is set
     if debug_flag:

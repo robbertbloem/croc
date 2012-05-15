@@ -127,7 +127,7 @@ def protein_ligand_kinetics(kd, cA, cX, X_steps = 100, print_for_X = [], A_name 
         plt.xlim(x_plot_prop[2]*cX[0], x_plot_prop[2]*cX[-1])
         plt.xlabel("[" + X_letter + "] (" + x_plot_prop[1] + ")")
         
-        plt.legend(loc=0)
+        plt.legend(loc=0)#"lower right")
         
         plt.grid(b=True, which="both")  
             
@@ -296,26 +296,26 @@ def ITC_sim():
 
 if __name__ == "__main__": 
     
-    kd = [48.5e-6, 58.5e-6, 68.5e-6]
-    cA = [1.7e-3]
-    cX = [0, 3e-3]
-    print_for_X = [1.3e-3]
+    kd = [58.5e-6]
+    cA = [1e-3, 2e-3, 3e-3, 5e-3, 7.5e-3, 10e-3]
+    cX = [0, 10e-3]
+    print_for_X = []
     
-    #protein_ligand_kinetics(kd, cA, cX, X_steps = 100, print_for_X = print_for_X, flag_plot = True, A_name = "Protein", X_name = "Ligand", y_range = [80,100])  
+    protein_ligand_kinetics(kd, cA, cX, X_steps = 100, print_for_X = print_for_X, flag_plot = True, A_name = "Protein", X_name = "Ligand", y_range = [80,100])  
     
     #ITC_sim()
 
-    l = numpy.arange(0,10,0.1)
-    k = 1
-    q = (k*l)/(1+k*l)
-
-    d = numpy.zeros(len(q)-1)
-    for i in range(len(q)-1):
-        d[i] = (q[i+1]-q[i])
-    
-    plt.figure()
-    plt.plot(d)
-    plt.show()
+#    l = numpy.arange(0,10,0.1)
+#    k = 1
+#    q = (k*l)/(1+k*l)
+#
+#    d = numpy.zeros(len(q)-1)
+#    for i in range(len(q)-1):
+#        d[i] = (q[i+1]-q[i])
+#    
+#    plt.figure()
+#    plt.plot(d)
+#    plt.show()
     
     
     
