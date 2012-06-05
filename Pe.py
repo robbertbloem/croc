@@ -1489,28 +1489,66 @@ class pefs(pe_exp):
     def import_binned_data(self, path_and_filename, diagram):
     
         b, b_count, b_axis = IOM.import_binned_data(path_and_filename, self.n_pixels, diagram)
-        
+   
         # if b etc are integers, the importing went wrong
         if type(b) == int:
             return False
         
         if numpy.shape(self.b_axis)[-1] == 2:
-            self.make_arrays()        
-
-        # to get rid of the bins outside of the range
-        if diagram == 0:
-            short = -int(self.b_axis[0][0] - b_axis[0] + 4000)
-            long = -int(self.b_axis[0][-1] - b_axis[-1] + 4000)
-        else:
-            short = int(self.b_axis[1][-1] + b_axis[0] - 4000)
-            long = int(self.b_axis[1][0] - b_axis[-1] + 4000)
-
-        # work around since self.b[list][2D-numpy.array]
-        self.b[diagram*2][short:long, :self.n_pixels] += b[diagram*2,:,:]
-        self.b[diagram*2+1][short:long, :self.n_pixels] += b[diagram*2+1,:,:]
+            self.make_arrays()     
         
-        self.b_count[diagram*2:diagram*2+2, short:long] += b_count[:][:]
+#        print(numpy.shape(b))
+#        print(numpy.shape(b_count))
+#        print(numpy.shape(b_axis))
+        
+        
+        for i in range(len(b_axis)):
+            # rephasing
+            if diagram == 0:
+                index_self = int(b_axis[i] - 4000 + self.extra_fringes)
+            elif diagram == 1:
+                index_self = int(-(b_axis[i] - 4000) + self.extra_fringes)
+                
+            for j in range(4):
+                self.b[j][index_self, :self.n_pixels] += b[j][i,:]
+                
+                if diagram == 0:
+                    if j == 0 or j == 1:
+                        self.b_count[j][index_self] += b_count[j][i]
+                else:
+                    if j == 2 or j == 3:
+                        self.b_count[j][index_self] += b_count[j-2][i]
 
+        
+        
+        
+
+#        # to get rid of the bins outside of the range
+#        if diagram == 0:
+#            short = -int(self.b_axis[0][0] - b_axis[0] + 4000)
+#            long = -int(self.b_axis[0][-1] - b_axis[-1] + 4000)
+#        else:
+#            short = int(self.b_axis[1][-1] + b_axis[0] - 4000)
+#            long = int(self.b_axis[1][0] - b_axis[-1] + 4000)
+#
+#        # work around since self.b[list][2D-numpy.array]
+#        if diagram == 0:
+#            for i in range(len(b_axis)):
+#            
+#                index = int(b_axis[i] - 4000 + self.extra_fringes)
+#                self.b[diagram*2][index, :self.n_pixels] += b[diagram*2,i,:]
+#                self.b_count[diagram*2, index] += b_count[diagram*2][i]
+#        elif diagram == 1:
+#            for i in range(len(b_axis
+#                index = int(-(b_axis[i] - 4000) + self.extra_fringes)
+#                self.b[diagram*2+1][index, :self.n_pixels] += b[diagram*2+1,i,:]
+#                self.b_count[diagram*2+1, index] += b_count[diagram*2+1][i]
+#            
+##        self.b[diagram*2][short:long, :self.n_pixels] += b[diagram*2,:,:]
+##        self.b[diagram*2+1][short:long, :self.n_pixels] += b[diagram*2+1,:,:]
+#        
+##        self.b_count[diagram*2:diagram*2+2, short:long] += b_count[:][:]
+#
         return True
 
 
@@ -1604,10 +1642,10 @@ class pefs(pe_exp):
             # convert it to mOD
             for j in range(2):
                 self.r[j][:,:self.n_pixels] = -numpy.log10(1+ 2*(temp[2*j,:,:self.n_pixels] - temp[2*j+1,:,:self.n_pixels])/self.reference[:self.n_pixels]) 
-                
-            # the time order for the NR data binned in VB6 is reverse
-            if self.data_type_version == "1.4":
-                self.r[1][:,:] = self.r[1][::-1,:]
+#                
+#            # the time order for the NR data binned in VB6 is reverse
+#            if self.data_type_version == "1.4":
+#                self.r[1][:,:] = self.r[1][::-1,:]
         
         #self.r = numpy.nan_to_num(self.r)
         
