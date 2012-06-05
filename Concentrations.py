@@ -14,7 +14,6 @@ import matplotlib.pyplot as plt
 import Resources.Mathematics as M
 
 
-
 def protein_ligand_kinetics(kd, cA, cX, X_steps = 100, print_for_X = [], A_name = "A", X_name = "X", flag_plot = True, y_range = [0,0], verbose = True):
     """
     For the equilibrium A + X <-> AX, with dissociation constant kd and with concentrations for A and X, calculate the percentage of how much of X is bound to A. 
