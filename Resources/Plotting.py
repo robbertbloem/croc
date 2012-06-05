@@ -266,7 +266,7 @@ def contourplot(data, x_axis, y_axis, x_range = [0, 0], y_range = [0, -1], zlimi
     try:
         y_max_i = numpy.where(y_axis > y_max)[0][0] + 1
     except: 
-        y_max_i = len(y_axis) + 1
+        y_max_i = len(y_axis)
 
     try:
         x_min_i = numpy.where(x_axis < x_min)[0][-1]
@@ -276,9 +276,9 @@ def contourplot(data, x_axis, y_axis, x_range = [0, 0], y_range = [0, -1], zlimi
     try:
         x_max_i = numpy.where(x_axis > x_max)[0][0] + 1
     except: 
-        x_max_i = len(x_axis) + 1
+        x_max_i = len(x_axis)
     
-    print(x_axis[x_max_i], x_max)
+#    print(x_axis[x_max_i], x_max)
     
     # truncate the data, this speeds up the plotting
     data = data[y_min_i:y_max_i,x_min_i:x_max_i]
