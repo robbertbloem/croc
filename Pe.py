@@ -1605,9 +1605,9 @@ class pefs(pe_exp):
             for j in range(2):
                 self.r[j][:,:self.n_pixels] = -numpy.log10(1+ 2*(temp[2*j,:,:self.n_pixels] - temp[2*j+1,:,:self.n_pixels])/self.reference[:self.n_pixels]) 
                 
-                # the time order for the NR data binned in VB6 is reverse
-                if self.data_type_version == "1.4" and j == 1:
-                    self.r[j][:,:] = self.r[j][::-1,:]
+            # the time order for the NR data binned in VB6 is reverse
+            if self.data_type_version == "1.4":
+                self.r[1][:,:] = self.r[1][::-1,:]
         
         #self.r = numpy.nan_to_num(self.r)
         
