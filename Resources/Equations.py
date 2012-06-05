@@ -42,3 +42,111 @@ def double_exp(A,t):
     
 def rb_exp(A,t):
     return A[0]*numpy.exp(-t/A[1]) 
+
+def rb_gaussian(A, t, ignore = -1):
+    """
+    A[0]: sigma (sigma^2 = variance)
+    A[1]: mu (mean)
+    A[2]: offset 
+    A[3]: scale, before offset
+    
+    ignore: 
+    == 2: ignore the offset
+    == 3: ignore the scale
+    == 23: ignore both the scale and offset
+    """
+
+    if ignore == 2:
+        return (A[3]/(A[0]*numpy.sqrt(2*numpy.pi))) * numpy.exp(-(t-A[1])**2/(2*A[0]**2)) 
+        
+    elif ignore == 3:
+        return (A[3]/(A[0]*numpy.sqrt(2*numpy.pi))) * numpy.exp(-(t-A[1])**2/(2*A[0]**2))         
+
+    elif ignore == 23:
+        return (1/(A[0]*numpy.sqrt(2*numpy.pi))) * numpy.exp(-(t-A[1])**2/(2*A[0]**2))   
+
+    else:
+        return (A[3]/(A[0]*numpy.sqrt(2*numpy.pi))) * numpy.exp(-(t-A[1])**2/(2*A[0]**2)) + A[2]
+
+
+
+def rb_two_gaussians(A, t, ignore = -1):
+    
+    return rb_gaussian(A[:4], t, ignore = ignore) + rb_gaussian(A[4:], t, ignore = ignore)
+      
+
+def rb_lorentzian(A, t, ignore = -1):
+    """
+    A[0]: gamma
+    A[1]: mean
+    A[2]: offset
+    A[3]: scale
+
+    ignore: 
+    == 2: ignore the offset
+    == 3: ignore the scale
+    == 23: ignore both the scale and offset
+    """
+    if ignore == 2:
+        return A[3]/(numpy.pi * A[0] * (1 + ((t - A[1])/A[0])**2))
+    
+    elif ignore == 3:
+        return 1/(numpy.pi * A[0] * (1 + ((t - A[1])/A[0])**2)) + A[2]
+    
+    elif ignore == 23:
+        return 1/(numpy.pi * A[0] * (1 + ((t - A[1])/A[0])**2))
+    
+    else:
+        return A[3]/(numpy.pi * A[0] * (1 + ((t - A[1])/A[0])**2)) + A[2]
+
+
+def rb_two_lorentzians(A, t, ignore = -1):
+    
+    return rb_lorentzian(A[:4], t, ignore = ignore) + rb_lorentzian(A[4:], t, ignore = ignore)
+
+
+#def rb_gaussian(A,t):
+#    """
+#    A[0]: sigma
+#    A[1]: mu
+#    A[2]: offset
+#    A[3]: scale, before offset
+#    """
+#    return (1/(A[0]*numpy.sqrt(2*numpy.pi))) * numpy.exp(-(t-A[1])**2/(2*A[0]**2)) + A[2]
+#
+#def rb_gaussian_2(A,t):
+#    """
+#    A[0]: sigma
+#    A[1]: mu
+#    A[2]: offset
+#    A[3]: scale, before offset
+#    """
+#    return (A[3]/(A[0]*numpy.sqrt(2*numpy.pi))) * numpy.exp(-(t-A[1])**2/(2*A[0]**2)) + A[2]
+#
+#def rb_gaussian_3(A,t):
+#    """
+#    A[0]: sigma
+#    A[1]: mu
+#    A[2]: offset
+#    A[3]: scale, before offset
+#    """
+#    return (A[3]/(A[0]*numpy.sqrt(2*numpy.pi))) * numpy.exp(-(t-A[1])**2/(2*A[0]**2)) 
+#
+#def rb_gaussian_test(A,t):
+#    """
+#    A[0]: sigma
+#    A[1]: mu
+#    A[2]: offset
+#    """
+##    return rb_gaussian(A[:4],t) - rb_gaussian(A[4:],t)
+#    return rb_lorentzian(A[:4],t) - rb_lorentzian(A[4:],t)
+    
+
+
+    
+    
+    
+    
+    
+    
+    
