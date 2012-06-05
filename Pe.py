@@ -1497,6 +1497,7 @@ class pefs(pe_exp):
         if numpy.shape(self.b_axis)[-1] == 2:
             self.make_arrays()        
 
+        # to get rid of the bins outside of the range
         if diagram == 0:
             short = -int(self.b_axis[0][0] - b_axis[0] + 4000)
             long = -int(self.b_axis[0][-1] - b_axis[-1] + 4000)
@@ -1602,7 +1603,11 @@ class pefs(pe_exp):
         else:
             # convert it to mOD
             for j in range(2):
-                self.r[j][:,:self.n_pixels] = -numpy.log10(1+ 2*(temp[2*j,:,:self.n_pixels] - temp[2*j+1,:,:self.n_pixels])/self.reference[:self.n_pixels])                
+                self.r[j][:,:self.n_pixels] = -numpy.log10(1+ 2*(temp[2*j,:,:self.n_pixels] - temp[2*j+1,:,:self.n_pixels])/self.reference[:self.n_pixels]) 
+                
+                # the time order for the NR data binned in VB6 is reverse
+                if self.data_type_version == "1.4" and j == 1:
+                    self.r[j][:,:] = self.r[j][::-1,:]
         
         #self.r = numpy.nan_to_num(self.r)
         
