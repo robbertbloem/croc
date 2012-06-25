@@ -20,11 +20,40 @@ reload(GVD_Materials)
 
 
 
+### 
+
+def find_indices(axis, range):
+    """
+    Find the minimum and maximum indices of the values given by range in axis.
+    
+    CHANGELOG:
+    20120622/RB: generalization of function in line shape method
+    
+    USAGE:
+    - axis (ndarray): an array with values. The values should be successive.
+    - range (list of 2 int): the minimum and maximum of the range
+    
+    You have an axis AXIS from 2000 to 2200 cm-1 in 32 elements. If range RANGE = [2050, 2150] it will find the indices of the points between these two values, including those values. It will return the first and last index. 
+
+    """
 
 
+    try:
+        min_i = numpy.where(axis < range[0])[0][-1]
+    except: 
+        min_i = 0
+    
+    try:
+        max_i = numpy.where(axis > range[1])[0][0] + 1
+    except: 
+        max_i = len(axis)
 
+    return min_i, max_i
 
-
+def rb_rotate(x, y, ang_rad):
+    X = x * numpy.cos(-ang_rad) - y * numpy.sin(-ang_rad)
+    Y = x * numpy.sin(-ang_rad) + y * numpy.cos(-ang_rad)
+    return X, Y
 
 
 

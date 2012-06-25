@@ -43,6 +43,9 @@ def double_exp(A,t):
 def rb_exp(A,t):
     return A[0]*numpy.exp(-t/A[1]) 
 
+def single_exp_offset(A,t):
+    return A[0]*numpy.exp(-t/A[1]) + A[2]
+
 def rb_gaussian(A, t, ignore = -1):
     """
     A[0]: sigma (sigma^2 = variance)
