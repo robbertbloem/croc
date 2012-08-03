@@ -41,15 +41,15 @@ def plot_lineshape_overlap(c_array, ax, index = 1, flag_CLS = False, flag_median
     if flag_CLS:
         
         # plot the minima and maxima of the double lorentzian fits
-        for i in range(2):
-            
-            y = c_array[i].mess.s_axis[0][c_array[i].dl_y_i[0]:c_array[i].dl_y_i[1]]
-            
-            x = c_array[i].dl_ble
-            ax.plot(x, y, ".", c = c_array[i].color_overlap_array[i], markersize = markersize)
+#        for i in range(2):
+#            
+           # y = c_array[i].mess.s_axis[0][c_array[i].dl_y_i[0]:c_array[i].dl_y_i[1]]
+#            
+#            x = c_array[i].dl_ble
+#            ax.plot(x, y, ".", c = c_array[i].color_overlap_array[i], markersize = markersize)
 
-            x = c_array[i].dl_esa
-            ax.plot(x, y, ".", c = c_array[i].color_overlap_array[i], markersize = markersize)
+#            x = c_array[i].dl_esa
+#            ax.plot(x, y, ".", c = c_array[i].color_overlap_array[i], markersize = markersize)
             
 
         # plot the linear fits of the minima and maxima
@@ -60,8 +60,8 @@ def plot_lineshape_overlap(c_array, ax, index = 1, flag_CLS = False, flag_median
             x = [(y[0] - c_array[i].l_A_ble[0])/c_array[i].l_A_ble[1], (y[1] - c_array[i].l_A_ble[0])/c_array[i].l_A_ble[1]]
             ax.plot(x, y, "-", c = c_array[i].color_overlap_array[i], linewidth = linewidth)
             
-            x = [(y[0] - c_array[i].l_A_esa[0])/c_array[i].l_A_esa[1], (y[1] - c_array[i].l_A_esa[0])/c_array[i].l_A_esa[1]]
-            ax.plot(x, y, "-", c = c_array[i].color_overlap_array[i], linewidth = linewidth)
+#            x = [(y[0] - c_array[i].l_A_esa[0])/c_array[i].l_A_esa[1], (y[1] - c_array[i].l_A_esa[0])/c_array[i].l_A_esa[1]]
+#            ax.plot(x, y, "-", c = c_array[i].color_overlap_array[i], linewidth = linewidth)
 
          
 #    if flag_median:
@@ -78,10 +78,11 @@ def plot_lineshape_overlap(c_array, ax, index = 1, flag_CLS = False, flag_median
     # plot properties
     ax.set_title("blue:" + c_array[0].objectname + "\nred: " + c_array[1].objectname)
      
-    ax.set_xlim(c_array[i].mess.s_axis[2][c_array[i].plot_x_i[0]], c_array[i].mess.s_axis[2][c_array[i].plot_x_i[1]-1])
-    ax.set_ylim(c_array[i].mess.s_axis[0][c_array[i].plot_y_i[0]], c_array[i].mess.s_axis[0][c_array[i].plot_y_i[1]-1])
+#    ax.set_xlim(c_array[i].mess.s_axis[2][c_array[i].plot_x_i[0]], c_array[i].mess.s_axis[2][c_array[i].plot_x_i[1]-1])
+#    ax.set_ylim(c_array[i].mess.s_axis[0][c_array[i].plot_y_i[0]], c_array[i].mess.s_axis[0][c_array[i].plot_y_i[1]-1])
 
-
+#    ax.set_xlim(2090,2140)
+#    ax.set_ylim(2085,2135)
 
 
 
@@ -166,6 +167,14 @@ class Lineshape(DC.ClassTools):
         
         self.ph_esa_max = 0
         self.ph_esa_min = 0
+        
+        ### find peak along w1 ###
+        self.w1_peaks_x_i = [0,0]
+        self.w1_peaks_y_i = [0,0]       
+        
+        self.w1_peaks_A_in = [0,0,0,0]
+        
+        self.w1_peaks = [0]
         
         ### plot related stuff ###
         self.color_array = ["b", "g", "r", "c", "m", "y", "k"]
@@ -358,8 +367,33 @@ class Lineshape(DC.ClassTools):
 
         self.ph_esa_min = numpy.min(data)
         self.ph_esa_max = numpy.max(data)
+        
+    def find_w1_peaks(self, verbose = False):
+        
+        data = self.mess.s[self.w1_peaks_y_i[0]:self.w1_peaks_y_i[1], self.w1_peaks_x_i[0]:self.w1_peaks_x_i[1]]
+        # x_axis = self.mess.s_axis[2][self.w1_peaks_x_i[0]:self.w1_peaks_x_i[1]]
+        y_axis = self.mess.s_axis[0][self.w1_peaks_y_i[0]:self.w1_peaks_y_i[1]]        
+
+        y = numpy.sum(data,1)
+   
+        A_out = MATH.fit(y_axis, y, EQ.rb_lorentzian, self.w1_peaks_A_in)
+           
+        self.w1_peaks[0] = A_out[1]
+        
+        # plt.figure()
+        # plt.plot(y_axis, y)
+        # t = numpy.linspace(y_axis[0], y_axis[-1], 100)
+        # y_fit = EQ.rb_lorentzian(A_out, t)
+        # plt.plot(t, y_fit)
+        # plt.title(self.objectname)
+        # plt.show()
+        
+        
 
 
+            
+            
+        
 
 
 

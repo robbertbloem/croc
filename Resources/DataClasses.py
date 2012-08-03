@@ -203,6 +203,8 @@ def make_db(array_of_class_instances, path_and_filename, use_shelve = False, fla
         db[object.objectname] = object
     
     db.close()
+    
+    os.system("chmod 777 " + path_and_filename)
 
 
 
