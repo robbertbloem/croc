@@ -37,7 +37,12 @@ class ftir(croc.Resources.DataClasses.mess_data):
         
         Init the FTIR class.
         
+        CHANGELOG:
+        2011/xx/xx/RB: started
+        2012/08/03/RB: removed difference between spectra and difference spectra and instead introduced class ftir_combine.
+        
         INPUT:
+        - objectname: a name
 
         
         """
@@ -52,6 +57,15 @@ class ftir(croc.Resources.DataClasses.mess_data):
 
 
     def import_data(self):
+        """
+        Before calling this function, set self.path and self.filename
+        The function does not check the extension (.txt, .dpt)
+        
+        CHANGELOG:
+        2011/xx/xx/RB: started
+        2012/08/03/RB: removed checking for file extension
+        
+        """
 
         filename = self.path + self.base_filename
 
@@ -68,6 +82,22 @@ class ftir(croc.Resources.DataClasses.mess_data):
             
     
     def plot(self, x_range = [0, 0], y_range = [0, 0], x_label = "", y_label = "", title = "", scale = 1.0, new_figure = True):
+        """
+        Plot the linear spectrum.
+        
+        CHANGELOG:
+        2011/xx/xx/RB: started
+        2012/08/03/RB: changes
+        
+        INPUT:
+        - x_range (list with 2 elements): range for the frequency axis. Set to [0,0] for the full range
+        - y_range  (list with 2 elements): range for the optical density. Set to [0,0] for the full range
+        - x_label (string): set the x_label. 
+        - y_label (string): set the label for the y-axis. Default is OD.
+        - title (string): set the title
+        - scale (float): you can scale a spectrum for comparison
+        - new_figure (BOOL): If set to True, it will call plt.figure(), plt.plot() and plt.show(). If set to False, it will only call plt.plot() and you need to call plt.figure() and plt.show() yourself. Usefull if you want to have sub-plots
+        """
     
         data = (self.s[0])[::-1] * scale
         axis = (self.s_axis[0])[::-1]
@@ -87,9 +117,26 @@ class ftir(croc.Resources.DataClasses.mess_data):
 
 
 class ftir_combine(ftir):
+    """
+    
+    Class to add or subtract FTIR spectra. It is based on croc.Pe.pe_combine()
+
+    
+    CHANGELOG:
+    2012/08/03/RB: started. 
+    """    
     
     def __init__(self, objectname, class_plus = [], class_min = []):
-        
+        """
+        Subtract FTIR spectra.
+
+        INPUT:
+        - objectname (string): name
+        - class_plus (list with ftir objects): these spectra will be added
+        - class_min (list with ftir objects): these spectra will be added
+
+        """
+
         croc.Ftir.ftir.__init__(self, objectname)
         
 
