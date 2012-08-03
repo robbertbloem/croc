@@ -141,17 +141,28 @@ class ftir_combine(ftir):
         
 
         
+        # for i in range(len(class_plus)):
+        #     
+        #     self.s[0] += class_plus[i].s[0] / len(class_plus)
+        #     self.s_axis = class_plus[i].s_axis
+        # 
+        #     
+        # for i in range(len(class_min)):
+        #     self.s[0] -= class_min[i].s[0] / len(class_min)
+
+        self.s_axis = class_plus[0].s_axis
+
+        plus = [0] * len(self.s_axis)
+        subt = [0] * len(self.s_axis)
+
         for i in range(len(class_plus)):
             
-            self.s[0] += class_plus[i].s[0] / len(class_plus)
-            self.s_axis = class_plus[i].s_axis
-
+            plus += class_plus[i].s[0] / len(class_plus)
             
         for i in range(len(class_min)):
-            self.s[0] -= class_min[i].s[0] / len(class_min)
-
-
-
+            subt += class_min[i].s[0] / len(class_min)     
+            
+        self.s[0] = - numpy.log10(plus/subt)   
 
 
 
