@@ -241,9 +241,39 @@ def import_db(path_and_filename, print_keys = False):
         return False
 
 
+def ensure_dir(f):
+    d = os.path.dirname(f)
+    if not os.path.exists(d):
+        os.makedirs(d)
+        
+def save_data(path_and_filename, array):
+    numpy.savetxt(path_and_filename, array)
+        
 
+def export_data_as_txt(array_of_class_instances, path):
+    
+    print("Exporting...")
+    
+    for i in range(len(array_of_class_instances)):
+        
+        path_extended = path + array_of_class_instances[i].objectname + "/"
+        
+        ensure_dir(path_extended)
+        
+        path_and_filename = path_extended + "s.txt"
+        save_data(path_and_filename, array_of_class_instances[i].s)
 
+        path_and_filename = path_extended + "s_axis_w1.txt"
+        save_data(path_and_filename, array_of_class_instances[i].s_axis[0])
 
+        path_and_filename = path_extended + "s_axis_t2.txt"
+        save_data(path_and_filename, [array_of_class_instances[i].r_axis[1]])
+
+        path_and_filename = path_extended + "s_axis_w3.txt"
+        save_data(path_and_filename, array_of_class_instances[i].s_axis[2])
+        
+        path_and_filename = path_extended + "phase_degrees.txt"
+        save_data(path_and_filename, [array_of_class_instances[i].phase_degrees])        
 
 ####################
 # HELPER FUNCTIONS #
