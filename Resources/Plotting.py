@@ -31,7 +31,7 @@ my_cmap = matplotlib.colors.LinearSegmentedColormap('my_colormap', cdict, 256)
 
 
 
-def linear(data, axis, x_range = [0, 0], y_range = [0, 0], x_label = "", y_label = "", title = "", new_figure = True, plot_real = True):
+def linear(data, axis, x_range = [0, 0], y_range = [0, 0], x_label = "", y_label = "", title = "", legend = "", new_figure = True, plot_real = True):
     
     if plot_real:
         data = numpy.real(data)
@@ -56,7 +56,7 @@ def linear(data, axis, x_range = [0, 0], y_range = [0, 0], x_label = "", y_label
             plt.figure()
     
         # the actual plot
-        plt.plot(axis, data)
+        plt.plot(axis, data, label = legend)
         
         plt.xlim(x_min, x_max)
         # plt.ylim(y_min, y_max)
@@ -66,7 +66,12 @@ def linear(data, axis, x_range = [0, 0], y_range = [0, 0], x_label = "", y_label
         
         plt.title(title)
         
-        plt.show()
+        if legend != "":
+            plt.legend()
+        
+        if new_figure: 
+        
+            plt.show()
 
     except:
         if D.FlagRunningOn == "server":
