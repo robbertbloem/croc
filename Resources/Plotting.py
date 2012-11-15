@@ -31,7 +31,7 @@ my_cmap = matplotlib.colors.LinearSegmentedColormap('my_colormap', cdict, 256)
 
 
 
-def linear(data, axis, x_range = [0, 0], y_range = [0, 0], x_label = "", y_label = "", title = "", new_figure = True, plot_real = True):
+def linear(data, axis, x_range = [0, 0], y_range = [0, 0], x_label = "", y_label = "", title = "", legend = "", new_figure = True, plot_real = True):
     
     if plot_real:
         data = numpy.real(data)
@@ -43,37 +43,35 @@ def linear(data, axis, x_range = [0, 0], y_range = [0, 0], x_label = "", y_label
     else:
         x_min = x_range[0]
         x_max = x_range[1]
-
-    # make the y_axis
-    if y_range == [0, 0]:
-        # find the minimum and maximum for the plotted range
-        y_min = numpy.nanmin(data[numpy.where(axis < x_max)[0][0]:numpy.where(axis > x_min)[0][-1]])        
-        y_max = numpy.nanmax(data[numpy.where(axis < x_max)[0][0]:numpy.where(axis > x_min)[0][-1]])
         
-        # give the plot some air
-        y_min -= (y_max - y_min)/10
-        y_max += (y_max - y_min)/10
-        
-    else:
-        y_min = y_range[0]
-        y_max = y_range[1]
+    # select the appropriate data range
+    x_min_i = numpy.where(axis > x_min)[0][0]
+    x_max_i = numpy.where(axis < x_max)[0][-1] 
+    
+    axis = axis[x_min_i:x_max_i]
+    data = data[x_min_i:x_max_i]     
 
     try:
         if new_figure:  
             plt.figure()
     
         # the actual plot
-        plt.plot(axis, data)
+        plt.plot(axis, data, label = legend)
         
         plt.xlim(x_min, x_max)
-        plt.ylim(y_min, y_max)
+        # plt.ylim(y_min, y_max)
         
         plt.xlabel(x_label)
         plt.ylabel(y_label)
         
         plt.title(title)
         
-        plt.show()
+        if legend != "":
+            plt.legend()
+        
+        if new_figure: 
+        
+            plt.show()
 
     except:
         if D.FlagRunningOn == "server":

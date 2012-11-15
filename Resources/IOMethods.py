@@ -70,6 +70,44 @@ def import_data_FS(path_and_filename, n_shots = 30000, n_channels = 37, flag_cou
         raise
         return 0, 0
 
+def import_labview_data(path, base_filename, num):
+    
+    try:
+        path_and_filename = path + base_filename + "_" + str(num) + ".csv"
+        data = numpy.loadtxt(path_and_filename, dtype = "float", delimiter = ",")
+        data = data.T
+        
+        path_and_filename = path + base_filename + "_t1_" + str(num) + ".csv"
+        t1_axis = numpy.loadtxt(path_and_filename, dtype = "float", delimiter = ",") 
+        
+        path_and_filename = path + base_filename + "_w3_" + str(num) + ".csv"
+        w3_axis = numpy.loadtxt(path_and_filename, dtype = "float", delimiter = ",") 
+        w3_axis = numpy.linspace(1990, 2217, 32)
+
+        n_fringes = int((len(t1_axis)-1)/2)
+        n_pixels = len(w3_axis)
+        
+        data = numpy.nan_to_num(data)
+        
+        R = data[n_fringes:, :]
+        NR = numpy.flipud(data[:n_fringes+1, :])
+        
+
+        R[0,:] /= 2
+        NR[0,:] /= 2
+        
+        t1_axis = numpy.arange(n_fringes+1) * 2.11
+   
+        return R, NR, t1_axis, w3_axis
+    
+    except IOError:
+        # D.printError("Unable to import binned data from file " + path_and_filename, inspect.stack())
+        raise
+        return 0, 0, 0    
+
+
+
+
 
 def import_binned_data(path_and_filename, n_pixels, diagram):
 

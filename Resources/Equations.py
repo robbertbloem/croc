@@ -20,7 +20,10 @@ def rb_cos(A, t):
 
 
 def linear(A, t):
-    return A[0] + A[1] * t    
+    return A[0] + A[1] * t  
+    
+def quadratic(A, t):
+    return A[0] + A[1] * t + A[2] * t**2  
 
 def Sellmeier(A, t):
     """
@@ -107,44 +110,57 @@ def rb_two_lorentzians(A, t, ignore = -1):
     
     return rb_lorentzian(A[:4], t, ignore = ignore) + rb_lorentzian(A[4:], t, ignore = ignore)
 
-
-#def rb_gaussian(A,t):
-#    """
-#    A[0]: sigma
-#    A[1]: mu
-#    A[2]: offset
-#    A[3]: scale, before offset
-#    """
-#    return (1/(A[0]*numpy.sqrt(2*numpy.pi))) * numpy.exp(-(t-A[1])**2/(2*A[0]**2)) + A[2]
-#
-#def rb_gaussian_2(A,t):
-#    """
-#    A[0]: sigma
-#    A[1]: mu
-#    A[2]: offset
-#    A[3]: scale, before offset
-#    """
-#    return (A[3]/(A[0]*numpy.sqrt(2*numpy.pi))) * numpy.exp(-(t-A[1])**2/(2*A[0]**2)) + A[2]
-#
-#def rb_gaussian_3(A,t):
-#    """
-#    A[0]: sigma
-#    A[1]: mu
-#    A[2]: offset
-#    A[3]: scale, before offset
-#    """
-#    return (A[3]/(A[0]*numpy.sqrt(2*numpy.pi))) * numpy.exp(-(t-A[1])**2/(2*A[0]**2)) 
-#
-#def rb_gaussian_test(A,t):
-#    """
-#    A[0]: sigma
-#    A[1]: mu
-#    A[2]: offset
-#    """
-##    return rb_gaussian(A[:4],t) - rb_gaussian(A[4:],t)
-#    return rb_lorentzian(A[:4],t) - rb_lorentzian(A[4:],t)
     
 
+# to calculate the non-rephasing and rephasing diagrams
+def g(t, delta, t_corr):
+    """
+    20101209/RB: started/continued
+    These are the g(t) functions used to make the non-rephasing and rephasing diagrams.
+
+    INPUT:
+    t: time array
+
+    OUTPUT:
+    An array with the results
+    """
+    # delta= 1/1000
+    # t_corr = 1000
+    return delta**2 * t_corr**2 * ( numpy.exp(-t/t_corr) + t/t_corr - 1)
+
+# calculate the non-rephasing diagram
+def non_rephasing(t1, t2, t3, w, anh, delta, t_corr):
+    """
+    20101209/RB: started/continued
+    Calculates the non-rephasing diagram
+
+    INPUT:
+    t1, t3 (mesh): coherence times in fs
+    t1_axis = numpy.arange(start, stop, step)
+    t3_axis = numpy.arange(start, stop, step)
+    t1, t3 = numpy.meshgrid(t1_axis, t3_axis)
+    
+    t2 (integer/float?): population time in fs
+    w (integer): frequency (in cm-1)
+    anh (integer): anharmonicity (in cm-1)
+    delta (float): ?
+    t_corr (float): correlation time
+
+    OUTPUT:
+    A 2D array of the response in for the coherence times
+    """
+
+    return (numpy.exp(-1j * (t3 + t1) * w) - numpy.exp(-1j * (t3 * (w - anh) + t1 * w))) * (numpy.exp(-g(t1, delta, t_corr) - g(t2, delta, t_corr) - g(t3, delta, t_corr) + g(t1+t2, delta, t_corr) + g(t2+t3, delta, t_corr) - g(t1+t2+t3, delta, t_corr)))
+
+#calculate the rephasing diagram
+def rephasing(t1, t2, t3, w, anh, delta, t_corr):
+    """
+    20101209/RB: started/continued
+    Calculates the non-rephasing diagram
+
+    see for details the non_rephasing function
+    """
+    return (numpy.exp(-1j * (t3 - t1) * w) - numpy.exp(-1j * (t3 * (w - anh) - t1 * w))) * (numpy.exp(-g(t1, delta, t_corr) + g(t2, delta, t_corr) - g(t3, delta, t_corr) - g(t1+t2, delta, t_corr) - g(t2+t3, delta, t_corr) + g(t1+t2+t3, delta, t_corr)))
 
     
     

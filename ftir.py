@@ -25,161 +25,170 @@ reload(croc.Debug)
 if croc.Debug.reload_flag:
     reload(croc)
     reload(P)
+    
 
 
 
 class ftir(croc.Resources.DataClasses.mess_data):
     
     
-    def __init__(self, object_name, abs_diff = False):
+    def __init__(self, object_name):
         """
         croc.ftir.__init__
         
         Init the FTIR class.
         
+        CHANGELOG:
+        2011/xx/xx/RB: started
+        2012/08/03/RB: removed difference between spectra and difference spectra and instead introduced class ftir_combine.
+        
         INPUT:
-        - abs_diff: if False, it will show an absorption spectrum. If True, it will make a difference absorption spectrum. In order to do this, a second file has to be loaded. 
+        - objectname: a name
+
         
         """
 
         print("=== CROCODILE FTIR ===")
-        if abs_diff:
-            croc.DataClasses.mess_data.__init__(self, object_name, diagrams = 2, dimensions = 1)
-            self.mess_type = "AbsDiff"
-        else:
-            croc.DataClasses.mess_data.__init__(self, object_name, diagrams = 1, dimensions = 1)
-            self.mess_type = "Abs"
+
+        croc.Resources.DataClasses.mess_data.__init__(self, object_name, measurements = 1, dimensions = 1)
+        self.mess_type = "FTIR"
+        
+        self.concentration = 0
+        self.pathlength = 0
 
 
 
 
 
     def import_data(self):
-
-
-        # for both
-        if self.mess_type != "AbsDiff": 
-            if self.base_filename[-4:] != ".txt":
-                self.base_filename = self.base_filename + ".txt"
-            
-            filename = self.path + self.base_filename
-
-        else:
-            if self.base_filename[0][-4:] != ".txt":
-                self.base_filename[0] = self.base_filename[0] + ".txt"
+        """
+        Before calling this function, set self.path and self.filename
+        The function does not check the extension (.txt, .dpt)
         
-            if self.base_filename[1][-4:] != ".txt":
-                self.base_filename[1] = self.base_filename[1] + ".txt"              
+        CHANGELOG:
+        2011/xx/xx/RB: started
+        2012/08/03/RB: removed checking for file extension
+        
+        """
 
-            filename = self.path + self.base_filename[0]  
-              
+        filename = self.path + self.base_filename
+
         try:
-            self.r_axis[0], self.r[0] = numpy.loadtxt(filename, delimiter = ",", unpack = True)
+            self.s_axis[0], self.s[0] = numpy.loadtxt(filename, delimiter = ",", unpack = True)
+            self.s_domain[0] = "cm-1"
+            self.s_axis[0] = (self.s_axis[0])[::-1]
+            self.s[0] = (self.s[0])[::-1]
         except IOError:
             print("ERROR (croc.ftir.import_data): unable to load file:", filename)
             return 0  
-        
-        # only for difference absorption
-        if self.mess_type == "AbsDiff":
-        
-            filename = self.path + self.base_filename[1]
-            try:
-                self.r_axis[0], self.r[1] = numpy.loadtxt(filename, delimiter = ",", unpack = True)
-            except IOError:
-                print("ERROR (croc.ftir.import_data): unable to load file:", filename)
-                return 0             
-        
-        # 
-        if self.mess_type == "AbsDiff":
-            self.s_axis[0] = self.r_axis[0]
-            self.s[0] = -numpy.log10(self.r[0] / self.r[1])
-        else:
-            self.s_axis[0] = self.r_axis[0]
-            self.s[0] = self.r[0]
-        
+            
+
         
 
             
     
-    def plot(self, x_range = [0, 0], y_range = [0, 0], x_label = "", y_label = "", title = "", new_figure = True):
-    
-        data = self.s[0]
-        axis = self.s_axis[0]
+    def plot(self, x_range = [0, 0], y_range = [0, 0], x_label = "", y_label = "", title = "", scale = "OD", legend = "", new_figure = True):
         
+        """
+        Plot the linear spectrum.
+        
+        CHANGELOG:
+        2011/xx/xx/RB: started
+        2012/08/03/RB: changes
+        
+        INPUT:
+        - x_range (list with 2 elements): range for the frequency axis. Set to [0,0] for the full range
+        - y_range  (list with 2 elements): range for the optical density. Set to [0,0] for the full range
+        - x_label (string): set the x_label. 
+        - y_label (string): set the label for the y-axis. Default is OD.
+        - title (string): set the title
+        - scale (string): default is 'OD', alternatively: 'EC' for extinction coefficient. You should have set self.concentration and self.pathlength.
+        - new_figure (BOOL): If set to True, it will call plt.figure(), plt.plot() and plt.show(). If set to False, it will only call plt.plot() and you need to call plt.figure() and plt.show() yourself. Usefull if you want to have sub-plots
+        """
+        # data = (self.s[0])[::-1]
+        # y_label = "Absorption (OD)"
+        
+        print("plot...")
+        
+        if type(scale) == float:
+            print("float")
+            data = self.s[0] * scale
+            if y_label == "":
+                y_label = "Absorption (AU)"
+            
+        elif scale == "OD":
+            data = self.s[0]
+            if y_label == "":
+                y_label = "Absorption (OD)"
+            print("OD")
+        elif scale == "EC":
+            data = self.s[0] / (100 * self.concentration * self.pathlength)
+            if y_label == "":
+                y_label = "Extinction Coefficient (M-1cm-1)"
+            print("EC")
+        
+        axis = self.s_axis[0]
+
         if title == "": 
             title = self.objectname
-            if self.mess_type == "AbsDiff":
-                title += " Difference Absorption Spectrum"
-            else:
-                title += " Absorption Spectrum"
                     
         if x_label == "":
             x_label = self.s_units[0]
-        if y_label == "":
-            if self.mess_type == "AbsDiff":
-                y_label = "Different Absorption (OD)"    
-            else:
-                y_label = "Absorption (OD)"
+
                 
         
-        P.linear(data, axis, x_range = x_range, y_range = y_range, x_label = x_label, y_label = y_label, title = title, new_figure = new_figure)
+        P.linear(data, axis, x_range = x_range, y_range = y_range, x_label = x_label, y_label = y_label, title = title, legend = legend, new_figure = new_figure)
         
         
 
 
+class ftir_combine(ftir):
+    """
+    
+    Class to add or subtract FTIR spectra. It is based on croc.Pe.pe_combine()
 
-
-class ftir_abs(ftir):
-
-    def __init__(self, object_name, base_filename):
+    
+    CHANGELOG:
+    2012/08/03/RB: started. 
+    """    
+    
+    def __init__(self, objectname, class_plus = [], class_min = []):
         """
-        croc.ftir.ftir_abs
-        
-        Init the FTIR class for absorbance measurements
-        
+        Subtract FTIR spectra.
+
         INPUT:
-        - abs_diff: if False, it will show an absorption spectrum. If True, it will make a difference absorption spectrum. In order to do this, a second file has to be loaded. 
-        
+        - objectname (string): name
+        - class_plus (list with ftir objects): these spectra will be added
+        - class_min (list with ftir objects): these spectra will be added
+
         """
 
-        print("=== CROCODILE FTIR ===")
-        croc.DataClasses.mess_data.__init__(self, object_name, measurements = 1, dimensions = 1)
-        self.mess_type = "Abs"
-        self.base_filename = base_filename
-
-
-
-
-
-
-
-class ftir_diffabs(ftir):
-
-
-    def __init__(self, object_name, I_filename, I0_filename):
-        """
-        croc.ftir.__init__
+        croc.Ftir.ftir.__init__(self, objectname)
         
-        Init the FTIR class.
+
         
-        INPUT:
-        - abs_diff: if False, it will show an absorption spectrum. If True, it will make a difference absorption spectrum. In order to do this, a second file has to be loaded. 
-        
-        """
+        # for i in range(len(class_plus)):
+        #     
+        #     self.s[0] += class_plus[i].s[0] / len(class_plus)
+        #     self.s_axis = class_plus[i].s_axis
+        # 
+        #     
+        # for i in range(len(class_min)):
+        #     self.s[0] -= class_min[i].s[0] / len(class_min)
 
-        print("=== CROCODILE FTIR ===")
-        croc.DataClasses.mess_data.__init__(self, object_name, measurements = 2, dimensions = 1)
-        self.mess_type = "AbsDiff"
-        self.base_filename = [I_filename, I0_filename]
+        self.s_axis = class_plus[0].s_axis
 
+        plus = [0] * len(self.s_axis)
+        subt = [0] * len(self.s_axis)
 
-
-
-
-
-
-
-
+        for i in range(len(class_plus)):
+            
+            plus += class_plus[i].s[0] / len(class_plus)
+            
+        for i in range(len(class_min)):
+            subt += class_min[i].s[0] / len(class_min)     
+            
+        self.s[0] = - numpy.log10(plus/subt)   
 
 
 
