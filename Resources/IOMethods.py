@@ -6,6 +6,7 @@ from __future__ import print_function
 from __future__ import division
 
 import os
+import inspect
 
 import numpy
 import matplotlib 
@@ -14,6 +15,7 @@ import matplotlib.pyplot as plt
 import croc
 #import croc.Pe
 from croc.Resources.DataClasses import mess_data
+import croc.Resources.Constants as C
 import croc.Debug as D
 
 def import_data_FS(path_and_filename, n_shots = 30000, n_channels = 37, flag_counter = False):
@@ -70,38 +72,53 @@ def import_data_FS(path_and_filename, n_shots = 30000, n_channels = 37, flag_cou
         raise
         return 0, 0
 
-def import_labview_data(path, base_filename, num):
+def import_labview_data(path, base_filename):
     
     try:
-        path_and_filename = path + base_filename + "_" + str(num) + ".csv"
+        # data
+        path_and_filename = path + base_filename + ".csv"
         data = numpy.loadtxt(path_and_filename, dtype = "float", delimiter = ",")
         data = data.T
         
-        path_and_filename = path + base_filename + "_t1_" + str(num) + ".csv"
+        # time axis in fringes
+        path_and_filename = path + base_filename + "_t1.csv"
         t1_axis = numpy.loadtxt(path_and_filename, dtype = "float", delimiter = ",") 
         
-        path_and_filename = path + base_filename + "_w3_" + str(num) + ".csv"
+        # frequency axis
+        path_and_filename = path + base_filename + "_w3.csv"
         w3_axis = numpy.loadtxt(path_and_filename, dtype = "float", delimiter = ",") 
-        w3_axis = numpy.linspace(1990, 2217, 32)
-
+        
+        # phase
+        path_and_filename = path + base_filename + "_phase.txt"
+        phase = numpy.loadtxt(path_and_filename, dtype = "float")
+        
+        # last pump
+        path_and_filename = path + base_filename + "_lastpump.txt"
+        lastpump = numpy.loadtxt(path_and_filename, dtype = "str")
+        
+        # determine number of fringes
         n_fringes = int((len(t1_axis)-1)/2)
         n_pixels = len(w3_axis)
         
+        # convert NaN to zeros
         data = numpy.nan_to_num(data)
         
+        # labview measures 4000-N to 4000+N, we want the data split into 4000-N to 4000 (non-rephasing) and 4000 to 4000+N (rephasing)
         R = data[n_fringes:, :]
         NR = numpy.flipud(data[:n_fringes+1, :])
         
-
-        R[0,:] /= 2
-        NR[0,:] /= 2
+        # fringe 4000 is included twice. 
         
-        t1_axis = numpy.arange(n_fringes+1) * 2.11
-   
-        return R, NR, t1_axis, w3_axis
+        # for the FFT, we don't want 4000 to be zero. The axes run from 0 to N
+        # also: calculate the axis in fs        
+        t1fr_axis = numpy.arange(n_fringes+1)
+        t1fs_axis = numpy.arange(n_fringes+1) * C.hene_fringe_fs
+        
+        # return everything
+        return R, NR, t1fs_axis, t1fr_axis, w3_axis, phase, lastpump, n_fringes, n_pixels
     
     except IOError:
-        # D.printError("Unable to import binned data from file " + path_and_filename, inspect.stack())
+        D.printError("Unable to LabView data from file " + path + "/" + base_filename, inspect.stack())
         raise
         return 0, 0, 0    
 

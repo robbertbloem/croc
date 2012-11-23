@@ -1296,6 +1296,93 @@ class pefs(pe_exp):
         
         """
         
+        # let's see what format we need to use
+        file_list = os.listdir(self.path)
+        
+        labview_format = 0
+        visual_basic_format = 0.0
+        
+        # first, try the labview format. It should be LV.x, where x is the version
+        for i in range(len(file_list)):
+            if file_list[i][:2] == "LV":
+                labview_format = int(file_list[i][3:])
+                print("LabView file format " + str(labview_format) + " detected")
+        
+        # if there is no labview format, then try VB6
+        if labview_format == 0:
+            fileinput.close()
+            try:
+                filebase = self.path + self.base_filename + "_" + str(self.time_stamp) + "_T" + str(self.r_axis[1]) + "_meta.txt"
+                for line in fileinput.input(filebase):
+                    if re.match("mess2Dheterodyne_meta_format", line): 
+                        visual_basic_format = float(line[-5:-2])
+                        print("VB6 file format " + str(visual_basic_format) + " detected")
+                fileinput.close()
+            except:
+                pass
+        
+        # throw an error when no file format is detected
+        if visual_basic_format == 0 and labview_format == 0:
+            print("No file format detected")     
+            return False
+        
+        if labview_format != 0:
+            out = self.add_data_LV(scan, flag_import_override, flag_construct_r, flag_calculate_noise, flag_noise_time_domain)
+          
+        elif visual_basic_format != 0:
+            out = self.add_data_VB6(scan, flag_import_override, flag_construct_r, flag_calculate_noise, flag_noise_time_domain)   
+            
+        return out     
+        
+        
+    
+    
+    def add_data_LV(self, 
+        scan, 
+        flag_import_override = False, 
+        flag_construct_r = True, 
+        flag_calculate_noise = False,
+        flag_noise_time_domain = False):
+
+        filename = self.base_filename + "_" + str(self.time_stamp) + "_T" + str(self.r_axis[1])
+        
+        try:
+            R, NR, t1fs_axis, t1fr_axis, w3_axis, phase, lastpump, n_fringes, n_pixels = IOM.import_labview_data(self.path, filename)
+        except IOError:
+            return False
+        
+        self.r[0] = R
+        self.r[1] = NR
+        self.r_axis[0] = t1fs_axis
+        self.r_axis[2] = w3_axis
+        self.phase_degrees = phase
+        
+        
+        if self.n_fringes == 0:
+            self.n_fringes = n_fringes
+        if self.n_pixels == 0:
+            self.n_pixels = n_pixels
+
+        self.r_units = ["fs", "fs", "cm-1"]
+
+        # now append that we imported this scan
+        self.imported_scans.append(scan)
+        
+        self.n_scans = len(self.imported_scans)
+        
+        return True
+
+
+
+    
+    
+    def add_data_VB6(self, 
+        scan, 
+        flag_import_override = False, 
+        flag_construct_r = True, 
+        flag_calculate_noise = False,
+        flag_noise_time_domain = False):
+        
         error_flag = False
         
         if len(self.imported_scans) == 0:
