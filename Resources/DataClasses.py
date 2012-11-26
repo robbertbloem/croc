@@ -316,6 +316,8 @@ def format_print(var):
     elif type(var) == time.struct_time: 
         var = time.strftime("%a, %d %b %Y %H:%M:%S", var)
         return var
+    # elif type(var) == int:
+        # return var
     elif type(var) == float:
         return round(var, 2)
     elif type(var) == numpy.float64:

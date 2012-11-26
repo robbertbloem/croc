@@ -1304,8 +1304,8 @@ class pefs(pe_exp):
         
         # first, try the labview format. It should be LV.x, where x is the version
         for i in range(len(file_list)):
-            if file_list[i][:2] == "LV":
-                labview_format = int(file_list[i][3:])
+            if file_list[i][:14] == "LV_file_format":
+                labview_format = int(file_list[i][15:])
                 print("LabView file format " + str(labview_format) + " detected")
         
         # if there is no labview format, then try VB6
@@ -1355,6 +1355,7 @@ class pefs(pe_exp):
         self.r[1] = NR
         self.r_axis[0] = t1fs_axis
         self.r_axis[2] = w3_axis
+        self.s_axis[2] = w3_axis
         self.phase_degrees = phase
         
         

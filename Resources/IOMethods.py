@@ -90,12 +90,23 @@ def import_labview_data(path, base_filename):
         
         # phase
         path_and_filename = path + base_filename + "_phase.txt"
-        phase = numpy.loadtxt(path_and_filename, dtype = "float")
+        f = open(path_and_filename)
+        for line in f:
+            temp = line
+        f.close()
+        if temp == "NaN":
+            D.printWarning("Phase is Not-a-Number, will be set to 0 ", inspect.stack())
+            phase = 0
+        else:
+            phase = float(temp)
         
         # last pump
         path_and_filename = path + base_filename + "_lastpump.txt"
-        lastpump = numpy.loadtxt(path_and_filename, dtype = "str")
-        
+        f = open(path_and_filename)
+        for line in f:
+            lastpump = line
+        f.close()
+                
         # determine number of fringes
         n_fringes = int((len(t1_axis)-1)/2)
         n_pixels = len(w3_axis)
