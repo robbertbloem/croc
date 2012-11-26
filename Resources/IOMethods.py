@@ -108,22 +108,22 @@ def import_labview_data(path, base_filename):
         f.close()
                 
         # determine number of fringes
-        n_fringes = int((len(t1_axis)-1)/2)
+        n_fringes = int((len(t1_axis)+1)/2)
         n_pixels = len(w3_axis)
         
         # convert NaN to zeros
         data = numpy.nan_to_num(data)
         
         # labview measures 4000-N to 4000+N, we want the data split into 4000-N to 4000 (non-rephasing) and 4000 to 4000+N (rephasing)
-        R = data[n_fringes:, :]
-        NR = numpy.flipud(data[:n_fringes+1, :])
+        R = data[n_fringes-1:, :]
+        NR = numpy.flipud(data[:n_fringes, :])
         
         # fringe 4000 is included twice. 
         
         # for the FFT, we don't want 4000 to be zero. The axes run from 0 to N
         # also: calculate the axis in fs        
-        t1fr_axis = numpy.arange(n_fringes+1)
-        t1fs_axis = numpy.arange(n_fringes+1) * C.hene_fringe_fs
+        t1fr_axis = numpy.arange(n_fringes)
+        t1fs_axis = numpy.arange(n_fringes) * C.hene_fringe_fs
         
         # return everything
         return R, NR, t1fs_axis, t1fr_axis, w3_axis, phase, lastpump, n_fringes, n_pixels
