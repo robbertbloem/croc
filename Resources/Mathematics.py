@@ -16,6 +16,8 @@ import matplotlib.pyplot as plt
 
 from scipy.optimize.minpack import leastsq
 
+import itertools
+
 
 
 def square_formula(a, b, c):
@@ -227,7 +229,7 @@ def make_ft_axis(length, dt, undersampling = 0, normalized_to_period = 0, zero_i
 ### CORRELATION STUFF ###
 
 
-def correlation(array, maxtau = 200, step_type = "tau"):
+def correlation(array, maxtau = 200, step_type = "tau", flag_normalize = True):
     """
     Calculation of the correlation using the method Jan used.
     
@@ -237,9 +239,15 @@ def correlation(array, maxtau = 200, step_type = "tau"):
     array (ndarray): 1-d array with the data
     maxtau (int): the maximum shift, also the maximum to where the correlation is calculated. This directly affects the speed of the calculation. (with N^2?)
     step_type ("1", "tau"): The step size. With "1" the step size is 1, this will result in a longer calculation but less noise. With "tau" the step size is the current "tau". The calculation will be faster but the result will be noisier.
+    flag_normalize (BOOL, True): see note below.
+    
+    NOTE:
+    The autocorrelation will show the different contributions to the loss of correlation. If the result is normalized, this is by ratio. Large long-term fluctuations will dominate the result, and make it look as if the shot-to-shot correlation is very good. But really, it is just not 
+    
     
     CHANGELOG:
     20120215: Introduced step_type
+    20130131/RB: introduced flag_normalize
     """
 
     array = array - numpy.mean(array)
@@ -264,24 +272,44 @@ def correlation(array, maxtau = 200, step_type = "tau"):
         
         c[i] = numpy.sum(a) / len(a)
     
-    return c/c[0]
-
+    if flag_normalize:
+        return c/c[0]
+    else:
+        return c
 
 
 
 def correlation_fft(array):
+    """
+    201202xx/RB: started function
+    20130205/RB: the function now uses an actual Fourier transform
+    """
 
-    # fix that is proposed for numpy, but not implemented yet
-    a = (array - numpy.mean(array)) / (numpy.std(array) * len(array))
-    v = (array - numpy.mean(array)) /  numpy.std(array)
+    array = (array - numpy.mean(array))
     
-    # calculate the autocorrelation
-    r = numpy.correlate(a, v, mode="full")
+    # zeropadding    
+    l = 2 ** int(1+numpy.log2(len(array) * 2))
     
-    # select the part we want
-    r = r[len(r)/2:]
+    s = numpy.fft.fft(array, n=l)
+    r = numpy.fft.ifft(s * numpy.conjugate(s))
+    
+    r = r[::-1]
+    r = r[:len(array)]
     
     return numpy.real(r/r[0])
+    
+    
+    # # fix that is proposed for numpy, but not implemented yet
+    # a = (array - numpy.mean(array)) / (numpy.std(array) * len(array))
+    # v = (array - numpy.mean(array)) /  numpy.std(array)
+    # 
+    # # calculate the autocorrelation
+    # r = numpy.correlate(a, v, mode="full")
+    # 
+    # # select the part we want
+    # r = r[len(r)/2:]
+    # 
+    # return numpy.real(r/r[0])
 
 
 
